@@ -5,10 +5,13 @@ Synchro Assignment
 
 HWND mainHWND;
 static int cxClient = 800, cyClient = 600;
-
+BOOL GLOBAL = FALSE;
+CRITICAL_SECTION cs;
+static BOOL winner = FALSE;
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 					PSTR szCmdLine, int iCmdShow)
 {
+
 	static TCHAR szAppName[] = TEXT ("Extreme Racing") ;
 	HWND         hwnd ;
 	MSG          msg ;
@@ -59,18 +62,23 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    static HWND	  hwndButton[5];
-	static WPARAM buttonNum[5];
-	static HANDLE cars[5];
-	int			  n = 0;
-	LPCWSTR		  names[] = {TEXT("red car"), TEXT("blue car"), TEXT("orange car"), TEXT("black car"), TEXT("green car")};
+	HANDLE events[] = {CreateEvent(NULL, FALSE, FALSE, TEXT("start race 1")), CreateEvent(NULL, FALSE, FALSE, TEXT("start race 2"))};
 	
-	//struct carData **cData = (struct carData **) malloc(sizeof(carData));
-	
-	int y = 50;
+	WaitForMultipleObjects(2, events, FALSE, 100000);
 
+    static HWND		hwndButton[5];
+	static WPARAM	buttonNum[5];
+	static HANDLE	cars[5];
+	PAINTSTRUCT		ps;
+	int				n		= 0;
+	LPCWSTR			names[] = {TEXT("red car"), TEXT("blue car"), TEXT("orange car"), TEXT("black car"), TEXT("green car")};
+	HDC				hdc;
+	int				y		= 50;
+	HPEN			red_pen = CreatePen(PS_SOLID, 5, RGB(155, 55, 80));
+	
 	switch (message)
 	{
+		
 		case WM_CREATE:
 				
 				DWORD threadID;
@@ -93,47 +101,57 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			cyClient = HIWORD(lParam);
 			return 0;
 		
+		case WM_PAINT:
+			hdc = BeginPaint(hwnd, &ps);
+			SelectObject(hdc,red_pen);
+			MoveToEx(hdc, cxClient/2, 0, NULL);
+			LineTo(hdc, cxClient/2, cyClient);
+			ReleaseDC(hwnd, hdc);
+			return 0;
+
 		case RACE_CONDITION_TRUE:{
-				if(wParam == buttonNum[0])
-					MessageBox(hwnd, TEXT("Red has Won"), TEXT("We have a winner"), MB_OK);
-				return 0;
+				if(wParam == buttonNum[0]){
+					MessageBox(hwnd, TEXT("The red car has won the race!"), TEXT("We have a winner"), MB_OK);
+					return 0;
+				}
 				
-				if(wParam == buttonNum[1])
-					MessageBox(hwnd, TEXT("Blue has Won"), TEXT("We have a winner"), MB_OK);
-				return 0;
-				
-				if(wParam == buttonNum[2])
-					MessageBox(hwnd, TEXT("Orange has Won"), TEXT("We have a winner"), MB_OK);
-				return 0;
-				
-				if(wParam == buttonNum[3])
-					MessageBox(hwnd, TEXT("Black has Won"), TEXT("We have a winner"), MB_OK);
-				return 0;
-				
-				if(wParam == buttonNum[4])
-					MessageBox(hwnd, TEXT("Green has Won"), TEXT("We have a winner"), MB_OK);
-		}
+				if(wParam == buttonNum[1]){
+					MessageBox(hwnd, TEXT("The blue car has won the race!"), TEXT("We have a winner"), MB_OK);
+					return 0;
+				}
+				if(wParam == buttonNum[2]){
+					MessageBox(hwnd, TEXT("The orange car has won the race!"), TEXT("We have a winner"), MB_OK);
+					return 0;
+				}
+				if(wParam == buttonNum[3]){
+					MessageBox(hwnd, TEXT("The black car has won the race!"), TEXT("We have a winner"), MB_OK);
+					return 0;
+				}
+				if(wParam == buttonNum[4]){
+					MessageBox(hwnd, TEXT("The green car has won the race!"), TEXT("We have a winner"), MB_OK);
+					return 0;
+				}
 		return 0;
-			
+		}
+
+		case WM_RBUTTONDOWN:
+			GLOBAL = TRUE;
+			InitializeCriticalSection (&cs);
+			for(int i = 0; i < 5; i++){
+				
+				ResumeThread(cars[i]);
+				
+			}
+			return 0;
 
 		case WM_LBUTTONDOWN:
+			
 			for(int i = 0; i < 5; i++){
 				ResumeThread(cars[i]);
 			}
+
+			return 0;
 		
-			//unsynchro race
-
-			return 0;
-
-		case WM_RBUTTONDOWN:
-			//synchro race
-
-			return 0;
-
-		case WM_PAINT:
-
-			return 0 ;
-
 		case WM_DESTROY:
 			PostQuitMessage (0) ;
 			return 0 ;
@@ -145,9 +163,7 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 DWORD WINAPI startCar(LPVOID hwndButton){
 	
 	RECT carRect;
-	//struct carData *raceData;
-	//raceData = (struct carData *) raceData;
-	
+
 	GetWindowRect((HWND)hwndButton, &carRect);
 	MapWindowPoints(HWND_DESKTOP, GetParent((HWND)hwndButton), (LPPOINT)&carRect, 2);
 	
@@ -157,11 +173,20 @@ DWORD WINAPI startCar(LPVOID hwndButton){
 			carRect.right - carRect.left, 
 			carRect.bottom - carRect.top, 
 			TRUE);
-		UpdateWindow(mainHWND);
+		UpdateWindow(mainHWND); 
 		Sleep(7);		
 	}
+
+	if(GLOBAL)
+		EnterCriticalSection(&cs);
+
+	if(!winner)
+		SendMessage(mainHWND, RACE_CONDITION_TRUE, (WPARAM)hwndButton, NULL); 
 	
-	SendMessage(mainHWND, RACE_CONDITION_TRUE, (WPARAM)hwndButton, NULL); 
+	winner = TRUE;
+
+	if(GLOBAL)
+		LeaveCriticalSection(&cs);
 
 	return 0;
 }

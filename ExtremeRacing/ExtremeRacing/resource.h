@@ -8,8 +8,3 @@ LRESULT CALLBACK WndProc (HWND, UINT, WPARAM, LPARAM) ;
 HWND createCar(LPCWSTR name, int id, int ypos, HWND hwnd, LPARAM lParam);
 
 
-
-struct carData{
-	HWND hwndButton;
-	int carNum;
-};
