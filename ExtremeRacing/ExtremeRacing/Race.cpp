@@ -8,35 +8,52 @@ static int cxClient = 800, cyClient = 600;
 BOOL GLOBAL = FALSE;
 CRITICAL_SECTION cs;
 static BOOL winner = FALSE;
+bool wndExit[] = {false, false};
+HANDLE events[] = {CreateEvent(NULL, FALSE, FALSE, TEXT("start race 1")), CreateEvent(NULL, FALSE, FALSE, TEXT("start race 2"))};
+
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 					PSTR szCmdLine, int iCmdShow)
 {
+	TCHAR* szCaption = TEXT("WAS NOT STARTED");
+	TCHAR* szAppName = TEXT("Extreme Racing");
+	HWND         hwnd;
+	MSG          msg;
+	WNDCLASS     wndclass;
+	DWORD dwRes = 0;
 
-	static TCHAR szAppName[] = TEXT ("Extreme Racing") ;
-	HWND         hwnd ;
-	MSG          msg ;
-	WNDCLASS     wndclass ;
-
-	wndclass.style         = CS_HREDRAW | CS_VREDRAW ;
-	wndclass.lpfnWndProc   = WndProc ;
-	wndclass.cbClsExtra    = 0 ;
-	wndclass.cbWndExtra    = 0 ;
-	wndclass.hInstance     = hInstance ;
-	wndclass.hIcon         = LoadIcon (NULL, IDI_APPLICATION) ;
-	wndclass.hCursor       = LoadCursor (NULL, IDC_ARROW) ;
-	wndclass.hbrBackground = (HBRUSH) GetStockObject (WHITE_BRUSH) ;
-	wndclass.lpszMenuName  = NULL ;
-	wndclass.lpszClassName = szAppName ;
+	wndclass.style         = CS_HREDRAW | CS_VREDRAW;
+	wndclass.lpfnWndProc   = WndProc;
+	wndclass.cbClsExtra    = 0;
+	wndclass.cbWndExtra    = 0;
+	wndclass.hInstance     = hInstance;
+	wndclass.hIcon         = LoadIcon (NULL, IDI_APPLICATION);
+	wndclass.hCursor       = LoadCursor (NULL, IDC_ARROW);
+	wndclass.hbrBackground = (HBRUSH) GetStockObject (WHITE_BRUSH);
+	wndclass.lpszMenuName  = NULL;
+	wndclass.lpszClassName = szAppName;
 
 	if (!RegisterClass (&wndclass))
 	{
 		MessageBox (NULL, TEXT ("This program requires Windows NT!"), 
-			szAppName, MB_ICONERROR) ;
-		return 0 ;
+			szAppName, MB_ICONERROR);
+		return 0;
+	}
+	
+	dwRes = WaitForMultipleObjects(2, events, FALSE, INFINITE);
+	switch(dwRes){
+		case WAIT_OBJECT_0:
+			szCaption = TEXT("Window 1 Started Extreme Racing");
+			wndExit[0] = true;
+		break;
+		
+		case WAIT_OBJECT_0 + 1:
+			szCaption = TEXT("Window 2 Started Extreme Racing");
+			wndExit[1] = true;
+		break;
 	}
 
 	hwnd = CreateWindow (szAppName,                  // window class name
-		TEXT ("Extreme Racing"), // window caption
+		szCaption, // window caption
 		WS_OVERLAPPEDWINDOW,        // window style
 		CW_USEDEFAULT,              // initial x position
 		CW_USEDEFAULT,              // initial y position
@@ -62,23 +79,34 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	HANDLE events[] = {CreateEvent(NULL, FALSE, FALSE, TEXT("start race 1")), CreateEvent(NULL, FALSE, FALSE, TEXT("start race 2"))};
-	
-	WaitForMultipleObjects(2, events, FALSE, 100000);
 
     static HWND		hwndButton[5];
 	static WPARAM	buttonNum[5];
 	static HANDLE	cars[5];
 	PAINTSTRUCT		ps;
+	DWORD			dwRes	= 0;
 	int				n		= 0;
 	LPCWSTR			names[] = {TEXT("red car"), TEXT("blue car"), TEXT("orange car"), TEXT("black car"), TEXT("green car")};
 	HDC				hdc;
 	int				y		= 50;
 	HPEN			red_pen = CreatePen(PS_SOLID, 5, RGB(155, 55, 80));
+	HANDLE			quit	= CreateEvent(NULL, FALSE, FALSE, TEXT("race exit"));
+	HANDLE			quit2	= CreateEvent(NULL, FALSE, FALSE, TEXT("race exit 2"));
+
 	
 	switch (message)
 	{
+		dwRes = WaitForMultipleObjects(2, events, FALSE, 1);
+		switch(dwRes){
+			case WAIT_OBJECT_0:
+				wndExit[0] = true;
+			break;
 		
+			case WAIT_OBJECT_0 + 1:
+				wndExit[1] = true;
+			break;
+		}
+
 		case WM_CREATE:
 				
 				DWORD threadID;
@@ -153,8 +181,15 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			return 0;
 		
 		case WM_DESTROY:
-			PostQuitMessage (0) ;
-			return 0 ;
+			
+			if(wndExit[0])
+				SetEvent(quit);
+			
+			if(wndExit[1])
+				SetEvent(quit2);
+
+			PostQuitMessage (0);
+			return 0;
 		}
 		return DefWindowProc (hwnd, message, wParam, lParam);
 }

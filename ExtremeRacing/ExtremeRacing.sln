@@ -5,6 +5,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ExtremeRacing", "ExtremeRac
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "StartWindow1", "StartWindow1\StartWindow1.vcxproj", "{6B0A6AF1-8006-488C-84E9-FF018C6EFE72}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "StartWindow2", "StartWindow2\StartWindow2.vcxproj", "{C7495DD9-F288-44A7-A6ED-A178012E6A0B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -19,6 +21,10 @@ Global
 		{6B0A6AF1-8006-488C-84E9-FF018C6EFE72}.Debug|Win32.Build.0 = Debug|Win32
 		{6B0A6AF1-8006-488C-84E9-FF018C6EFE72}.Release|Win32.ActiveCfg = Release|Win32
 		{6B0A6AF1-8006-488C-84E9-FF018C6EFE72}.Release|Win32.Build.0 = Release|Win32
+		{C7495DD9-F288-44A7-A6ED-A178012E6A0B}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C7495DD9-F288-44A7-A6ED-A178012E6A0B}.Debug|Win32.Build.0 = Debug|Win32
+		{C7495DD9-F288-44A7-A6ED-A178012E6A0B}.Release|Win32.ActiveCfg = Release|Win32
+		{C7495DD9-F288-44A7-A6ED-A178012E6A0B}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

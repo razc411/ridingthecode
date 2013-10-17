@@ -4,12 +4,11 @@
 LRESULT CALLBACK WndProc (HWND, UINT, WPARAM, LPARAM);
 
 static int cxClient = 300, cyClient = 200;
-static bool EXIT = false;
 
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 					PSTR szCmdLine, int iCmdShow)
 {
-	static TCHAR szAppName[] = TEXT ("Start Window 1") ;
+	static TCHAR szAppName[] = TEXT ("Start Window 2") ;
 	HWND         hwnd;
 	MSG          msg;
 	WNDCLASS     wndclass;
@@ -33,7 +32,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	}
 
 	hwnd = CreateWindow (szAppName,                  // window class name
-		TEXT ("Start Window 1"), // window caption
+		TEXT ("Start Window 2"), // window caption
 		WS_OVERLAPPEDWINDOW,        // window style
 		CW_USEDEFAULT,              // initial x position
 		CW_USEDEFAULT,              // initial y position
@@ -59,8 +58,8 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	HWND button;
 	HDC hdc;
-	HANDLE begin = CreateEvent(NULL, FALSE, FALSE, TEXT("start race 1"));
-	HANDLE quit = CreateEvent(NULL, FALSE, FALSE, TEXT("race exit"));
+	HANDLE begin = CreateEvent(NULL, FALSE, FALSE, TEXT("start race 2"));
+	HANDLE quit = CreateEvent(NULL, FALSE, FALSE, TEXT("race exit 2"));
 	DWORD dwRes = 0;
 
 	switch (message){
