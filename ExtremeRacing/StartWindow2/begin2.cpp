@@ -1,8 +1,12 @@
 #include <Windows.h>
-#include <stdio.h>
 #define IDC_START 0x030
 LRESULT CALLBACK WndProc (HWND, UINT, WPARAM, LPARAM);
 
+/*
+	By Ramzi Chennafi, A00825005 3O
+	Simple window containing a button. Pressing the button
+	signals Extreme Racing to start.
+*/
 static int cxClient = 300, cyClient = 200;
 
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
@@ -31,17 +35,15 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		return 0 ;
 	}
 
-	hwnd = CreateWindow (szAppName,                  // window class name
-		TEXT ("Start Window 2"), // window caption
-		WS_OVERLAPPEDWINDOW,        // window style
-		CW_USEDEFAULT,              // initial x position
-		CW_USEDEFAULT,              // initial y position
-		300,              // initial x size
-		200,              // initial y size
-		NULL,                       // parent window handle
-		NULL,                       // window menu handle
-		hInstance,                  // program instance handle
-		NULL) ;                     // creation parameters
+	hwnd = CreateWindow (szAppName,               
+		TEXT ("Start Window 2"), 
+		WS_OVERLAPPEDWINDOW,        
+		CW_USEDEFAULT, CW_USEDEFAULT,              
+		300, 200,              
+		NULL,                       
+		NULL,                       
+		hInstance,                  
+		NULL) ;                     
 
 	ShowWindow (hwnd, iCmdShow) ;
 	UpdateWindow (hwnd) ;
@@ -56,11 +58,18 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	HWND button;
-	HDC hdc;
-	HANDLE begin = CreateEvent(NULL, FALSE, FALSE, TEXT("start race 2"));
-	HANDLE quit = CreateEvent(NULL, FALSE, FALSE, TEXT("race exit 2"));
-	DWORD dwRes = 0;
+	HWND	button;
+	HDC		hdc;
+	HANDLE	begin	= CreateEvent(NULL, FALSE, FALSE, TEXT("start race 2"));
+	HANDLE	quit[]	= {CreateEvent(NULL, FALSE, FALSE, TEXT("race exit 2"))};
+	DWORD	dwRes	= 0;
+	
+	dwRes = MsgWaitForMultipleObjects(1, quit, false, 0, QS_ALLINPUT);
+	switch(dwRes){
+		case WAIT_OBJECT_0:
+			PostQuitMessage(0);
+			DestroyWindow(hwnd);
+	}
 
 	switch (message){
 
@@ -77,12 +86,6 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			{
 				case IDC_START:
 					SetEvent(begin);
-					dwRes = WaitForSingleObject(quit, INFINITE);
-					switch(dwRes){
-						case WAIT_OBJECT_0:
-							PostQuitMessage(0);
-							DestroyWindow(hwnd);
-					}
 			}
 			return 0;
 

@@ -1,25 +1,32 @@
 /*------------------------------------------------------------
-Synchro Assignment
+Synchro Assignment - Extreme Racing
+By Ramzi Chennafi A00825005
+
+Multithreaded car racing program. Races can be done in
+synchronized(right click) and unsynchronized (left click) mode.
+
+Requires a button press on either StartWindow 1 or StartWindow 2
+to intiate the program.
 ------------------------------------------------------------*/
 #include "resource.h"
 
-HWND mainHWND;
-static int cxClient = 800, cyClient = 600;
-BOOL GLOBAL = FALSE;
-CRITICAL_SECTION cs;
-static BOOL winner = FALSE;
-bool wndExit[] = {false, false};
-HANDLE events[] = {CreateEvent(NULL, FALSE, FALSE, TEXT("start race 1")), CreateEvent(NULL, FALSE, FALSE, TEXT("start race 2"))};
+HWND				mainHWND;
+CRITICAL_SECTION	cs;
+static int			cxClient	= 800, cyClient = 600;
+BOOL				GLOBAL		= FALSE;
+static BOOL			winner		= FALSE;
+static bool			wndExit[]	= {false, false};
+HANDLE				events[]	= {CreateEvent(NULL, FALSE, FALSE, TEXT("start race 1")), CreateEvent(NULL, FALSE, FALSE, TEXT("start race 2"))};
 
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 					PSTR szCmdLine, int iCmdShow)
 {
-	TCHAR* szCaption = TEXT("WAS NOT STARTED");
-	TCHAR* szAppName = TEXT("Extreme Racing");
-	HWND         hwnd;
-	MSG          msg;
-	WNDCLASS     wndclass;
-	DWORD dwRes = 0;
+	TCHAR*		szCaption = TEXT("WAS NOT STARTED");
+	TCHAR*		szAppName = TEXT("Extreme Racing");
+	DWORD		dwRes	  = 0;
+	HWND		hwnd;
+	MSG         msg;
+	WNDCLASS    wndclass;
 
 	wndclass.style         = CS_HREDRAW | CS_VREDRAW;
 	wndclass.lpfnWndProc   = WndProc;
@@ -34,11 +41,11 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 	if (!RegisterClass (&wndclass))
 	{
-		MessageBox (NULL, TEXT ("This program requires Windows NT!"), 
+		MessageBox (NULL, TEXT ("Shit doesn't work!"), 
 			szAppName, MB_ICONERROR);
 		return 0;
 	}
-	
+
 	dwRes = WaitForMultipleObjects(2, events, FALSE, INFINITE);
 	switch(dwRes){
 		case WAIT_OBJECT_0:
@@ -52,13 +59,13 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		break;
 	}
 
-	hwnd = CreateWindow (szAppName,                  // window class name
-		szCaption, // window caption
+	hwnd = CreateWindow (szAppName, // window class name
+		szCaption,					// window caption
 		WS_OVERLAPPEDWINDOW,        // window style
 		CW_USEDEFAULT,              // initial x position
 		CW_USEDEFAULT,              // initial y position
-		800,              // initial x size
-		600,              // initial y size
+		800,						// initial x size
+		600,						// initial y size
 		NULL,                       // parent window handle
 		NULL,                       // window menu handle
 		hInstance,                  // program instance handle
@@ -77,6 +84,11 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	return msg.wParam ;
 }
 
+/*
+	Intiates a synchronized or unsynchronized race containing 5 "cars". Intiates 
+	their threads and draws the finish line. Determines winner dependent on 
+	the callback message.
+*/
 LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 
@@ -84,32 +96,31 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	static WPARAM	buttonNum[5];
 	static HANDLE	cars[5];
 	PAINTSTRUCT		ps;
+	HDC				hdc;
 	DWORD			dwRes	= 0;
 	int				n		= 0;
-	LPCWSTR			names[] = {TEXT("red car"), TEXT("blue car"), TEXT("orange car"), TEXT("black car"), TEXT("green car")};
-	HDC				hdc;
 	int				y		= 50;
 	HPEN			red_pen = CreatePen(PS_SOLID, 5, RGB(155, 55, 80));
+	LPCWSTR			names[] = {TEXT("red car"), TEXT("blue car"), TEXT("orange car"), TEXT("black car"), TEXT("green car")};
 	HANDLE			quit	= CreateEvent(NULL, FALSE, FALSE, TEXT("race exit"));
 	HANDLE			quit2	= CreateEvent(NULL, FALSE, FALSE, TEXT("race exit 2"));
-
+	
+	// Checks if program 2/3 have their buttons pressed after intialization.
+	dwRes = MsgWaitForMultipleObjects(2, events, false, 0, QS_ALLINPUT);
+	switch(dwRes){
+		case WAIT_OBJECT_0:
+			wndExit[0] = true;
+		break;
+		
+		case WAIT_OBJECT_0 + 1:
+			wndExit[1] = true;
+		break;
+	}
 	
 	switch (message)
 	{
-		dwRes = WaitForMultipleObjects(2, events, FALSE, 1);
-		switch(dwRes){
-			case WAIT_OBJECT_0:
-				wndExit[0] = true;
-			break;
-		
-			case WAIT_OBJECT_0 + 1:
-				wndExit[1] = true;
-			break;
-		}
 
 		case WM_CREATE:
-				
-				DWORD threadID;
 
 				for(int i = 0; i < 5; i++){
 					hwndButton[i] = createCar(names[i], n, y, hwnd, lParam);
@@ -117,11 +128,11 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 					y += 100;
 				}
 				
-				for(int i = 0; i < 5; i++){
-					cars[i] = CreateThread(NULL, 0, startCar, hwndButton[i], CREATE_SUSPENDED, &threadID);
-				}
-
+				for(int i = 0; i < 5; i++)
+					cars[i] = CreateThread(NULL, 0, startCar, hwndButton[i], CREATE_SUSPENDED, NULL);
+				
 				UpdateWindow(hwnd);
+
 			return 0;
 
 		case WM_SIZE:
@@ -136,7 +147,8 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			LineTo(hdc, cxClient/2, cyClient);
 			ReleaseDC(hwnd, hdc);
 			return 0;
-
+		
+		// Determines winner
 		case RACE_CONDITION_TRUE:{
 				if(wParam == buttonNum[0]){
 					MessageBox(hwnd, TEXT("The red car has won the race!"), TEXT("We have a winner"), MB_OK);
@@ -161,25 +173,26 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 				}
 		return 0;
 		}
-
+		
+		// Synchronized Race
 		case WM_RBUTTONDOWN:
 			GLOBAL = TRUE;
 			InitializeCriticalSection (&cs);
-			for(int i = 0; i < 5; i++){
-				
-				ResumeThread(cars[i]);
-				
-			}
-			return 0;
-
-		case WM_LBUTTONDOWN:
 			
-			for(int i = 0; i < 5; i++){
+			for(int i = 0; i < 5; i++)
 				ResumeThread(cars[i]);
-			}
-
+			
 			return 0;
 		
+		// Unsynchronized Race
+		case WM_LBUTTONDOWN:
+			
+			for(int i = 0; i < 5; i++)
+				ResumeThread(cars[i]);
+			
+			return 0;
+		
+		// Closes program 2 or/and 3 if they signaled "begin"
 		case WM_DESTROY:
 			
 			if(wndExit[0])
@@ -194,7 +207,14 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 		return DefWindowProc (hwnd, message, wParam, lParam);
 }
 	
+/*
+	Starts a "car" thread. "Car" moves towards finish line, once passed, stops.
+	Sends a RACE_CONDITION_TRUE message containing the button hwnd (which serves
+	as a comparison to determine who sent what message) when it passes the finish 
+	line then returns 0.
 
+	A critical section will occur if the GLOBAL is activated.
+*/
 DWORD WINAPI startCar(LPVOID hwndButton){
 	
 	RECT carRect;
@@ -226,6 +246,10 @@ DWORD WINAPI startCar(LPVOID hwndButton){
 	return 0;
 }
 
+/*
+	Creates a new "car". Takes a car name, car id, y car position and the parent
+	window hwnd. Retruns a HWND to a button.
+*/
 HWND createCar(LPCWSTR name, int id, int ypos, HWND hwnd, LPARAM lParam){
 	int	width = 80;
 	int	height = 30;

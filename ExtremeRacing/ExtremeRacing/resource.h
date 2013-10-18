@@ -1,6 +1,4 @@
 #include <Windows.h>
-#include <stdio.h>
-#include <stdlib.h>
 #define RACE_CONDITION_TRUE 0x000048
 
 DWORD WINAPI startCar(LPVOID n);

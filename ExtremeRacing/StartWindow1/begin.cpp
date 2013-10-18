@@ -1,7 +1,12 @@
 #include <Windows.h>
-#include <stdio.h>
 #define IDC_START 0x030
 LRESULT CALLBACK WndProc (HWND, UINT, WPARAM, LPARAM);
+
+/*
+	By Ramzi Chennafi A00825005 3O
+	Simple window containing a button. Pressing the button
+	signals Extreme Racing to start.
+*/
 
 static int cxClient = 300, cyClient = 200;
 static bool EXIT = false;
@@ -60,8 +65,15 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	HWND button;
 	HDC hdc;
 	HANDLE begin = CreateEvent(NULL, FALSE, FALSE, TEXT("start race 1"));
-	HANDLE quit = CreateEvent(NULL, FALSE, FALSE, TEXT("race exit"));
+	HANDLE quit[] = {CreateEvent(NULL, FALSE, FALSE, TEXT("race exit"))};
 	DWORD dwRes = 0;
+	
+	dwRes = MsgWaitForMultipleObjects(1, quit, false, 0, QS_ALLINPUT);
+	switch(dwRes){
+		case WAIT_OBJECT_0:
+			PostQuitMessage(0);
+			DestroyWindow(hwnd);
+	}
 
 	switch (message){
 
@@ -78,12 +90,6 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			{
 				case IDC_START:
 					SetEvent(begin);
-					dwRes = WaitForSingleObject(quit, INFINITE);
-					switch(dwRes){
-						case WAIT_OBJECT_0:
-							PostQuitMessage(0);
-							DestroyWindow(hwnd);
-					}
 			}
 			return 0;
 
