@@ -146,8 +146,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		HANDLE_MSG(hWnd, WM_COMMAND, Main_OnCommand);
 		HANDLE_MSG(hWnd, WM_PAINT, Main_OnPaint);
 		HANDLE_MSG(hWnd, WM_DESTROY, Main_OnDestroy);
-	default:
-		return DefWindowProc(hWnd, message, wParam, lParam);
+		default:
+			return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 }
 //-------------------------------------------------------------------------------------------------------
@@ -176,6 +176,19 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct){
 void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify){
 	switch (id)
 	{
+	case ID_CONNECT_SERVERMODE:
+		break;
+	
+	case ID_CONNECT_CLIENTMODE:
+		break;
+	
+	case ID_HELP_README:
+		break;
+
+	case ID_HELP_ABOUT:
+		DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hwnd, About);
+		break;
+
 	case IDM_EXIT:
 		DestroyWindow(hwnd);
 		break;
@@ -208,4 +221,30 @@ void Main_OnPaint(HWND hwnd){
 //-------------------------------------------------------------------------------------------------------
 void Main_OnDestroy(HWND hwnd){
 	PostQuitMessage(0);
+}
+//-------------------------------------------------------------------------------------------------------
+//	DATE: January 10 2014
+//	AUTHOR: RAMZI CHENNAFI
+//	
+//	FUNCTION: INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+//	RETURNS: INT_PTR, used by OS
+//	DESCRIPTION:
+//			Message loop for the "About" dialog box.
+//-------------------------------------------------------------------------------------------------------
+INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+	case WM_INITDIALOG:
+		return TRUE;
+
+	case WM_COMMAND:
+		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
+		{
+			EndDialog(hDlg, LOWORD(wParam));
+			return TRUE;
+		}
+		break;
+	}
+	return FALSE;
 }

@@ -1,0 +1,108 @@
+PseudoCode and Planning
+===========================================================================
+Client
+Draw GUI -> Client Selected -> Choose data file to send -> Open TCP or UDP connection -> Send data
+
+Server
+Draw GUI -> Server Selected -> Choose connection type -> Set to TCP or UDP connecton -> 
+Listen for connections -> Connect with client when found -> Read data -> Save Data -> Display the data -> Display statistics
+
+Functions Client - 2 Threads, 1 for send or recieve, 1 for main client
+
+Possible Additional Features
+-WAN communication
+-Adaptable file size
+-Pretty GUI
+-Saveable statistics
+
+Required Features
+-LAN Comm
+-Statistics
+-File transfer
+-User chosen file size and connection settings
+-Client and Server mode
+-GUI
+-Ability to specifiy amount of times packet is sent
+
+Required Documents
+-Planning, Design, Pseudocode and testing
+-Technical report
+-Source code and executable
+
+++++++++++++
++PseudoCode+
+++++++++++++
+Idle - WndProc and Window Registering
+
+On Client Mode Select
+	init_client()
+On Server Mode select
+	init_server()
+On Paint
+	retrieve net_stats() from classlong data and paint
+------------------------------------------
+init_client()
+	
+	create connection
+	call send_data()
+------------------------------------------
+send_data()
+	
+	while(user has not hit cancel)
+		data = select_data()
+		send data to specified address
+		if data reaches location
+			print successful transfer
+		else 
+			print failure to send data
+		net_stats(collect network data)
+	
+	close thread, return to idle
+------------------------------------------
+select_data()
+	
+	file select dialog appears
+	request IP and port info
+	return a net_send struct containing address info and data descriptor
+------------------------------------------
+net_stats()
+	
+	depending on mode selected
+	process data accordingly
+	save stats as a classlong net_stat struct
+------------------------------------------
+init_server
+	
+	create connection
+	set wsasync event for read
+	
+	while(user has not canceled mode)
+		if(recieve event is detected)
+			recieve_data()
+
+	exit thread, return to idle
+------------------------------------------
+recieve_data
+	
+	read data from socket
+	package data
+	if read fails
+		print error
+	if read succeds
+		print success, call save_data()
+	send net data to net_stats()
+
+	return to init server
+------------------------------------------
+save_data()
+
+	take data and save to setting specified location
+------------------------------------------
+transfer_display()
+
+	handles displaying all network text form net_stats()
+	and displaying error messages as well as success messages
+------------------------------------------
+	
+
+
