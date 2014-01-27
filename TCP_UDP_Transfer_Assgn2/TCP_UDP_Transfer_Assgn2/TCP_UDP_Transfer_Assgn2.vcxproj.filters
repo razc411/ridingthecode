@@ -45,6 +45,9 @@
     <ClCompile Include="ServerMode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="TCP_UDP_Transfer_Assgn2.rc">
