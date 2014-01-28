@@ -169,3 +169,23 @@ void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons){
 	ReleaseDC(hwnd, hdc);
 
 }
+
+void Init_Settings(HWND hwnd){
+	HWND hDlgPTCL	= GetDlgItem(hwnd, IDC_PROTSLT);
+	HWND hDlgPORT	= GetDlgItem(hwnd, IDC_PORT);
+	HWND hDlgIP		= GetDlgItem(hwnd, IDC_IPADDRESS1);
+	HWND hDlgSAVE	= GetDlgItem(hwnd, IDC_SDISPLAY);
+	HWND hDlgSPORT	= GetDlgItem(hwnd, IDC_SPORT);
+	HWND hDlgSPRTCL	= GetDlgItem(hwnd, IDC_SPRTCL);
+
+	ComboBox_AddString(hDlgPTCL, "TCP");
+	ComboBox_AddString(hDlgPTCL, "UDP");
+	ComboBox_SetCurSel(hDlgPTCL, 0);
+	ComboBox_AddString(hDlgSPRTCL, "TCP");
+	ComboBox_AddString(hDlgSPRTCL, "UDP");
+	ComboBox_SetCurSel(hDlgSPRTCL, 0);
+	Edit_SetText(hDlgPORT, "5150");
+	Edit_SetText(hDlgSAVE, "C:\\");
+	LPARAM ip = MAKEIPADDRESS(127, 0, 0, 1);
+	SendMessage(hDlgIP, IPM_SETADDRESS, 0, ip);
+}

@@ -104,7 +104,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 
 	wcex.style = CS_HREDRAW | CS_VREDRAW;
 	wcex.lpfnWndProc = WndProc;
-	wcex.cbClsExtra = 0;
+	wcex.cbClsExtra = sizeof(SETTINGS);
 	wcex.cbWndExtra = 0;
 	wcex.hInstance = hInstance;
 	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_TCP_UDP_TRANSFER_ASSGN2));
@@ -327,23 +327,41 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	}
 	return FALSE;
 }
-
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: main
+--
+--      DATE: January 20, 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void main(void)
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Program entry point. Disables terminal processing, creates 3 pipes and 2 children processes. These processes
+--		are directed into their respective function paths.
+----------------------------------------------------------------------------------------------------------------------*/
 INT_PTR CALLBACK Settings(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{
 	case WM_INITDIALOG:
-		SendMessage(GetDlgItem(hDlg, IDC_PROTSLT), CB_ADDSTRING, 0, (LPARAM)"TCP"); 
-		SendMessage(GetDlgItem(hDlg, IDC_PROTSLT), CB_ADDSTRING, 0, (LPARAM)"UDP");
+		Init_Settings(hDlg);
 		return TRUE;
 
 	case WM_COMMAND:
-		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
-		{
+		switch(LOWORD(wParam)){
+		case BT_SETTINGCANCEL:
 			EndDialog(hDlg, LOWORD(wParam));
 			return TRUE;
+		case BT_SETTINGOK:
+			set_settings(hDlg);			
+			EndDialog(hDlg, LOWORD(wParam));
+			break;
 		}
-		break;
 	}
 	return FALSE;
 }

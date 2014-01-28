@@ -34,7 +34,8 @@ void init_server(HWND hwnd){
 	SOCKET Listen;
 	SOCKADDR_IN InternetAddr;
 	WSADATA wsaData;
-	
+	SETTINGS * st = (SETTINGS*) GetClassLong(hwnd, 0);
+
 	if ((Ret = WSAStartup(0x0202, &wsaData)) != 0){
 		return;
 	}
@@ -49,7 +50,7 @@ void init_server(HWND hwnd){
 
 	InternetAddr.sin_family = AF_INET;
 	InternetAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	InternetAddr.sin_port = htons(PORT);
+	InternetAddr.sin_port = htons(atoi(st->server_port));
 
 	if (bind(Listen, (PSOCKADDR)&InternetAddr, sizeof(InternetAddr)) == SOCKET_ERROR)
 	{

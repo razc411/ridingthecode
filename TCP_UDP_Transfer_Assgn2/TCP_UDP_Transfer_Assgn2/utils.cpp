@@ -30,3 +30,25 @@
 void net_stats(){
 
 }
+
+void save_select(){
+
+}
+
+void set_settings(HWND hwnd){
+	HWND hDlgPTCL	= GetDlgItem(hwnd, IDC_PROTSLT);
+	HWND hDlgPORT	= GetDlgItem(hwnd, IDC_PORT);
+	HWND hDlgIP		= GetDlgItem(hwnd, IDC_IPADDRESS1);
+	HWND hDlgSAVE	= GetDlgItem(hwnd, IDC_SDISPLAY);
+	HWND hDlgSPORT	= GetDlgItem(hwnd, IDC_SPORT);
+
+	SETTINGS * st =(SETTINGS*) malloc(sizeof(SETTINGS));
+
+	Edit_GetText(hwnd, st->client_port, MAX_SIZE);
+	Edit_GetText(hwnd, st->server_port, MAX_SIZE);
+	st->client_prtcl = ComboBox_GetCurSel(hDlgPTCL);
+	st->server_prtcl = ComboBox_GetCurSel(hDlgSPORT);
+	SendMessage(hDlgIP, IPM_GETADDRESS, 0, (LPARAM) &st->client_send_ip);
+
+	SetClassLong(hwnd, 0, (LONG)st);
+}

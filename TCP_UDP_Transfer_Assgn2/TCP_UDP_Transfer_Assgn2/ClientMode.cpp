@@ -36,9 +36,9 @@ void init_client(HWND hwnd){
 	char  *host, *bp, rbuf[1024], sbuf[1024] = "testing", **pptr;
 	WSADATA WSAData;
 	WORD wVersionRequested;
-	
-	host = "localhost";
-	port = 5150;
+	SETTINGS * st = (SETTINGS*) GetClassLong(hwnd, 0);
+
+	port = atoi(st->client_port);
 
 	wVersionRequested = MAKEWORD(2, 2);
 	err = WSAStartup(wVersionRequested, &WSAData);
@@ -58,7 +58,7 @@ void init_client(HWND hwnd){
 	// Initialize and set up the address structure
 	memset((char *)&server, 0, sizeof(struct sockaddr_in));
 	server.sin_family = AF_INET;
-	server.sin_port = htons(port);
+	server.sin_port = st->client_send_ip;
 	if ((hp = gethostbyname(host)) == NULL)
 	{
 		fprintf(stderr, "Unknown server address\n");
