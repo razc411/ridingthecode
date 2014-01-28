@@ -1,29 +1,29 @@
-//-------------------------------------------------------------------------------------------------------
-//	PROJECT: TCP/IP Resolver
-//	FILE: Assignment1Term4_v2.cpp
-//	DATE: January 10 2014
-//	AUTHOR: RAMZI CHENNAFI
-//	FUNCTIONS: 
-//			int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
-//				_In_opt_ HINSTANCE hPrevInstance,
-//				_In_ LPTSTR    lpCmdLine,
-//				_In_ int       nCmdShow)
-//			LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-//			ATOM MyRegisterClass(HINSTANCE hInstance)
-//			BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
-//			void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
-//			void Main_OnPaint(HWND hwnd)
-//			BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct)
-//			void Main_OnDestroy(HWND hwnd)
-//			INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-//			
-//	DESCRIPTION:
-//			Creates the main program window, calls the message loop and sets up the various GUI aspects.
-//			Also responds when corresponding resolvers are called. All responses are directed to the text box.
-//	NOTES:
-//			Requires WS2_32.lib for winsock. Character set must be "not set", TCHAR -> char* conversion 
-//			problems will arise.
-//-------------------------------------------------------------------------------------------------------
+/*--------------------------------------------------------------------------------------------------------------------
+--	SOURCE: Assignment1Term4SPII.cpp
+--
+--	PROGRAM : Raw Terminal Input through Forks and Pipes
+--
+--	FUNCTIONS :
+--		int main()
+--		void process_input(int rawp[2], int transp[2], pid_t * children)
+--		void translate_input(int frmtp[2], int transp[2])
+--		void print_output(int rawp[2], int frmtp[2])
+--		void fatal_error(char * error)
+--
+--	DATE: January 20, 2014
+--	REVISIONS : none
+--
+--	DESIGNER : Ramzi Chennafi
+--  PROGRAMMER : Ramzi Chennafi
+--
+--	NOTES :
+--	A program which disables terminal text processing and handles it instead.Several methods of character input have
+--	changed, as well as methods of terminating the program.Prints out one line of raw input, then upon typing "E",
+--	prints out a formatted line of text.All 'a' characters are changed to 'z', all 'z' characters are changed to 'a',
+--	and control letters such as X, E, K and T are not printed in the formatted text.
+--
+--
+----------------------------------------------------------------------------------------------------------------------*/
 #include "stdafx.h"
 #include "TCP_UDP_Transfer_Assgn2.h"
 // Global Variables:
@@ -31,18 +31,23 @@
 HINSTANCE hInst;								// current instance
 TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
-//-------------------------------------------------------------------------------------------------------
-//	DATE: January 10 2014
-//	AUTHOR: RAMZI CHENNAFI
-//	
-//	FUNCTION: int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
-//				_In_opt_ HINSTANCE hPrevInstance,
-//				_In_ LPTSTR    lpCmdLine,
-//				_In_ int       nCmdShow)
-//	RETURNS: int for use by system
-//	DESCRIPTION:
-//			Registers the main window class and begins the main message loop.
-//-------------------------------------------------------------------------------------------------------
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: main
+--
+--      DATE: January 20, 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void main(void)
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Program entry point. Disables terminal processing, creates 3 pipes and 2 children processes. These processes
+--		are directed into their respective function paths.
+----------------------------------------------------------------------------------------------------------------------*/
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
 	_In_ LPTSTR    lpCmdLine,
@@ -73,15 +78,23 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 
 	return msg.wParam;
 }
-//-------------------------------------------------------------------------------------------------------
-//	DATE: January 10 2014
-//	AUTHOR: RAMZI CHENNAFI
-//	
-//	FUNCTION: ATOM MyRegisterClass(HINSTANCE hInstance)
-//	RETURNS: ATOM value (unused)
-//	DESCRIPTION:
-//			Registers the main window class;
-//-------------------------------------------------------------------------------------------------------
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: main
+--
+--      DATE: January 20, 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void main(void)
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Program entry point. Disables terminal processing, creates 3 pipes and 2 children processes. These processes
+--		are directed into their respective function paths.
+----------------------------------------------------------------------------------------------------------------------*/
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
 	WNDCLASSEX wcex;
@@ -102,15 +115,23 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 
 	return RegisterClassEx(&wcex);
 }
-//-------------------------------------------------------------------------------------------------------
-//	DATE: January 10 2014
-//	AUTHOR: RAMZI CHENNAFI
-//	
-//	FUNCTION: BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
-//	RETURNS: BOOL, returns false on failure of window creation
-//	DESCRIPTION:
-//			Intiates the window.
-//-------------------------------------------------------------------------------------------------------
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: main
+--
+--      DATE: January 20, 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void main(void)
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Program entry point. Disables terminal processing, creates 3 pipes and 2 children processes. These processes
+--		are directed into their respective function paths.
+----------------------------------------------------------------------------------------------------------------------*/
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
 	HWND hWnd;
@@ -128,17 +149,23 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 	return TRUE;
 }
-//-------------------------------------------------------------------------------------------------------
-//	DATE: January 10 2014
-//	AUTHOR: RAMZI CHENNAFI
-//	
-//	FUNCTION: LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-//	RETURNS: LRESULT, returned to system
-//	DESCRIPTION:
-//			Handles window system messages. Handles WM_CREATE, WM_COMMAND, WM_PAINT AND WM_DESTROY.
-//	NOTES: 
-//			Uses message crackers.
-//-------------------------------------------------------------------------------------------------------
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: main
+--
+--      DATE: January 20, 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void main(void)
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Program entry point. Disables terminal processing, creates 3 pipes and 2 children processes. These processes
+--		are directed into their respective function paths.
+----------------------------------------------------------------------------------------------------------------------*/
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message){
@@ -146,40 +173,65 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		HANDLE_MSG(hWnd, WM_COMMAND, Main_OnCommand);
 		HANDLE_MSG(hWnd, WM_PAINT, Main_OnPaint);
 		HANDLE_MSG(hWnd, WM_DESTROY, Main_OnDestroy);
+		case WM_SOCKET:
+			socket_event(hWnd, wParam, lParam);
+			break;
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);
+			
 	}
 }
-//-------------------------------------------------------------------------------------------------------
-//	DATE: January 10 2014
-//	AUTHOR: RAMZI CHENNAFI
-//	
-//	FUNCTION: BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct)
-//	RETURNS: BOOL, used by the OS
-//	DESCRIPTION:
-//			Creates the GUI aspects of the program on startup.
-//-------------------------------------------------------------------------------------------------------
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: main
+--
+--      DATE: January 20, 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void main(void)
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Program entry point. Disables terminal processing, creates 3 pipes and 2 children processes. These processes
+--		are directed into their respective function paths.
+----------------------------------------------------------------------------------------------------------------------*/
 BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct){
+	
+	DrawDisplay(hwnd);
+	DrawButtons(hwnd);
+	UpdateWindow(hwnd);
+	
 	return TRUE;
 }
-//-------------------------------------------------------------------------------------------------------
-//	DATE: January 10 2014
-//	AUTHOR: RAMZI CHENNAFI
-//	
-//	FUNCTION: void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
-//	RETURNS: Nothing
-//	DESCRIPTION:
-//			Deals with menu items and handles messages that are sent by the "OK" buttons.
-//	NOTES: 
-//			OK buttons cause the respective resolution relevant to that button.
-//-------------------------------------------------------------------------------------------------------
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: main
+--
+--      DATE: January 20, 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void main(void)
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Program entry point. Disables terminal processing, creates 3 pipes and 2 children processes. These processes
+--		are directed into their respective function paths.
+----------------------------------------------------------------------------------------------------------------------*/
 void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify){
 	switch (id)
 	{
 	case ID_CONNECT_SERVERMODE:
+		init_server(hwnd);
 		break;
 	
 	case ID_CONNECT_CLIENTMODE:
+		init_client(hwnd);
 		break;
 	
 	case ID_HELP_README:
@@ -194,43 +246,66 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify){
 		break;
 	}
 }
-//-------------------------------------------------------------------------------------------------------
-//	DATE: January 10 2014
-//	AUTHOR: RAMZI CHENNAFI
-//	
-//	FUNCTION: void Main_OnPaint(HWND hwnd)
-//	RETURNS: Nothing
-//	DESCRIPTION:
-//			Handles painting of the screen on WM_PAINT.
-//	NOTES: 
-//			Calls DrawTitleText() to draw all the visible text on the screen.
-//-------------------------------------------------------------------------------------------------------
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: main
+--
+--      DATE: January 20, 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void main(void)
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Program entry point. Disables terminal processing, creates 3 pipes and 2 children processes. These processes
+--		are directed into their respective function paths.
+----------------------------------------------------------------------------------------------------------------------*/
 void Main_OnPaint(HWND hwnd){
 	PAINTSTRUCT ps;
 	HDC hdc = BeginPaint(hwnd, &ps);
+	DrawTitleText(hdc);
 	EndPaint(hwnd, &ps);
 }
-//-------------------------------------------------------------------------------------------------------
-//	DATE: January 10 2014
-//	AUTHOR: RAMZI CHENNAFI
-//	
-//	FUNCTION: void Main_OnDestroy(HWND hwnd)
-//	RETURNS: Nothing
-//	DESCRIPTION:
-//			Exits the program, nessecary for message crackers.
-//-------------------------------------------------------------------------------------------------------
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: main
+--
+--      DATE: January 20, 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void main(void)
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Program entry point. Disables terminal processing, creates 3 pipes and 2 children processes. These processes
+--		are directed into their respective function paths.
+----------------------------------------------------------------------------------------------------------------------*/
 void Main_OnDestroy(HWND hwnd){
 	PostQuitMessage(0);
 }
-//-------------------------------------------------------------------------------------------------------
-//	DATE: January 10 2014
-//	AUTHOR: RAMZI CHENNAFI
-//	
-//	FUNCTION: INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-//	RETURNS: INT_PTR, used by OS
-//	DESCRIPTION:
-//			Message loop for the "About" dialog box.
-//-------------------------------------------------------------------------------------------------------
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: main
+--
+--      DATE: January 20, 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void main(void)
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Program entry point. Disables terminal processing, creates 3 pipes and 2 children processes. These processes
+--		are directed into their respective function paths.
+----------------------------------------------------------------------------------------------------------------------*/
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)

@@ -11,11 +11,14 @@
 // Windows Header Files:
 #include <windows.h>
 #include <windowsx.h>
+#include <winsock2.h>
 // C RunTime Header Files
 #include <stdlib.h>
 #include <malloc.h>
 #include <memory.h>
 #include <tchar.h>
+#include <stdio.h>
+#include <conio.h>
 
 
 // TODO: reference additional headers your program requires here
