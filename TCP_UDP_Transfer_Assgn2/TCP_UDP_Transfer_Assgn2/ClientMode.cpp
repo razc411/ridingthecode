@@ -37,7 +37,7 @@ void init_client(HWND hwnd){
 	WSADATA WSAData;
 	WORD wVersionRequested;
 	
-	host = "127.0.0.1";
+	host = "localhost";
 	port = 5150;
 
 	wVersionRequested = MAKEWORD(2, 2);
@@ -71,7 +71,7 @@ void init_client(HWND hwnd){
 	// Connecting to the server
 	if (connect(sd, (struct sockaddr *)&server, sizeof(server)) == -1)
 	{
-		fprintf(stderr, "Can't connect to server\n");
+		SendMessage(GetDlgItem(hwnd, EB_STATUSBOX) , WM_SETTEXT, NULL, (LPARAM)"Failed to connect");
 		perror("connect");
 		exit(1);
 	}
@@ -88,7 +88,7 @@ void init_client(HWND hwnd){
 
 	// client makes repeated calls to recv until no more data is expected to arrive.
     n = recv(sd, bp, bytes_to_read, 0);
-	SendMessage(GetDlgItem(hwnd, EB_STATBOX), WM_SETTEXT, NULL, (LPARAM)rbuf);
+	SendMessage(GetDlgItem(hwnd, EB_STATBOX), WM_SETTEXT, NULL, (LPARAM)"Data Sent!");
 	closesocket(sd);
 	WSACleanup();
 }

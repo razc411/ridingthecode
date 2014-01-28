@@ -1,6 +1,7 @@
 #pragma once
 
 #include "resource.h"
+#define WM_SOCKET (WM_USER + 1)
 
 typedef struct _SOCKET_INFORMATION {
 	BOOL RecvPosted;
@@ -27,9 +28,10 @@ void				DrawTitleText(HDC hdc);
 void				DrawDisplay(HWND hwndParent);
 void				SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons);
 //server testing functions
-int socket_event(HWND hwnd, LPARAM lParam, WPARAM wParam);
-void init_server(HWND hwnd);
-void CreateSocketInformation(SOCKET s);
+int					socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam);
+void				init_server(HWND hwnd);
+void				CreateSocketInformation(SOCKET s);
 LPSOCKET_INFORMATION GetSocketInformation(SOCKET s);
-void FreeSocketInformation(SOCKET s);
-void init_client(HWND hwnd);
+void				FreeSocketInformation(SOCKET s);
+void				init_client(HWND hwnd);
+INT_PTR CALLBACK Settings(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);

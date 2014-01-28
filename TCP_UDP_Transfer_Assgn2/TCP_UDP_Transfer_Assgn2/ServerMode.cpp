@@ -35,9 +35,7 @@ void init_server(HWND hwnd){
 	SOCKADDR_IN InternetAddr;
 	WSADATA wsaData;
 	
-	if ((Ret = WSAStartup(0x0202, &wsaData)) != 0)
-	{
-		printf("WSAStartup failed with error %d\n", Ret);
+	if ((Ret = WSAStartup(0x0202, &wsaData)) != 0){
 		return;
 	}
 
@@ -66,7 +64,7 @@ void init_server(HWND hwnd){
 	}
 }
 
-int socket_event(HWND hwnd, LPARAM lParam, WPARAM wParam){
+int socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam){
 	SOCKET Accept;
 	LPSOCKET_INFORMATION SocketInfo;
 	DWORD RecvBytes, SendBytes;
@@ -93,7 +91,7 @@ int socket_event(HWND hwnd, LPARAM lParam, WPARAM wParam){
 			// socket for processing I/O.
 
 			CreateSocketInformation(Accept);
-
+			
 			printf("Socket number %d connected\n", Accept);
 
 			WSAAsyncSelect(Accept, hwnd, WM_SOCKET, FD_READ | FD_WRITE | FD_CLOSE);

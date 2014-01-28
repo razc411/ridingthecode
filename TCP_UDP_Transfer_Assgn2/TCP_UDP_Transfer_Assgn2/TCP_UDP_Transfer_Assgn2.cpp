@@ -26,6 +26,7 @@
 ----------------------------------------------------------------------------------------------------------------------*/
 #include "stdafx.h"
 #include "TCP_UDP_Transfer_Assgn2.h"
+
 // Global Variables:
 #define MAX_LOADSTRING 100
 HINSTANCE hInst;								// current instance
@@ -226,6 +227,9 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct){
 void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify){
 	switch (id)
 	{
+	case ID_FILE_SETTINGS:
+		DialogBox(hInst, MAKEINTRESOURCE(IDD_SETTINGS), hwnd, Settings);
+		break;
 	case ID_CONNECT_SERVERMODE:
 		init_server(hwnd);
 		break;
@@ -311,6 +315,26 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	switch (message)
 	{
 	case WM_INITDIALOG:
+		return TRUE;
+
+	case WM_COMMAND:
+		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
+		{
+			EndDialog(hDlg, LOWORD(wParam));
+			return TRUE;
+		}
+		break;
+	}
+	return FALSE;
+}
+
+INT_PTR CALLBACK Settings(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+	case WM_INITDIALOG:
+		SendMessage(GetDlgItem(hDlg, IDC_PROTSLT), CB_ADDSTRING, 0, (LPARAM)"TCP"); 
+		SendMessage(GetDlgItem(hDlg, IDC_PROTSLT), CB_ADDSTRING, 0, (LPARAM)"UDP");
 		return TRUE;
 
 	case WM_COMMAND:
