@@ -44,7 +44,7 @@
 ----------------------------------------------------------------------------------------------------------------------*/
 void DrawTitleText(HDC hdc){
 
-	RECT titleRects[] = { { 500, 650, 1000, 900 } };
+	RECT titleRects[] = { { 500, 500, 1000, 900 } };
 	LPCSTR titles[] = { "UDP/TCP Transfer in Win32"};
 	HFONT hFont = CreateFont(20, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET,
 		OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
@@ -86,17 +86,17 @@ void DrawButtons(HWND hwnd){
 
 	buttons[0] = CreateWindow("BUTTON", "Connect",
 							WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-							60, 500, 100, 35,
+							20, 435, 100, 35,
 							hwnd, (HMENU)BT_CONNECT, GetModuleHandle(NULL), NULL);
 
 	buttons[1] = CreateWindow("BUTTON", "Disconnect",
 							WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-							180, 500, 100, 35,
+							140, 435, 100, 35,
 							hwnd, (HMENU)BT_DISCONNECT, GetModuleHandle(NULL), NULL);
 	
 	buttons[1] = CreateWindow("BUTTON", "Send File",
 							WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-							300, 500, 100, 35,
+							260, 435, 100, 35,
 							hwnd, (HMENU)BT_SEND, GetModuleHandle(NULL), NULL);
 	
 	SetFont(_T("Arial"), hwnd, buttons, 3);
@@ -168,23 +168,40 @@ void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons){
 
 	ReleaseDC(hwnd, hdc);
 }
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: Init_Settings
+--
+--      DATE: January 27, 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void Init_Settings(HWND hwnd)
 
+--      RETURNS: void
+--
+--      NOTES:
+--      Sets the default settings
+----------------------------------------------------------------------------------------------------------------------*/
 void Init_Settings(HWND hwnd){
 	HWND hDlgPTCL	= GetDlgItem(hwnd, IDC_PROTSLT);
 	HWND hDlgPORT	= GetDlgItem(hwnd, IDC_PORT);
-	HWND hDlgIP		= GetDlgItem(hwnd, IDC_IPADDRESS1);
+	HWND hDlgIP		= GetDlgItem(hwnd, IDC_IP);
 	HWND hDlgSAVE	= GetDlgItem(hwnd, IDC_SDISPLAY);
 	HWND hDlgSPORT	= GetDlgItem(hwnd, IDC_SPORT);
 	HWND hDlgSPRTCL	= GetDlgItem(hwnd, IDC_SPRTCL);
 
+	SETTINGS * st = (SETTINGS*) GetClassLongPtr(GetParent(hwnd), 0);
+	
 	ComboBox_AddString(hDlgPTCL, "TCP");
 	ComboBox_AddString(hDlgPTCL, "UDP");
-	ComboBox_SetCurSel(hDlgPTCL, 0);
+	ComboBox_SetCurSel(hDlgPTCL, st->client_prtcl);
 	ComboBox_AddString(hDlgSPRTCL, "TCP");
 	ComboBox_AddString(hDlgSPRTCL, "UDP");
-	ComboBox_SetCurSel(hDlgSPRTCL, 0);
-	Edit_SetText(hDlgPORT, "5150");
-	Edit_SetText(hDlgSAVE, "C:\\");
-	LPARAM ip = MAKEIPADDRESS(127, 0, 0, 1);
-	SendMessage(hDlgIP, IPM_SETADDRESS, 0, ip);
+	ComboBox_SetCurSel(hDlgSPRTCL, st->server_prtcl);
+	Edit_SetText(hDlgSPORT, st->server_port);
+	Edit_SetText(hDlgPORT, st->client_port);
+	Edit_SetText(hDlgSAVE, st->save_location);
+	Edit_SetText(hDlgIP, st->client_send_ip);
 }

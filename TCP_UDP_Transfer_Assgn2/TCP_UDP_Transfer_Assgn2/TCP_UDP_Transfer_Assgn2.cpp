@@ -140,11 +140,11 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	hInst = hInstance;
 
 	hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, CW_USEDEFAULT, 940, 765, NULL, NULL, hInstance, NULL);
+		CW_USEDEFAULT, CW_USEDEFAULT, 940, 600, NULL, NULL, hInstance, NULL);
 
 	if (!hWnd)
 		return FALSE;
-
+	 
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
 
@@ -201,6 +201,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 ----------------------------------------------------------------------------------------------------------------------*/
 BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct){
 	
+	SETTINGS * st = (SETTINGS*) malloc(sizeof(SETTINGS));
+	st->client_port = "5150";
+	st->server_port = "5150";
+	st->client_prtcl = 0;
+	st->server_prtcl = 0;
+	st->client_send_ip = "127.0.0.1";
+	st->save_location = "C:\\";
+	SetClassLongPtr(hwnd, 0, (LONG)st);
+
 	DrawDisplay(hwnd);
 	DrawButtons(hwnd);
 	UpdateWindow(hwnd);
@@ -230,7 +239,7 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify){
 	switch (id)
 	{
 	case BT_SEND:
-		SendMessage(hwnd, WM_SOCKET)
+		client_connect(hwnd, id);
 		break;
 	case ID_FILE_SETTINGS:
 		DialogBox(hInst, MAKEINTRESOURCE(IDD_SETTINGS), hwnd, Settings);
@@ -238,18 +247,11 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify){
 	case ID_CONNECT_SERVERMODE:
 		init_server(hwnd);
 		break;
-	case WM_SOCKET:
-		EVENTINFO * ie = (EVENTINFO*)malloc(sizeof(EVENTINFO));
-		servThread = CreateThread(0, 0, (LPTHREAD_START_ROUTINE)&socket_event, (LPVOID)ie, 0, 0);
-		break;
 	case ID_CONNECT_CLIENTMODE:
 		init_client(hwnd);
-		servThread = CreateThread(0, 0, (LPTHREAD_START_ROUTINE)&write_data, 0, 0, 0);
 		break;
-	
 	case ID_HELP_README:
 		break;
-
 	case ID_HELP_ABOUT:
 		DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hwnd, About);
 		break;

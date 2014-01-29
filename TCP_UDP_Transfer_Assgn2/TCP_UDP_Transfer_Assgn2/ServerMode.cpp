@@ -55,12 +55,13 @@ void init_server(HWND hwnd){
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 
 	if ((Ret = WSAStartup(0x0202, &wsaData)) != 0){
+		MessageBox(hwnd, "WSAStartup failed on server", "Error", MB_ICONEXCLAMATION);
 		return;
 	}
 
 	if ((Listen = socket(PF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET)
 	{
-		printf("socket() failed with error %d\n", WSAGetLastError());
+		MessageBox(hwnd, "socket() failed on server", "Error", MB_ICONEXCLAMATION);
 		return;
 	}
 
@@ -68,17 +69,17 @@ void init_server(HWND hwnd){
 
 	InternetAddr.sin_family = AF_INET;
 	InternetAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	InternetAddr.sin_port = htons(st->server_port);
+	InternetAddr.sin_port = htons(atoi(st->server_port));
 
 	if (bind(Listen, (PSOCKADDR)&InternetAddr, sizeof(InternetAddr)) == SOCKET_ERROR)
 	{
-		printf("bind() failed with error %d\n", WSAGetLastError());
+		MessageBox(hwnd, "bind() failed on server", "Error", MB_ICONEXCLAMATION);
 		return;
 	}
 
 	if (listen(Listen, 5))
 	{
-		printf("listen() failed with error %d\n", WSAGetLastError());
+		MessageBox(hwnd, "listen() failed on server", "Error", MB_ICONEXCLAMATION);
 		return;
 	}
 }
@@ -99,9 +100,7 @@ void init_server(HWND hwnd){
 --      Generic function to change the font on an array of buttons. Requires a font name, the buttons
 --		to be chanaged handles, the number of buttons and the parent window.
 ----------------------------------------------------------------------------------------------------------------------*/
-DWORD socket_event(LPVOID lpdwThreadParam){
-
-	
+int socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam){
 
 	if (WSAGETSELECTERROR(lParam))
 	{
@@ -157,7 +156,7 @@ SOCKET accept_data(HWND hwnd, WPARAM wParam){
 
 	if ((Accept = accept(wParam, NULL, NULL)) == INVALID_SOCKET)
 	{
-		printf("accept() failed with error %d\n", WSAGetLastError());
+		MessageBox(hwnd, "accept() failed on server", "Error", MB_ICONEXCLAMATION);
 		return Accept;
 	}
 
@@ -166,9 +165,7 @@ SOCKET accept_data(HWND hwnd, WPARAM wParam){
 
 	CreateSocketInformation(Accept);
 
-	printf("Socket number %d connected\n", Accept);
-
-	WSAAsyncSelect(Accept, hwnd, WM_SOCKET, FD_READ | FD_WRITE | FD_CLOSE);
+	WSAAsyncSelect(Accept, hwnd, WM_SOCKET, FD_READ | FD_CLOSE);
 
 	return Accept;
 }
@@ -211,7 +208,7 @@ int read_server_data(HWND hwnd, WPARAM wParam){
 		{
 			if (WSAGetLastError() != WSAEWOULDBLOCK)
 			{
-				printf("WSARecv() failed with error %d\n", WSAGetLastError());
+				MessageBox(hwnd, "WSARecv() failed on server", "Error", MB_ICONEXCLAMATION);
 				FreeSocketInformation(wParam);
 				return 0;
 			}
@@ -301,14 +298,10 @@ void CreateSocketInformation(SOCKET s)
 {
 	LPSOCKET_INFORMATION SI;
 
-	if ((SI = (LPSOCKET_INFORMATION)GlobalAlloc(GPTR,
-		sizeof(SOCKET_INFORMATION))) == NULL)
-	{
-		printf("GlobalAlloc() failed with error %d\n", GetLastError());
+	if ((SI = (LPSOCKET_INFORMATION)GlobalAlloc(GPTR, sizeof(SOCKET_INFORMATION))) == NULL){
+		MessageBox(GetActiveWindow(), "GlobalAlloc() failed on server", "Error", MB_ICONEXCLAMATION);
 		return;
 	}
-
-	// Prepare SocketInfo structure for use.
 
 	SI->Socket = s;
 	SI->RecvPosted = FALSE;

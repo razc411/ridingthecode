@@ -37,29 +37,50 @@ void init_client(HWND hwnd){
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 
 	if ((Ret = WSAStartup(0x0202, &wsaData)) != 0){
+		MessageBox(hwnd, "WSAStartup failed on client", "Error", MB_ICONEXCLAMATION);
 		return;
 	}
 
 	if ((Send = socket(PF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET)
 	{
-		printf("socket() failed with error %d\n", WSAGetLastError());
+		MessageBox(hwnd, "socket() failed on client", "Error", MB_ICONEXCLAMATION);
 		return;
 	}
 
-	WSAAsyncSelect(Send, hwnd, WM_SOCKET, FD_WRITE | FD_CLOSE);
+	WSAAsyncSelect(Send, hwnd, WM_SOCKET, FD_CONNECT | FD_WRITE | FD_CLOSE);
 
 	InternetAddr.sin_family = AF_INET;
 	InternetAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	InternetAddr.sin_port = htons(st->client_port);
+	InternetAddr.sin_port = htons(atoi(st->client_port));
 
-	if (bind(Send, (PSOCKADDR)&InternetAddr, sizeof(InternetAddr)) == SOCKET_ERROR)
-	{
-		printf("bind() failed with error %d\n", WSAGetLastError());
+	if (bind(Send, (PSOCKADDR)&InternetAddr, sizeof(InternetAddr)) == SOCKET_ERROR){
+		MessageBox(hwnd, "bind failed() on client", "Error", MB_ICONEXCLAMATION);
 		return;
 	}
 }
 
-void write_data(HWND hwnd, WPARAM wParam, int fd){
+int client_connect(HWND hwnd, int id){
+	SOCKADDR_IN InternetAddr;
+	LPSOCKET_INFORMATION SocketInfo = GetSocketInformation(id);
+	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
+	int iRc;
+
+	InternetAddr.sin_family = AF_INET;
+	InternetAddr.sin_addr.s_addr = htonl(atoi(st->client_send_ip));
+	InternetAddr.sin_port = htons(atoi(st->client_port));
+
+	iRc = connect(SocketInfo->Socket, (PSOCKADDR)&InternetAddr, sizeof(InternetAddr)); 
+	if ((iRc=WSAGETSELECTERROR(lParam)) == 0){
+		return 0;
+	}
+	else{
+		MessageBox(hwnd, "Could not connect", "Error", MB_ICONEXCLAMATION);
+	}
+
+	write_data(hwnd, );
+}
+
+void write_data(HWND hwnd, WPARAM wParam){
 
 	DWORD SendBytes;
 	DWORD Flags;
@@ -79,7 +100,7 @@ void write_data(HWND hwnd, WPARAM wParam, int fd){
 				return;
 			}
 		}
-		else // No error so update the byte count
+		else 
 		{
 			SocketInfo->BytesSEND += SendBytes;
 		}
@@ -91,6 +112,7 @@ void write_data(HWND hwnd, WPARAM wParam, int fd){
 		SocketInfo->BytesRECV = 0;
 	}
 }
+
 
 //void init_client(HWND hwnd){
 //	int n, ns, bytes_to_read;
@@ -160,8 +182,3 @@ void write_data(HWND hwnd, WPARAM wParam, int fd){
 //	closesocket(sd);
 //	WSACleanup();
 //}
-
-void send_data(){
-
-}
-

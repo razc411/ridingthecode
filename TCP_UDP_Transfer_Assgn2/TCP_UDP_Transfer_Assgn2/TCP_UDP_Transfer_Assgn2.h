@@ -14,9 +14,9 @@ typedef struct _SOCKET_INFORMATION {
 } SOCKET_INFORMATION, *LPSOCKET_INFORMATION;
 
 typedef struct _SETTINGS{
-	int server_port;
-	int client_port;
-	DWORD client_send_ip;
+	char* server_port;
+	char* client_port;
+	char* client_send_ip;
 	int server_prtcl;
 	int client_prtcl;
 	char * save_location;
@@ -57,5 +57,5 @@ void				set_settings(HWND hwnd);
 int					write_server_data(HWND hwnd, WPARAM wParam);
 int					read_server_data(HWND hwnd, WPARAM wParam);
 SOCKET				accept_data(HWND hwnd, WPARAM wParam);
-char*				ip_convert(SETTINGS * st);
+char*				ip_convert(DWORD ip);
 DWORD				ServerProc(LPVOID lpdwThreadParam);
