@@ -167,7 +167,6 @@ void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons){
 	}
 
 	ReleaseDC(hwnd, hdc);
-
 }
 
 void Init_Settings(HWND hwnd){

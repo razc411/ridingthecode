@@ -41,14 +41,33 @@ void set_settings(HWND hwnd){
 	HWND hDlgIP		= GetDlgItem(hwnd, IDC_IPADDRESS1);
 	HWND hDlgSAVE	= GetDlgItem(hwnd, IDC_SDISPLAY);
 	HWND hDlgSPORT	= GetDlgItem(hwnd, IDC_SPORT);
+	HWND hDlgSPRTCL = GetDlgItem(hwnd, IDC_SPRTCL);
 
-	SETTINGS * st =(SETTINGS*) malloc(sizeof(SETTINGS));
+	SETTINGS * st = (SETTINGS*) malloc(sizeof(SETTINGS));
 
-	Edit_GetText(hwnd, st->client_port, MAX_SIZE);
-	Edit_GetText(hwnd, st->server_port, MAX_SIZE);
+	char buff[MAX_SIZE];
+	
+	Edit_GetText(hDlgPORT, buff, MAX_SIZE);
+	st->client_port = atoi(buff);
+	Edit_GetText(hDlgSPORT, buff, MAX_SIZE);
+	st->server_port = atoi(buff);
+
 	st->client_prtcl = ComboBox_GetCurSel(hDlgPTCL);
-	st->server_prtcl = ComboBox_GetCurSel(hDlgSPORT);
+	st->server_prtcl = ComboBox_GetCurSel(hDlgSPRTCL);
 	SendMessage(hDlgIP, IPM_GETADDRESS, 0, (LPARAM) &st->client_send_ip);
 
-	SetClassLong(hwnd, 0, (LONG)st);
+
+	SetClassLongPtr(GetParent(hwnd), 0, (LONG)st);
+}
+
+char* ip_convert(SETTINGS * st){
+	
+	char buff[500];
+	sprintf_s(buff, "%d.%d.%d.%d", (int)FIRST_IPADDRESS(st->client_send_ip), 
+								(int)SECOND_IPADDRESS(st->client_send_ip),
+								(int)THIRD_IPADDRESS(st->client_send_ip),
+								(int)FOURTH_IPADDRESS(st->client_send_ip)
+								);
+
+	return buff;
 }

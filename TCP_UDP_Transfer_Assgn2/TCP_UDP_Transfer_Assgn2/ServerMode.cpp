@@ -27,14 +27,32 @@
 #include "stdafx.h"
 #include "TCP_UDP_Transfer_Assgn2.h"
 LPSOCKET_INFORMATION SocketInfoList;
-
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: SetFont
+--
+--      DATE: January 27, 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons)
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Generic function to change the font on an array of buttons. Requires a font name, the buttons
+--		to be chanaged handles, the number of buttons and the parent window.
+----------------------------------------------------------------------------------------------------------------------*/
 void init_server(HWND hwnd){
+
 	MSG msg;
 	DWORD Ret;
 	SOCKET Listen;
 	SOCKADDR_IN InternetAddr;
 	WSADATA wsaData;
-	SETTINGS * st = (SETTINGS*) GetClassLong(hwnd, 0);
+
+	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 
 	if ((Ret = WSAStartup(0x0202, &wsaData)) != 0){
 		return;
@@ -50,7 +68,7 @@ void init_server(HWND hwnd){
 
 	InternetAddr.sin_family = AF_INET;
 	InternetAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	InternetAddr.sin_port = htons(atoi(st->server_port));
+	InternetAddr.sin_port = htons(st->server_port);
 
 	if (bind(Listen, (PSOCKADDR)&InternetAddr, sizeof(InternetAddr)) == SOCKET_ERROR)
 	{
@@ -64,16 +82,30 @@ void init_server(HWND hwnd){
 		return;
 	}
 }
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: SetFont
+--
+--      DATE: January 27, 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons)
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Generic function to change the font on an array of buttons. Requires a font name, the buttons
+--		to be chanaged handles, the number of buttons and the parent window.
+----------------------------------------------------------------------------------------------------------------------*/
+DWORD socket_event(LPVOID lpdwThreadParam){
 
-int socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam){
-	SOCKET Accept;
-	LPSOCKET_INFORMATION SocketInfo;
-	DWORD RecvBytes, SendBytes;
-	DWORD Flags;
+	
 
 	if (WSAGETSELECTERROR(lParam))
 	{
-		printf("Socket failed with error %d\n", WSAGETSELECTERROR(lParam));
+		//printf("Socket failed with error %d\n", WSAGETSELECTERROR(lParam));
 		FreeSocketInformation(wParam);
 	}
 	else
@@ -81,121 +113,190 @@ int socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam){
 		switch (WSAGETSELECTEVENT(lParam))
 		{
 		case FD_ACCEPT:
-
-			if ((Accept = accept(wParam, NULL, NULL)) == INVALID_SOCKET)
-			{
-				printf("accept() failed with error %d\n", WSAGetLastError());
-				break;
-			}
-
-			// Create a socket information structure to associate with the
-			// socket for processing I/O.
-
-			CreateSocketInformation(Accept);
-			
-			printf("Socket number %d connected\n", Accept);
-
-			WSAAsyncSelect(Accept, hwnd, WM_SOCKET, FD_READ | FD_WRITE | FD_CLOSE);
-
+			if (accept_data(hwnd, wParam))
+				return -4;
 			break;
 
 		case FD_READ:
-
-			SocketInfo = GetSocketInformation(wParam);
-
-			// Read data only if the receive buffer is empty.
-
-			if (SocketInfo->BytesRECV != 0)
-			{
-				SocketInfo->RecvPosted = TRUE;
-				return 0;
-			}
-			else
-			{
-				SocketInfo->DataBuf.buf = SocketInfo->Buffer;
-				SocketInfo->DataBuf.len = DATA_BUFSIZE;
-
-				Flags = 0;
-				if (WSARecv(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes,
-					&Flags, NULL, NULL) == SOCKET_ERROR)
-				{
-					if (WSAGetLastError() != WSAEWOULDBLOCK)
-					{
-						printf("WSARecv() failed with error %d\n", WSAGetLastError());
-						FreeSocketInformation(wParam);
-						return 0;
-					}
-				}
-				else // No error so update the byte count
-				{
-					SocketInfo->BytesRECV = RecvBytes;
-				}
-				SendMessage(GetDlgItem(hwnd, EB_STATBOX) , WM_SETTEXT, NULL, (LPARAM)SocketInfo->Buffer);
-			}
-
-			// DO NOT BREAK HERE SINCE WE GOT A SUCCESSFUL RECV. Go ahead
-			// and begin writing data to the client.
+			if (read_server_data(hwnd, wParam))
+				return -3;
+			break;
 
 		case FD_WRITE:
-
-			SocketInfo = GetSocketInformation(wParam);
-
-			if (SocketInfo->BytesRECV > SocketInfo->BytesSEND)
-			{
-				SocketInfo->DataBuf.buf = SocketInfo->Buffer + SocketInfo->BytesSEND;
-				SocketInfo->DataBuf.len = SocketInfo->BytesRECV - SocketInfo->BytesSEND;
-
-				if (WSASend(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &SendBytes, 0,
-					NULL, NULL) == SOCKET_ERROR)
-				{
-					if (WSAGetLastError() != WSAEWOULDBLOCK)
-					{
-						printf("WSASend() failed with error %d\n", WSAGetLastError());
-						FreeSocketInformation(wParam);
-						return 0;
-					}
-				}
-				else // No error so update the byte count
-				{
-					SocketInfo->BytesSEND += SendBytes;
-				}
-			}
-
-			if (SocketInfo->BytesSEND == SocketInfo->BytesRECV)
-			{
-				SocketInfo->BytesSEND = 0;
-				SocketInfo->BytesRECV = 0;
-
-				// If a RECV occurred during our SENDs then we need to post an FD_READ
-				// notification on the socket.
-
-				if (SocketInfo->RecvPosted == TRUE)
-				{
-					SocketInfo->RecvPosted = FALSE;
-					PostMessage(hwnd, WM_SOCKET, wParam, FD_READ);
-				}
-			}
-
+			if (write_server_data(hwnd, wParam))
+				return -2;
 			break;
 
 		case FD_CLOSE:
-
-			printf("Closing socket %d\n", wParam);
 			FreeSocketInformation(wParam);
-
 			break;
 		}
 	}
+
+	return 0;
 }
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: SetFont
+--
+--      DATE: January 27, 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons)
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Generic function to change the font on an array of buttons. Requires a font name, the buttons
+--		to be chanaged handles, the number of buttons and the parent window.
+----------------------------------------------------------------------------------------------------------------------*/
+SOCKET accept_data(HWND hwnd, WPARAM wParam){
+	SOCKET Accept;
 
-void recieve_data(){
+	if ((Accept = accept(wParam, NULL, NULL)) == INVALID_SOCKET)
+	{
+		printf("accept() failed with error %d\n", WSAGetLastError());
+		return Accept;
+	}
 
+	// Create a socket information structure to associate with the
+	// socket for processing I/O.
+
+	CreateSocketInformation(Accept);
+
+	printf("Socket number %d connected\n", Accept);
+
+	WSAAsyncSelect(Accept, hwnd, WM_SOCKET, FD_READ | FD_WRITE | FD_CLOSE);
+
+	return Accept;
 }
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: SetFont
+--
+--      DATE: January 27, 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons)
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Generic function to change the font on an array of buttons. Requires a font name, the buttons
+--		to be chanaged handles, the number of buttons and the parent window.
+----------------------------------------------------------------------------------------------------------------------*/
+int read_server_data(HWND hwnd, WPARAM wParam){
 
-void save_data(){
+	LPSOCKET_INFORMATION SocketInfo = GetSocketInformation(wParam);
+	DWORD RecvBytes;
+	DWORD Flags;
 
+	if (SocketInfo->BytesRECV != 0)
+	{
+		SocketInfo->RecvPosted = TRUE;
+		return 0;
+	}
+	else
+	{
+		SocketInfo->DataBuf.buf = SocketInfo->Buffer;
+		SocketInfo->DataBuf.len = DATA_BUFSIZE;
+
+		Flags = 0;
+		if (WSARecv(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes,
+			&Flags, NULL, NULL) == SOCKET_ERROR)
+		{
+			if (WSAGetLastError() != WSAEWOULDBLOCK)
+			{
+				printf("WSARecv() failed with error %d\n", WSAGetLastError());
+				FreeSocketInformation(wParam);
+				return 0;
+			}
+		}
+		else // No error so update the byte count
+		{
+			SocketInfo->BytesRECV = RecvBytes;
+		}
+		SendMessage(GetDlgItem(hwnd, EB_STATBOX), WM_SETTEXT, NULL, (LPARAM)SocketInfo->Buffer);
+	}
 }
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: SetFont
+--
+--      DATE: January 27, 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons)
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Generic function to change the font on an array of buttons. Requires a font name, the buttons
+--		to be chanaged handles, the number of buttons and the parent window.
+----------------------------------------------------------------------------------------------------------------------*/
+int write_server_data(HWND hwnd, WPARAM wParam){
+	
+	DWORD SendBytes;
+	DWORD Flags;
+	LPSOCKET_INFORMATION SocketInfo = GetSocketInformation(wParam);
 
+	if (SocketInfo->BytesRECV > SocketInfo->BytesSEND)
+	{
+		SocketInfo->DataBuf.buf = SocketInfo->Buffer + SocketInfo->BytesSEND;
+		SocketInfo->DataBuf.len = SocketInfo->BytesRECV - SocketInfo->BytesSEND;
+
+		if (WSASend(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &SendBytes, 0, NULL, NULL) == SOCKET_ERROR)
+		{
+			if (WSAGetLastError() != WSAEWOULDBLOCK)
+			{
+				FreeSocketInformation(wParam);
+				return 0;
+			}
+		}
+		else // No error so update the byte count
+		{
+			SocketInfo->BytesSEND += SendBytes;
+		}
+	}
+
+	if (SocketInfo->BytesSEND == SocketInfo->BytesRECV)
+	{
+		SocketInfo->BytesSEND = 0;
+		SocketInfo->BytesRECV = 0;
+
+		// If a RECV occurred during our SENDs then we need to post an FD_READ
+		// notification on the socket.
+
+		if (SocketInfo->RecvPosted == TRUE)
+		{
+			SocketInfo->RecvPosted = FALSE;
+			PostMessage(hwnd, WM_SOCKET, wParam, FD_READ);
+		}
+	}
+}
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: SetFont
+--
+--      DATE: January 27, 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons)
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Generic function to change the font on an array of buttons. Requires a font name, the buttons
+--		to be chanaged handles, the number of buttons and the parent window.
+----------------------------------------------------------------------------------------------------------------------*/
 void CreateSocketInformation(SOCKET s)
 {
 	LPSOCKET_INFORMATION SI;
@@ -218,7 +319,23 @@ void CreateSocketInformation(SOCKET s)
 
 	SocketInfoList = SI;
 }
-
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: SetFont
+--
+--      DATE: January 27, 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons)
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Generic function to change the font on an array of buttons. Requires a font name, the buttons
+--		to be chanaged handles, the number of buttons and the parent window.
+----------------------------------------------------------------------------------------------------------------------*/
 LPSOCKET_INFORMATION GetSocketInformation(SOCKET s)
 {
 	SOCKET_INFORMATION *SI = SocketInfoList;
@@ -233,7 +350,23 @@ LPSOCKET_INFORMATION GetSocketInformation(SOCKET s)
 
 	return NULL;
 }
-
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: SetFont
+--
+--      DATE: January 27, 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons)
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Generic function to change the font on an array of buttons. Requires a font name, the buttons
+--		to be chanaged handles, the number of buttons and the parent window.
+----------------------------------------------------------------------------------------------------------------------*/
 void FreeSocketInformation(SOCKET s)
 {
 	SOCKET_INFORMATION *SI = SocketInfoList;

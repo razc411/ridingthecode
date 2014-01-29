@@ -225,17 +225,26 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct){
 --		are directed into their respective function paths.
 ----------------------------------------------------------------------------------------------------------------------*/
 void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify){
+	static HANDLE servThread;
+
 	switch (id)
 	{
+	case BT_SEND:
+		SendMessage(hwnd, WM_SOCKET)
+		break;
 	case ID_FILE_SETTINGS:
 		DialogBox(hInst, MAKEINTRESOURCE(IDD_SETTINGS), hwnd, Settings);
 		break;
 	case ID_CONNECT_SERVERMODE:
 		init_server(hwnd);
 		break;
-	
+	case WM_SOCKET:
+		EVENTINFO * ie = (EVENTINFO*)malloc(sizeof(EVENTINFO));
+		servThread = CreateThread(0, 0, (LPTHREAD_START_ROUTINE)&socket_event, (LPVOID)ie, 0, 0);
+		break;
 	case ID_CONNECT_CLIENTMODE:
 		init_client(hwnd);
+		servThread = CreateThread(0, 0, (LPTHREAD_START_ROUTINE)&write_data, 0, 0, 0);
 		break;
 	
 	case ID_HELP_README:

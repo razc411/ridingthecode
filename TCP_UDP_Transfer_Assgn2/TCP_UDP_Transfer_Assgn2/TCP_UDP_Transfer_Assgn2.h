@@ -14,13 +14,19 @@ typedef struct _SOCKET_INFORMATION {
 } SOCKET_INFORMATION, *LPSOCKET_INFORMATION;
 
 typedef struct _SETTINGS{
-	char server_port[MAX_SIZE];
-	char client_port[MAX_SIZE];
+	int server_port;
+	int client_port;
 	DWORD client_send_ip;
 	int server_prtcl;
 	int client_prtcl;
-	char save_location[MAX_SIZE];
+	char * save_location;
 }SETTINGS;
+
+typedef struct _EVENTINFO{
+	HWND hwnd;
+	WPARAM wParam;
+	LPARAM lParam;
+}EVENTINFO;
 
 ATOM				MyRegisterClass(HINSTANCE hInstance);
 BOOL				InitInstance(HINSTANCE, int);
@@ -46,4 +52,10 @@ void				FreeSocketInformation(SOCKET s);
 void				init_client(HWND hwnd);
 INT_PTR CALLBACK	Settings(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 void				save_select();
-void set_settings(HWND hwnd);
+void				set_settings(HWND hwnd);
+
+int					write_server_data(HWND hwnd, WPARAM wParam);
+int					read_server_data(HWND hwnd, WPARAM wParam);
+SOCKET				accept_data(HWND hwnd, WPARAM wParam);
+char*				ip_convert(SETTINGS * st);
+DWORD				ServerProc(LPVOID lpdwThreadParam);
