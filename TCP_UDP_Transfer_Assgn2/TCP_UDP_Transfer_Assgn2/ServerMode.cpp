@@ -115,15 +115,12 @@ int socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam){
 			if (accept_data(hwnd, wParam))
 				return -4;
 			break;
-
+		case FD_WRITE:
+			write_data(hwnd, wParam, lParam);
+			break;
 		case FD_READ:
 			if (read_server_data(hwnd, wParam))
 				return -3;
-			break;
-
-		case FD_WRITE:
-			if (write_server_data(hwnd, wParam))
-				return -2;
 			break;
 
 		case FD_CLOSE:
@@ -218,63 +215,6 @@ int read_server_data(HWND hwnd, WPARAM wParam){
 			SocketInfo->BytesRECV = RecvBytes;
 		}
 		SendMessage(GetDlgItem(hwnd, EB_STATBOX), WM_SETTEXT, NULL, (LPARAM)SocketInfo->Buffer);
-	}
-}
-/*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: SetFont
---
---      DATE: January 27, 2014
---      REVISIONS: none
---
---      DESIGNER: Ramzi Chennafi
---      PROGRAMMER: Ramzi Chennafi
---
---      INTERFACE: void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons)
---
---      RETURNS: void
---
---      NOTES:
---      Generic function to change the font on an array of buttons. Requires a font name, the buttons
---		to be chanaged handles, the number of buttons and the parent window.
-----------------------------------------------------------------------------------------------------------------------*/
-int write_server_data(HWND hwnd, WPARAM wParam){
-	
-	DWORD SendBytes;
-	DWORD Flags;
-	LPSOCKET_INFORMATION SocketInfo = GetSocketInformation(wParam);
-
-	if (SocketInfo->BytesRECV > SocketInfo->BytesSEND)
-	{
-		SocketInfo->DataBuf.buf = SocketInfo->Buffer + SocketInfo->BytesSEND;
-		SocketInfo->DataBuf.len = SocketInfo->BytesRECV - SocketInfo->BytesSEND;
-
-		if (WSASend(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &SendBytes, 0, NULL, NULL) == SOCKET_ERROR)
-		{
-			if (WSAGetLastError() != WSAEWOULDBLOCK)
-			{
-				FreeSocketInformation(wParam);
-				return 0;
-			}
-		}
-		else // No error so update the byte count
-		{
-			SocketInfo->BytesSEND += SendBytes;
-		}
-	}
-
-	if (SocketInfo->BytesSEND == SocketInfo->BytesRECV)
-	{
-		SocketInfo->BytesSEND = 0;
-		SocketInfo->BytesRECV = 0;
-
-		// If a RECV occurred during our SENDs then we need to post an FD_READ
-		// notification on the socket.
-
-		if (SocketInfo->RecvPosted == TRUE)
-		{
-			SocketInfo->RecvPosted = FALSE;
-			PostMessage(hwnd, WM_SOCKET, wParam, FD_READ);
-		}
 	}
 }
 /*------------------------------------------------------------------------------------------------------------------

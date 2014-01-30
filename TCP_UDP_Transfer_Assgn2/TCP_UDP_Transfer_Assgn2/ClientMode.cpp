@@ -26,14 +26,29 @@
 ----------------------------------------------------------------------------------------------------------------------*/
 #include "stdafx.h"
 #include "TCP_UDP_Transfer_Assgn2.h"
-
+#define PORT 55001;
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: SetFont
+--
+--      DATE: January 27, 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons)
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Generic function to change the font on an array of buttons. Requires a font name, the buttons
+--		to be chanaged handles, the number of buttons and the parent window.
+----------------------------------------------------------------------------------------------------------------------*/
 void init_client(HWND hwnd){
-	MSG msg;
 	DWORD Ret;
 	SOCKET Send;
 	SOCKADDR_IN InternetAddr;
 	WSADATA wsaData;
-
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 
 	if ((Ret = WSAStartup(0x0202, &wsaData)) != 0){
@@ -41,75 +56,98 @@ void init_client(HWND hwnd){
 		return;
 	}
 
-	if ((Send = socket(PF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET)
+	if ((st->client_socket = socket(PF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET)
 	{
 		MessageBox(hwnd, "socket() failed on client", "Error", MB_ICONEXCLAMATION);
 		return;
 	}
 
-	WSAAsyncSelect(Send, hwnd, WM_SOCKET, FD_CONNECT | FD_WRITE | FD_CLOSE);
+	WSAAsyncSelect(st->client_socket, hwnd, WM_SOCKET, FD_WRITE | FD_CLOSE);
 
 	InternetAddr.sin_family = AF_INET;
 	InternetAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	InternetAddr.sin_port = htons(atoi(st->client_port));
+	InternetAddr.sin_port = PORT;
 
-	if (bind(Send, (PSOCKADDR)&InternetAddr, sizeof(InternetAddr)) == SOCKET_ERROR){
+	if (bind(st->client_socket, (PSOCKADDR)&InternetAddr, sizeof(InternetAddr)) == SOCKET_ERROR){
 		MessageBox(hwnd, "bind failed() on client", "Error", MB_ICONEXCLAMATION);
-		return;
 	}
-}
 
-int client_connect(HWND hwnd, int id){
+	SetClassLongPtr(hwnd, 0, (LONG)st);
+}
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: SetFont
+--
+--      DATE: January 27, 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons)
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Generic function to change the font on an array of buttons. Requires a font name, the buttons
+--		to be chanaged handles, the number of buttons and the parent window.
+----------------------------------------------------------------------------------------------------------------------*/
+int client_connect(HWND hwnd){
 	SOCKADDR_IN InternetAddr;
-	LPSOCKET_INFORMATION SocketInfo = GetSocketInformation(id);
+	hostent *hp;
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
+	memset((char *)&InternetAddr, 0, sizeof(SOCKADDR_IN));
 	int iRc;
 
 	InternetAddr.sin_family = AF_INET;
-	InternetAddr.sin_addr.s_addr = htonl(atoi(st->client_send_ip));
 	InternetAddr.sin_port = htons(atoi(st->client_port));
-
-	iRc = connect(SocketInfo->Socket, (PSOCKADDR)&InternetAddr, sizeof(InternetAddr)); 
-	if ((iRc=WSAGETSELECTERROR(lParam)) == 0){
+	
+	if ((hp = gethostbyname(st->client_send_ip)) == NULL)
+	{
+		MessageBox(hwnd, "Unknown server address.", "Error", MB_ICONEXCLAMATION);
 		return 0;
 	}
-	else{
-		MessageBox(hwnd, "Could not connect", "Error", MB_ICONEXCLAMATION);
+
+	memcpy((char *)&InternetAddr.sin_addr, hp->h_addr, hp->h_length);
+
+	if ((iRc = connect(st->client_socket, (PSOCKADDR)&InternetAddr, sizeof(InternetAddr)) == -1)){
+		MessageBox(hwnd, "Can't connect to server.", "Error", MB_ICONEXCLAMATION);
+		return 0;
 	}
-
-	write_data(hwnd, );
+	
+	return 0;
 }
-
-void write_data(HWND hwnd, WPARAM wParam){
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: SetFont
+--
+--      DATE: January 27, 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons)
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Generic function to change the font on an array of buttons. Requires a font name, the buttons
+--		to be chanaged handles, the number of buttons and the parent window.
+----------------------------------------------------------------------------------------------------------------------*/
+void write_data(HWND hwnd, WPARAM wParam, LPARAM lParam){
 
 	DWORD SendBytes;
 	DWORD Flags;
-	LPSOCKET_INFORMATION SocketInfo = GetSocketInformation(wParam);
+	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
+
 	WSABUF buffer = { 9, "testing" };
 
-	if (SocketInfo->BytesRECV > SocketInfo->BytesSEND)
+	if (WSASend(st->client_socket, &buffer, 1, &SendBytes, 0, NULL, NULL) == SOCKET_ERROR)
 	{
-		SocketInfo->DataBuf.buf = SocketInfo->Buffer + SocketInfo->BytesSEND;
-		SocketInfo->DataBuf.len = SocketInfo->BytesRECV - SocketInfo->BytesSEND;
-
-		if (WSASend(SocketInfo->Socket, &buffer, 1, &SendBytes, 0, NULL, NULL) == SOCKET_ERROR)
+		if (WSAGetLastError() != WSAEWOULDBLOCK)
 		{
-			if (WSAGetLastError() != WSAEWOULDBLOCK)
-			{
-				FreeSocketInformation(wParam);
-				return;
-			}
+			FreeSocketInformation(wParam);
+			return;
 		}
-		else 
-		{
-			SocketInfo->BytesSEND += SendBytes;
-		}
-	}
-
-	if (SocketInfo->BytesSEND == SocketInfo->BytesRECV)
-	{
-		SocketInfo->BytesSEND = 0;
-		SocketInfo->BytesRECV = 0;
 	}
 }
 

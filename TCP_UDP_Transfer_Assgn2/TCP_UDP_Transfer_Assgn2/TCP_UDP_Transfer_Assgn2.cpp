@@ -32,6 +32,8 @@
 HINSTANCE hInst;								// current instance
 TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
+WPARAM glbwParam;
+LPARAM glblParam;
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: main
 --
@@ -169,6 +171,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 ----------------------------------------------------------------------------------------------------------------------*/
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	glbwParam = wParam;
+	glblParam = lParam;
+
 	switch (message){
 		HANDLE_MSG(hWnd, WM_CREATE, Main_OnCreate);
 		HANDLE_MSG(hWnd, WM_COMMAND, Main_OnCommand);
@@ -234,12 +239,12 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct){
 --		are directed into their respective function paths.
 ----------------------------------------------------------------------------------------------------------------------*/
 void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify){
-	static HANDLE servThread;
+	static SOCKET write;
 
 	switch (id)
 	{
 	case BT_SEND:
-		client_connect(hwnd, id);
+		client_connect(hwnd);
 		break;
 	case ID_FILE_SETTINGS:
 		DialogBox(hInst, MAKEINTRESOURCE(IDD_SETTINGS), hwnd, Settings);
@@ -255,7 +260,6 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify){
 	case ID_HELP_ABOUT:
 		DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hwnd, About);
 		break;
-
 	case IDM_EXIT:
 		DestroyWindow(hwnd);
 		break;

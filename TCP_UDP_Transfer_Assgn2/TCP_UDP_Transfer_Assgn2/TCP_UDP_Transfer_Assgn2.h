@@ -20,6 +20,7 @@ typedef struct _SETTINGS{
 	int server_prtcl;
 	int client_prtcl;
 	char * save_location;
+	SOCKET client_socket;
 }SETTINGS;
 
 typedef struct _EVENTINFO{
@@ -42,20 +43,20 @@ void				DrawButtons(HWND hwndParent);
 void				DrawTitleText(HDC hdc);
 void				DrawDisplay(HWND hwndParent);
 void				SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons);
-void Init_Settings(HWND hwnd);
-//server testing functions
-int					socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam);
-void				init_server(HWND hwnd);
+
+void				Init_Settings(HWND hwnd);
+INT_PTR CALLBACK	Settings(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
+void				set_settings(HWND hwnd);
 void				CreateSocketInformation(SOCKET s);
 LPSOCKET_INFORMATION GetSocketInformation(SOCKET s);
 void				FreeSocketInformation(SOCKET s);
-void				init_client(HWND hwnd);
-INT_PTR CALLBACK	Settings(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
-void				save_select();
-void				set_settings(HWND hwnd);
-
-int					write_server_data(HWND hwnd, WPARAM wParam);
+//server testing functions
+void				init_server(HWND hwnd);
+int					socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam);
 int					read_server_data(HWND hwnd, WPARAM wParam);
 SOCKET				accept_data(HWND hwnd, WPARAM wParam);
-char*				ip_convert(DWORD ip);
-DWORD				ServerProc(LPVOID lpdwThreadParam);
+
+void     			init_client(HWND hwnd);
+int					client_connect(HWND hwnd);
+void				write_data(HWND hwnd, WPARAM wParam, LPARAM lParam);
+
