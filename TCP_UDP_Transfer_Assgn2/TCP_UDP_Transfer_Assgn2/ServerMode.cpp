@@ -46,7 +46,6 @@ LPSOCKET_INFORMATION SocketInfoList;
 ----------------------------------------------------------------------------------------------------------------------*/
 void init_server(HWND hwnd){
 
-	MSG msg;
 	DWORD Ret;
 	SOCKET Listen;
 	SOCKADDR_IN InternetAddr;

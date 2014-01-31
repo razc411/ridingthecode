@@ -3,6 +3,7 @@
 #include "resource.h"
 #define WM_SOCKET (WM_USER + 1)
 #define MAX_SIZE 1024
+
 typedef struct _SOCKET_INFORMATION {
 	BOOL RecvPosted;
 	CHAR Buffer[DATA_BUFSIZE];
@@ -22,12 +23,6 @@ typedef struct _SETTINGS{
 	char * save_location;
 	SOCKET client_socket;
 }SETTINGS;
-
-typedef struct _EVENTINFO{
-	HWND hwnd;
-	WPARAM wParam;
-	LPARAM lParam;
-}EVENTINFO;
 
 ATOM				MyRegisterClass(HINSTANCE hInstance);
 BOOL				InitInstance(HINSTANCE, int);
@@ -60,3 +55,4 @@ void     			init_client(HWND hwnd);
 int					client_connect(HWND hwnd);
 void				write_data(HWND hwnd, WPARAM wParam, LPARAM lParam);
 
+void grab_file(HWND hwnd);

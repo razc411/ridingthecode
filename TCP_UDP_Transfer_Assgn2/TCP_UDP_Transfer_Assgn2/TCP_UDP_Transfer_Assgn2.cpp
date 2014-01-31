@@ -171,9 +171,6 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 ----------------------------------------------------------------------------------------------------------------------*/
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	glbwParam = wParam;
-	glblParam = lParam;
-
 	switch (message){
 		HANDLE_MSG(hWnd, WM_CREATE, Main_OnCreate);
 		HANDLE_MSG(hWnd, WM_COMMAND, Main_OnCommand);
@@ -212,7 +209,7 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct){
 	st->client_prtcl = 0;
 	st->server_prtcl = 0;
 	st->client_send_ip = "127.0.0.1";
-	st->save_location = "C:\\";
+	st->save_location = "NOTSET";
 	SetClassLongPtr(hwnd, 0, (LONG)st);
 
 	DrawDisplay(hwnd);
@@ -240,9 +237,12 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct){
 ----------------------------------------------------------------------------------------------------------------------*/
 void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify){
 	static SOCKET write;
-
+	
 	switch (id)
 	{
+	case BT_SELECTFILE:
+		grab_file(hwnd);
+		break;
 	case BT_SEND:
 		client_connect(hwnd);
 		break;

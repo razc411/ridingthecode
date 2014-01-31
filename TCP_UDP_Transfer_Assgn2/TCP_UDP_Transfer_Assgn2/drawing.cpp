@@ -82,22 +82,27 @@ void DrawTitleText(HDC hdc){
 --      Generic function to draw buttons. Font is set at the end for all the buttons in the function.
 ----------------------------------------------------------------------------------------------------------------------*/
 void DrawButtons(HWND hwnd){
-	HWND buttons[3];
+	HWND buttons[4];
 
 	buttons[0] = CreateWindow("BUTTON", "Connect",
-							WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-							20, 435, 100, 35,
-							hwnd, (HMENU)BT_CONNECT, GetModuleHandle(NULL), NULL);
+		WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+		20, 435, 100, 35,
+		hwnd, (HMENU)BT_CONNECT, GetModuleHandle(NULL), NULL);
 
 	buttons[1] = CreateWindow("BUTTON", "Disconnect",
-							WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-							140, 435, 100, 35,
-							hwnd, (HMENU)BT_DISCONNECT, GetModuleHandle(NULL), NULL);
+		WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+		140, 435, 100, 35,
+		hwnd, (HMENU)BT_DISCONNECT, GetModuleHandle(NULL), NULL);
 	
-	buttons[1] = CreateWindow("BUTTON", "Send File",
-							WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-							260, 435, 100, 35,
-							hwnd, (HMENU)BT_SEND, GetModuleHandle(NULL), NULL);
+	buttons[2] = CreateWindow("BUTTON", "Send File",
+		WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+		260, 435, 100, 35,
+		hwnd, (HMENU)BT_SEND, GetModuleHandle(NULL), NULL);
+	
+	buttons[3] = CreateWindow("BUTTON", "Select File",
+		WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+		260, 535, 100, 35,
+		hwnd, (HMENU)BT_SELECTFILE, GetModuleHandle(NULL), NULL);
 	
 	SetFont(_T("Arial"), hwnd, buttons, 3);
 }

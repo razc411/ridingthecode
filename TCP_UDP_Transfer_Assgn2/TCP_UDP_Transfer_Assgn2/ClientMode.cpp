@@ -26,7 +26,7 @@
 ----------------------------------------------------------------------------------------------------------------------*/
 #include "stdafx.h"
 #include "TCP_UDP_Transfer_Assgn2.h"
-#define PORT 55001;
+#define PORTC 55011;
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: SetFont
 --
@@ -46,7 +46,6 @@
 ----------------------------------------------------------------------------------------------------------------------*/
 void init_client(HWND hwnd){
 	DWORD Ret;
-	SOCKET Send;
 	SOCKADDR_IN InternetAddr;
 	WSADATA wsaData;
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
@@ -66,7 +65,7 @@ void init_client(HWND hwnd){
 
 	InternetAddr.sin_family = AF_INET;
 	InternetAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	InternetAddr.sin_port = PORT;
+	InternetAddr.sin_port = PORTC;
 
 	if (bind(st->client_socket, (PSOCKADDR)&InternetAddr, sizeof(InternetAddr)) == SOCKET_ERROR){
 		MessageBox(hwnd, "bind failed() on client", "Error", MB_ICONEXCLAMATION);
@@ -94,9 +93,17 @@ void init_client(HWND hwnd){
 int client_connect(HWND hwnd){
 	SOCKADDR_IN InternetAddr;
 	hostent *hp;
-	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
-	memset((char *)&InternetAddr, 0, sizeof(SOCKADDR_IN));
 	int iRc;
+	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
+	
+	if (st->save_location == ("NOTSET")){
+		MessageBox(hwnd, "Please select a file to send.", "Error", MB_ICONEXCLAMATION);
+		return -5;
+	}
+
+	fopen(st->save_location, "r");
+
+	memset((char *)&InternetAddr, 0, sizeof(SOCKADDR_IN));
 
 	InternetAddr.sin_family = AF_INET;
 	InternetAddr.sin_port = htons(atoi(st->client_port));
@@ -109,7 +116,8 @@ int client_connect(HWND hwnd){
 
 	memcpy((char *)&InternetAddr.sin_addr, hp->h_addr, hp->h_length);
 
-	if ((iRc = connect(st->client_socket, (PSOCKADDR)&InternetAddr, sizeof(InternetAddr)) == -1)){
+	iRc = connect(st->client_socket, (PSOCKADDR)&InternetAddr, sizeof(InternetAddr));
+	if (iRc == 0){
 		MessageBox(hwnd, "Can't connect to server.", "Error", MB_ICONEXCLAMATION);
 		return 0;
 	}
@@ -136,7 +144,6 @@ int client_connect(HWND hwnd){
 void write_data(HWND hwnd, WPARAM wParam, LPARAM lParam){
 
 	DWORD SendBytes;
-	DWORD Flags;
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 
 	WSABUF buffer = { 9, "testing" };
@@ -150,73 +157,25 @@ void write_data(HWND hwnd, WPARAM wParam, LPARAM lParam){
 		}
 	}
 }
-
-
-//void init_client(HWND hwnd){
-//	int n, ns, bytes_to_read;
-//	int port, err;
-//	SOCKET sd;
-//	struct hostent	*hp;
-//	struct sockaddr_in server;
-//	char  *host, *bp, rbuf[1024], sbuf[1024] = "testing", **pptr;
-//	WSADATA WSAData;
-//	WORD wVersionRequested;
-//	
-//	set_settings(hwnd);
-//	
-//	SETTINGS * st = (SETTINGS*) GetClassLongPtr(hwnd, 0);
-//	char* ip = ip_convert(st);
-//	port = st->client_port;
+//UDP TRANSFER
+//char pkt[...];
+//size_t pkt_length = ...;
+//sockaddr_in dest;
+//sockaddr_in local;
+//WSAData data;
+//WSAStartup(MAKEWORD(2, 2), &data);
 //
-//	wVersionRequested = MAKEWORD(2, 2);
-//	err = WSAStartup(wVersionRequested, &WSAData);
-//	if (err != 0) //No usable DLL
-//	{
-//		printf("DLL not found!\n");
-//		exit(1);
-//	}
+//local.sin_family = AF_INET;
+//local.sin_addr.s_addr = inet_addr(<source IP address>);
+//local.sin_port = 0; // choose any
 //
-//	// Create the socket
-//	if ((sd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-//	{
-//		perror("Cannot create socket");
-//		exit(1);
-//	}
+//dest.sin_family = AF_INET;
+//dest.sin_addr.s_addr = inet_addr(<destination IP address>);
+//dest.sin_port = htons(<destination port number>);
 //
-//	// Initialize and set up the address structure
-//	memset((char *)&server, 0, sizeof(struct sockaddr_in));
-//	server.sin_family = AF_INET;
-//	server.sin_port = htons(port);
-//	if ((hp = gethostbyname(ip)) == NULL)
-//	{
-//		fprintf(stderr, "Unknown server address\n");
-//		exit(1);
-//	}
-//
-//	// Copy the server address
-//	memcpy((char *)&server.sin_addr, hp->h_addr, hp->h_length);
-//
-//	// Connecting to the server
-//	if (connect(sd, (struct sockaddr *)&server, sizeof(server)) == -1)
-//	{
-//		SendMessage(GetDlgItem(hwnd, EB_STATUSBOX) , WM_SETTEXT, NULL, (LPARAM)"Failed to connect");
-//		perror("connect");
-//		exit(1);
-//	}
-//	printf("Connected:    Server Name: %s\n", hp->h_name);
-//	pptr = hp->h_addr_list;
-//	printf("\t\tIP Address: %s\n", inet_ntoa(server.sin_addr));
-//	printf("Transmiting:\n");
-//
-//	// Transmit data through the socket
-//	ns = send(sd, sbuf, BUFSIZE, 0);
-//	printf("Receive:\n");
-//	bp = rbuf;
-//	bytes_to_read = BUFSIZE;
-//
-//	// client makes repeated calls to recv until no more data is expected to arrive.
-//    n = recv(sd, bp, bytes_to_read, 0);
-//	SendMessage(GetDlgItem(hwnd, EB_STATBOX), WM_SETTEXT, NULL, (LPARAM)"Data Sent!");
-//	closesocket(sd);
-//	WSACleanup();
-//}
+//// create the socket
+//SOCKET s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+//// bind to the local address
+//bind(s, (sockaddr *)&local, sizeof(local));
+//// send the pkt
+//int ret = sendto(s, pkt, pkt_length, 0, (sockaddr *)&dest, sizeof(dest));
