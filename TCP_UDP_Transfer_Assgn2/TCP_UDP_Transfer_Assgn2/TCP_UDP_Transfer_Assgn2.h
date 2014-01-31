@@ -20,7 +20,7 @@ typedef struct _SETTINGS{
 	char* client_send_ip;
 	int server_prtcl;
 	int client_prtcl;
-	char * save_location;
+	LPSTR save_location;
 	SOCKET client_socket;
 }SETTINGS;
 

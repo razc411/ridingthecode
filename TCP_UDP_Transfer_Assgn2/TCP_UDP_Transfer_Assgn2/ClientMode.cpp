@@ -96,12 +96,10 @@ int client_connect(HWND hwnd){
 	int iRc;
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 	
-	if (st->save_location == ("NOTSET")){
+	if (st->save_location == "NOTSET"){
 		MessageBox(hwnd, "Please select a file to send.", "Error", MB_ICONEXCLAMATION);
 		return -5;
 	}
-
-	fopen(st->save_location, "r");
 
 	memset((char *)&InternetAddr, 0, sizeof(SOCKADDR_IN));
 
@@ -143,18 +141,17 @@ int client_connect(HWND hwnd){
 ----------------------------------------------------------------------------------------------------------------------*/
 void write_data(HWND hwnd, WPARAM wParam, LPARAM lParam){
 
-	DWORD SendBytes;
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
+	
+	HANDLE fd = CreateFile(st->save_location, GENERIC_READ, FILE_SHARE_READ,
+		0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+	if (fd == INVALID_HANDLE_VALUE){
+		MessageBox(hwnd, "Unable to open file.", "Error", MB_ICONEXCLAMATION);
+	}
 
-	WSABUF buffer = { 9, "testing" };
-
-	if (WSASend(st->client_socket, &buffer, 1, &SendBytes, 0, NULL, NULL) == SOCKET_ERROR)
-	{
-		if (WSAGetLastError() != WSAEWOULDBLOCK)
-		{
-			FreeSocketInformation(wParam);
-			return;
-		}
+	int status = TransmitFile(st->client_socket, fd, 0, 1024, 0, 0, 0);
+	if (WSAGetLastError() == WSAECONNABORTED){
+		MessageBox(hwnd, "Failed to transmit.", "Error", MB_ICONEXCLAMATION);
 	}
 }
 //UDP TRANSFER

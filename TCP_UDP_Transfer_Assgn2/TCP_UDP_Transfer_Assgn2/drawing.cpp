@@ -101,7 +101,7 @@ void DrawButtons(HWND hwnd){
 	
 	buttons[3] = CreateWindow("BUTTON", "Select File",
 		WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-		260, 535, 100, 35,
+		260, 480, 100, 35,
 		hwnd, (HMENU)BT_SELECTFILE, GetModuleHandle(NULL), NULL);
 	
 	SetFont(_T("Arial"), hwnd, buttons, 3);

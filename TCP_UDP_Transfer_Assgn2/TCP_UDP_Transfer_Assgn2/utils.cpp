@@ -31,7 +31,7 @@ void grab_file(HWND hwnd){
 	OPENFILENAME ofn;       // common dialog box structure
 	char szFile[260];       // buffer for file name
 	HANDLE hf;              // file handle
-	SETTINGS * st = (SETTINGS*) GetClassLongPtr(hwnd, 0);
+	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 	// Initialize OPENFILENAME
 	ZeroMemory(&ofn, sizeof(ofn));
 	ofn.lStructSize = sizeof(ofn);
@@ -60,6 +60,7 @@ void grab_file(HWND hwnd){
 		(HANDLE)NULL);
 
 	st->save_location = ofn.lpstrFile;
+	SetClassLongPtr(hwnd, 0, (LONG)st);
 }
 
 void net_stats(){
@@ -67,6 +68,7 @@ void net_stats(){
 }
 
 void set_settings(HWND hwnd){
+	
 	HWND hDlgPTCL = GetDlgItem(hwnd, IDC_PROTSLT);
 	HWND hDlgPORT = GetDlgItem(hwnd, IDC_PORT);
 	HWND hDlgIP = GetDlgItem(hwnd, IDC_IP);
@@ -74,14 +76,14 @@ void set_settings(HWND hwnd){
 	HWND hDlgSPORT = GetDlgItem(hwnd, IDC_SPORT);
 	HWND hDlgSPRTCL = GetDlgItem(hwnd, IDC_SPRTCL);
 
-	SETTINGS * st = (SETTINGS*)malloc(sizeof(SETTINGS));
+	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 
 	Edit_GetText(hDlgPORT, st->client_port, MAX_SIZE);
 	Edit_GetText(hDlgSPORT, st->server_port, MAX_SIZE);
+	Edit_GetText(hDlgIP, st->client_send_ip, MAX_SIZE);
 
 	st->client_prtcl = ComboBox_GetCurSel(hDlgPTCL);
 	st->server_prtcl = ComboBox_GetCurSel(hDlgSPRTCL);
-	Edit_GetText(hDlgIP, st->client_send_ip, MAX_SIZE);
 
 	SetClassLongPtr(GetParent(hwnd), 0, (LONG)st);
 }

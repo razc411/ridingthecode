@@ -13,6 +13,7 @@
 #include <windowsx.h>
 #include <winsock2.h>
 #include <Commdlg.h>
+#include <Mswsock.h>
 // C RunTime Header Files
 #include <stdlib.h>
 #include <malloc.h>

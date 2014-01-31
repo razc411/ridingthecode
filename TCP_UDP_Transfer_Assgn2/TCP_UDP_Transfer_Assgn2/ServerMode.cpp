@@ -188,29 +188,23 @@ int read_server_data(HWND hwnd, WPARAM wParam){
 	DWORD RecvBytes;
 	DWORD Flags;
 
-	if (SocketInfo->BytesRECV != 0)
-	{
+	if (SocketInfo->BytesRECV != 0){
 		SocketInfo->RecvPosted = TRUE;
 		return 0;
 	}
-	else
-	{
+	else{
 		SocketInfo->DataBuf.buf = SocketInfo->Buffer;
 		SocketInfo->DataBuf.len = DATA_BUFSIZE;
 
 		Flags = 0;
-		if (WSARecv(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes,
-			&Flags, NULL, NULL) == SOCKET_ERROR)
-		{
-			if (WSAGetLastError() != WSAEWOULDBLOCK)
-			{
+		if (WSARecv(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes, &Flags, NULL, NULL) == SOCKET_ERROR){
+			if (WSAGetLastError() != WSAEWOULDBLOCK){
 				MessageBox(hwnd, "WSARecv() failed on server", "Error", MB_ICONEXCLAMATION);
 				FreeSocketInformation(wParam);
 				return 0;
 			}
 		}
-		else // No error so update the byte count
-		{
+		else {
 			SocketInfo->BytesRECV = RecvBytes;
 		}
 		SendMessage(GetDlgItem(hwnd, EB_STATBOX), WM_SETTEXT, NULL, (LPARAM)SocketInfo->Buffer);
