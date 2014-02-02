@@ -18,6 +18,7 @@ typedef struct _SETTINGS{
 	char* server_port;
 	char* client_port;
 	char* client_send_ip;
+	SOCKET server_socket;
 	int server_prtcl;
 	int client_prtcl;
 	int packet_size;
@@ -50,7 +51,7 @@ void				FreeSocketInformation(SOCKET s);
 void				init_server(HWND hwnd);
 int					socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam);
 int					read_server_data(HWND hwnd, WPARAM wParam);
-SOCKET				accept_data(HWND hwnd, WPARAM wParam);
+void accept_data(HWND hwnd, WPARAM wParam);
 
 void     			init_client(HWND hwnd);
 int					client_connect(HWND hwnd);
@@ -58,3 +59,5 @@ void				write_data(HWND hwnd, WPARAM wParam, LPARAM lParam);
 
 HANDLE grab_file(HWND hwnd);
 void save_file(HWND hwnd, char * buffer);
+void activity(char * buffer, int box);
+void disconnect(HWND hwnd);

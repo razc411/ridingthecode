@@ -82,7 +82,7 @@ void DrawTitleText(HDC hdc){
 --      Generic function to draw buttons. Font is set at the end for all the buttons in the function.
 ----------------------------------------------------------------------------------------------------------------------*/
 void DrawButtons(HWND hwnd){
-	HWND buttons[4];
+	HWND buttons[5];
 
 	buttons[0] = CreateWindow("BUTTON", "Connect",
 		WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
@@ -91,20 +91,25 @@ void DrawButtons(HWND hwnd){
 
 	buttons[1] = CreateWindow("BUTTON", "Disconnect",
 		WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-		140, 435, 100, 35,
+		20, 480, 100, 35,
 		hwnd, (HMENU)BT_DISCONNECT, GetModuleHandle(NULL), NULL);
 	
 	buttons[2] = CreateWindow("BUTTON", "Send File",
 		WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-		260, 435, 100, 35,
+		256, 435, 100, 35,
 		hwnd, (HMENU)BT_SEND, GetModuleHandle(NULL), NULL);
 	
-	buttons[3] = CreateWindow("BUTTON", "Select File",
+	buttons[3] = CreateWindow("BUTTON", "Server Mode",
 		WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-		260, 480, 100, 35,
-		hwnd, (HMENU)BT_SELECTFILE, GetModuleHandle(NULL), NULL);
+		137, 480, 100, 35,
+		hwnd, (HMENU)ID_CONNECT_SERVERMODE, GetModuleHandle(NULL), NULL);
+
+	buttons[4] = CreateWindow("BUTTON", "Client Mode",
+		WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+		137, 435, 100, 35,
+		hwnd, (HMENU)ID_CONNECT_CLIENTMODE, GetModuleHandle(NULL), NULL);
 	
-	SetFont(_T("Arial"), hwnd, buttons, 3);
+	SetFont(_T("Arial"), hwnd, buttons, 5);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: main
@@ -214,4 +219,21 @@ void Init_Settings(HWND hwnd){
 	Edit_SetText(hDlgPORT, st->client_port);
 	//Edit_SetText(hDlgSAVE, st->save_location);
 	Edit_SetText(hDlgIP, st->client_send_ip);
+}
+
+void activity(char * buffer, int box){
+	HWND hDlgStat = GetDlgItem(GetActiveWindow(), EB_STATBOX);
+	HWND hDlgStatus = GetDlgItem(GetActiveWindow(), EB_STATUSBOX);
+	int ndx = GetWindowTextLength(hDlgStatus);
+	
+	switch (box){
+	case EB_STATUSBOX:
+		SetFocus(hDlgStatus);
+		SendMessage(hDlgStatus, EM_SETSEL, (WPARAM)ndx, (LPARAM)ndx);
+		SendMessage(hDlgStatus, EM_REPLACESEL, 0, (LPARAM)((LPSTR)buffer));
+		break;
+	case EB_STATBOX:
+		Edit_SetText(hDlgStat, buffer);
+		break;
+	}
 }

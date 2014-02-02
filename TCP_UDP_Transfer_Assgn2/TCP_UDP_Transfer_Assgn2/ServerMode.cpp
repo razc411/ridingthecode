@@ -54,13 +54,13 @@ void init_server(HWND hwnd){
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 
 	if ((Ret = WSAStartup(0x0202, &wsaData)) != 0){
-		MessageBox(hwnd, "WSAStartup failed on server", "Error", MB_ICONEXCLAMATION);
+		activity("WSAStartup failed on server.\n", EB_STATUSBOX);
 		return;
 	}
 
 	if ((Listen = socket(PF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET)
 	{
-		MessageBox(hwnd, "socket() failed on server", "Error", MB_ICONEXCLAMATION);
+		activity("Failed to open server socket.\n", EB_STATUSBOX);
 		return;
 	}
 
@@ -72,13 +72,13 @@ void init_server(HWND hwnd){
 
 	if (bind(Listen, (PSOCKADDR)&InternetAddr, sizeof(InternetAddr)) == SOCKET_ERROR)
 	{
-		MessageBox(hwnd, "bind() failed on server", "Error", MB_ICONEXCLAMATION);
+		activity("bind() failed on server.\n", EB_STATUSBOX);
 		return;
 	}
 
 	if (listen(Listen, 5))
 	{
-		MessageBox(hwnd, "listen() failed on server", "Error", MB_ICONEXCLAMATION);
+		activity("listen() failed on server.\n", EB_STATUSBOX);
 		return;
 	}
 }
@@ -111,17 +111,14 @@ int socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam){
 		switch (WSAGETSELECTEVENT(lParam))
 		{
 		case FD_ACCEPT:
-			if (accept_data(hwnd, wParam))
-				return -4;
+			accept_data(hwnd, wParam);
 			break;
 		case FD_WRITE:
 			write_data(hwnd, wParam, lParam);
 			break;
 		case FD_READ:
-			if (read_server_data(hwnd, wParam))
-				return -3;
+			read_server_data(hwnd, wParam);
 			break;
-
 		case FD_CLOSE:
 			FreeSocketInformation(wParam);
 			break;
@@ -147,13 +144,13 @@ int socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam){
 --      Generic function to change the font on an array of buttons. Requires a font name, the buttons
 --		to be chanaged handles, the number of buttons and the parent window.
 ----------------------------------------------------------------------------------------------------------------------*/
-SOCKET accept_data(HWND hwnd, WPARAM wParam){
+void accept_data(HWND hwnd, WPARAM wParam){
 	SOCKET Accept;
 
 	if ((Accept = accept(wParam, NULL, NULL)) == INVALID_SOCKET)
 	{
-		MessageBox(hwnd, "accept() failed on server", "Error", MB_ICONEXCLAMATION);
-		return Accept;
+		activity("Failed to accept() connection.\n", EB_STATUSBOX);
+		return;
 	}
 
 	// Create a socket information structure to associate with the
@@ -162,8 +159,6 @@ SOCKET accept_data(HWND hwnd, WPARAM wParam){
 	CreateSocketInformation(Accept);
 
 	WSAAsyncSelect(Accept, hwnd, WM_SOCKET, FD_READ | FD_CLOSE);
-
-	return Accept;
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: SetFont
@@ -197,9 +192,10 @@ int read_server_data(HWND hwnd, WPARAM wParam){
 		SocketInfo->DataBuf.len = DATA_BUFSIZE;
 
 		Flags = 0;
+		
 		if (WSARecv(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes, &Flags, NULL, NULL) == SOCKET_ERROR){
 			if (WSAGetLastError() != WSAEWOULDBLOCK){
-				MessageBox(hwnd, "WSARecv() failed on server", "Error", MB_ICONEXCLAMATION);
+				activity("WSARecv() failed.\n", EB_STATUSBOX);
 				FreeSocketInformation(wParam);
 				return 0;
 			}

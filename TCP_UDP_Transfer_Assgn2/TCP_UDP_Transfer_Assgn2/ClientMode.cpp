@@ -51,24 +51,22 @@ void init_client(HWND hwnd){
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 
 	if ((Ret = WSAStartup(0x0202, &wsaData)) != 0){
-		MessageBox(hwnd, "WSAStartup failed on client", "Error", MB_ICONEXCLAMATION);
+		activity("WSAStartup failed on client.\n", EB_STATUSBOX);
 		return;
 	}
 
 	if ((st->client_socket = socket(PF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET)
 	{
-		MessageBox(hwnd, "socket() failed on client", "Error", MB_ICONEXCLAMATION);
+		activity("Failed to create client socket.\n", EB_STATUSBOX);
 		return;
 	}
-
-	WSAAsyncSelect(st->client_socket, hwnd, WM_SOCKET, FD_WRITE | FD_CLOSE);
 
 	InternetAddr.sin_family = AF_INET;
 	InternetAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	InternetAddr.sin_port = PORTC;
 
 	if (bind(st->client_socket, (PSOCKADDR)&InternetAddr, sizeof(InternetAddr)) == SOCKET_ERROR){
-		MessageBox(hwnd, "bind failed() on client", "Error", MB_ICONEXCLAMATION);
+		activity("bind() failed on client.\n", EB_STATUSBOX);
 	}
 
 	SetClassLongPtr(hwnd, 0, (LONG)st);
@@ -103,16 +101,15 @@ int client_connect(HWND hwnd){
 	
 	if ((hp = gethostbyname(st->client_send_ip)) == NULL)
 	{
-		MessageBox(hwnd, "Unknown server address.", "Error", MB_ICONEXCLAMATION);
+		activity("Could not find the specified server address.\n", EB_STATUSBOX);
 		return 0;
 	}
 
 	memcpy((char *)&InternetAddr.sin_addr, hp->h_addr, hp->h_length);
 
 	iRc = connect(st->client_socket, (PSOCKADDR)&InternetAddr, sizeof(InternetAddr));
-	if (iRc == 0){
-		MessageBox(hwnd, "Can't connect to server.", "Error", MB_ICONEXCLAMATION);
-		return 0;
+	if (iRc != 0){
+		activity("Failed to connect to server.\n", EB_STATUSBOX);
 	}
 	
 	return 0;
@@ -145,8 +142,16 @@ void write_data(HWND hwnd, WPARAM wParam, LPARAM lParam){
 	int status = TransmitFile(st->client_socket, hf, 0, packetsizes[st->packet_size], 0, 0, 0);
 
 	if (WSAGetLastError() == WSAECONNABORTED){
-		MessageBox(hwnd, "Failed to transmit.", "Error", MB_ICONEXCLAMATION);
+		activity("Failed to transmit, connection aborted.\n", EB_STATUSBOX);
 	}
+	
+	CloseHandle(hf);
+}
+
+void disconnect(HWND hwnd){
+	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
+	closesocket(st->client_socket);
+	closesocket(st->server_socket);
 }
 //UDP TRANSFER
 //char pkt[...];

@@ -171,6 +171,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 ----------------------------------------------------------------------------------------------------------------------*/
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	glblParam = lParam;
+	glbwParam = wParam;
+
 	switch (message){
 		HANDLE_MSG(hWnd, WM_CREATE, Main_OnCreate);
 		HANDLE_MSG(hWnd, WM_COMMAND, Main_OnCommand);
@@ -237,24 +240,31 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct){
 --		are directed into their respective function paths.
 ----------------------------------------------------------------------------------------------------------------------*/
 void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify){
-	static SOCKET write;
-	
+
 	switch (id)
 	{
-	case BT_SELECTFILE:
-		grab_file(hwnd);
-		break;
 	case BT_SEND:
+		write_data(hwnd, glbwParam, glblParam);
+		activity("Sending data.\n", EB_STATUSBOX);
+		break;
+	case BT_DISCONNECT:
+		disconnect(hwnd);
+		activity("Connection disconnected with server.\n", EB_STATUSBOX);
+		break;
+	case BT_CONNECT:
 		client_connect(hwnd);
+		activity("Connected to server.\n", EB_STATUSBOX);
 		break;
 	case ID_FILE_SETTINGS:
 		DialogBox(hInst, MAKEINTRESOURCE(IDD_SETTINGS), hwnd, Settings);
 		break;
 	case ID_CONNECT_SERVERMODE:
 		init_server(hwnd);
+		activity("Server mode intialized.\n", EB_STATUSBOX);
 		break;
 	case ID_CONNECT_CLIENTMODE:
 		init_client(hwnd);
+		activity("Client mode intialized.\n", EB_STATUSBOX);
 		break;
 	case ID_HELP_README:
 		break;
