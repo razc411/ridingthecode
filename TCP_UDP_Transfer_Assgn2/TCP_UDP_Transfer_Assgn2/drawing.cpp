@@ -127,14 +127,14 @@ void DrawDisplay(HWND hwnd){
 	HWND buttons[2];
 
 	buttons[0] = CreateWindow("EDIT", "",
-							ES_LEFT| ES_MULTILINE | ES_AUTOVSCROLL | WS_VISIBLE | WS_CHILD | ES_READONLY,
-							20, 20, 600, 400,
-							hwnd, (HMENU)EB_STATUSBOX, GetModuleHandle(NULL), NULL);
+			ES_LEFT | ES_MULTILINE | WS_VSCROLL | WS_VISIBLE | WS_CHILD | ES_READONLY,
+			20, 20, 600, 400,
+			hwnd, (HMENU)EB_STATUSBOX, GetModuleHandle(NULL), NULL);
 	
 	buttons[1] = CreateWindow("EDIT", "",
-							ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | WS_VISIBLE | WS_CHILD | ES_READONLY,
-							630, 20, 280, 400,
-							hwnd, (HMENU)EB_STATBOX, GetModuleHandle(NULL), NULL);
+			ES_LEFT | ES_MULTILINE | WS_VISIBLE | WS_CHILD | ES_READONLY,
+			630, 20, 280, 400,
+			hwnd, (HMENU)EB_STATBOX, GetModuleHandle(NULL), NULL);
 
 }
 /*------------------------------------------------------------------------------------------------------------------
@@ -196,9 +196,14 @@ void Init_Settings(HWND hwnd){
 	HWND hDlgSAVE	= GetDlgItem(hwnd, IDC_SDISPLAY);
 	HWND hDlgSPORT	= GetDlgItem(hwnd, IDC_SPORT);
 	HWND hDlgSPRTCL	= GetDlgItem(hwnd, IDC_SPRTCL);
-
+	HWND hDlgPCKT   = GetDlgItem(hwnd, IDC_PACKETSIZE);
 	SETTINGS * st = (SETTINGS*) GetClassLongPtr(GetParent(hwnd), 0);
 	
+	ComboBox_AddString(hDlgPCKT, "2048");
+	ComboBox_AddString(hDlgPCKT, "1024");
+	ComboBox_AddString(hDlgPCKT, "512");
+	ComboBox_AddString(hDlgPCKT, "256");
+	ComboBox_SetCurSel(hDlgPCKT, st->client_prtcl);
 	ComboBox_AddString(hDlgPTCL, "TCP");
 	ComboBox_AddString(hDlgPTCL, "UDP");
 	ComboBox_SetCurSel(hDlgPTCL, st->client_prtcl);
@@ -207,6 +212,6 @@ void Init_Settings(HWND hwnd){
 	ComboBox_SetCurSel(hDlgSPRTCL, st->server_prtcl);
 	Edit_SetText(hDlgSPORT, st->server_port);
 	Edit_SetText(hDlgPORT, st->client_port);
-	Edit_SetText(hDlgSAVE, st->save_location);
+	//Edit_SetText(hDlgSAVE, st->save_location);
 	Edit_SetText(hDlgIP, st->client_send_ip);
 }

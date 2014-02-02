@@ -20,7 +20,8 @@ typedef struct _SETTINGS{
 	char* client_send_ip;
 	int server_prtcl;
 	int client_prtcl;
-	LPSTR save_location;
+	int packet_size;
+	int times_to_send;
 	SOCKET client_socket;
 }SETTINGS;
 
@@ -55,4 +56,5 @@ void     			init_client(HWND hwnd);
 int					client_connect(HWND hwnd);
 void				write_data(HWND hwnd, WPARAM wParam, LPARAM lParam);
 
-void grab_file(HWND hwnd);
+HANDLE grab_file(HWND hwnd);
+void save_file(HWND hwnd, char * buffer);

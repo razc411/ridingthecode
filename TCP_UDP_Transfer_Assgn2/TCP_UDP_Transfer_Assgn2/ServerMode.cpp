@@ -207,7 +207,7 @@ int read_server_data(HWND hwnd, WPARAM wParam){
 		else {
 			SocketInfo->BytesRECV = RecvBytes;
 		}
-		SendMessage(GetDlgItem(hwnd, EB_STATBOX), WM_SETTEXT, NULL, (LPARAM)SocketInfo->Buffer);
+		save_file(hwnd, SocketInfo->Buffer);
 	}
 }
 /*------------------------------------------------------------------------------------------------------------------

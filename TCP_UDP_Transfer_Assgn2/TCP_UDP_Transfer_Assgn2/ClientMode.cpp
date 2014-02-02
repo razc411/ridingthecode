@@ -95,11 +95,6 @@ int client_connect(HWND hwnd){
 	hostent *hp;
 	int iRc;
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
-	
-	if (st->save_location == "NOTSET"){
-		MessageBox(hwnd, "Please select a file to send.", "Error", MB_ICONEXCLAMATION);
-		return -5;
-	}
 
 	memset((char *)&InternetAddr, 0, sizeof(SOCKADDR_IN));
 
@@ -142,14 +137,13 @@ int client_connect(HWND hwnd){
 void write_data(HWND hwnd, WPARAM wParam, LPARAM lParam){
 
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
-	
-	HANDLE fd = CreateFile(st->save_location, GENERIC_READ, FILE_SHARE_READ,
-		0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
-	if (fd == INVALID_HANDLE_VALUE){
-		MessageBox(hwnd, "Unable to open file.", "Error", MB_ICONEXCLAMATION);
-	}
+	FILE *filept;
+	errno_t fd;
+	HANDLE hf = grab_file(hwnd);
+	int packetsizes[] = { 256, 512, 1024, 2048 };
 
-	int status = TransmitFile(st->client_socket, fd, 0, 1024, 0, 0, 0);
+	int status = TransmitFile(st->client_socket, hf, 0, packetsizes[st->packet_size], 0, 0, 0);
+
 	if (WSAGetLastError() == WSAECONNABORTED){
 		MessageBox(hwnd, "Failed to transmit.", "Error", MB_ICONEXCLAMATION);
 	}

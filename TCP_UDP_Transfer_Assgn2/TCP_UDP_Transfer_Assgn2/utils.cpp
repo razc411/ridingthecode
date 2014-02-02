@@ -27,7 +27,7 @@
 #include "stdafx.h"
 #include "TCP_UDP_Transfer_Assgn2.h"
 
-void grab_file(HWND hwnd){
+HANDLE grab_file(HWND hwnd){
 	OPENFILENAME ofn;       // common dialog box structure
 	char szFile[260];       // buffer for file name
 	HANDLE hf;              // file handle
@@ -50,17 +50,47 @@ void grab_file(HWND hwnd){
 
 	// Display the Open dialog box. 
 
-	if (GetOpenFileName(&ofn) == TRUE)
-		hf = CreateFile(ofn.lpstrFile,
-		GENERIC_READ,
-		0,
-		(LPSECURITY_ATTRIBUTES)NULL,
-		OPEN_EXISTING,
-		FILE_ATTRIBUTE_NORMAL,
-		(HANDLE)NULL);
+	if (GetOpenFileName(&ofn) == TRUE){
+		hf = CreateFile(ofn.lpstrFile, GENERIC_READ, 0, NULL, 
+			OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+		return hf;
+	}
 
-	st->save_location = ofn.lpstrFile;
-	SetClassLongPtr(hwnd, 0, (LONG)st);
+	MessageBox(hwnd, "Failed to get file handle", "Error", MB_ICONEXCLAMATION);
+	return NULL;
+}
+
+void save_file(HWND hwnd, char * buffer){
+	TCHAR   szFile[MAX_PATH] = TEXT("\0");
+	OPENFILENAME   ofn;
+	HANDLE hFile = INVALID_HANDLE_VALUE;
+	DWORD bytesWritten = 0;
+
+	memset(&(ofn), 0, sizeof(ofn));
+	ofn.lStructSize = sizeof(ofn);
+	ofn.hwndOwner = hwnd;
+	ofn.lpstrFile = szFile;
+	ofn.nMaxFile = MAX_PATH;
+	ofn.lpstrFilter = TEXT("Text (*.txt)\0*.txt\0");
+	ofn.lpstrTitle = TEXT("Save File As");
+	ofn.Flags = OFN_HIDEREADONLY;
+	ofn.lpstrDefExt = TEXT("txt");
+
+	if (!GetSaveFileName(&ofn))
+	{
+		MessageBox(hwnd, "Failed to save file.", "Error", MB_ICONEXCLAMATION);
+		return;
+	}
+
+	hFile = CreateFile(ofn.lpstrFile, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hFile == INVALID_HANDLE_VALUE){
+		MessageBox(hwnd, "Failed to save file.", "Error", MB_ICONEXCLAMATION);
+		return;
+	}
+
+	WriteFile(hFile, buffer, strlen(buffer), &bytesWritten, NULL);
+
+	CloseHandle(hFile);
 }
 
 void net_stats(){

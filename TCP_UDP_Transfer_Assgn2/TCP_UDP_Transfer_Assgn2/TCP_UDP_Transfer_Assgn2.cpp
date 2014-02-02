@@ -106,7 +106,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 
 	wcex.style = CS_HREDRAW | CS_VREDRAW;
 	wcex.lpfnWndProc = WndProc;
-	wcex.cbClsExtra = sizeof(SETTINGS);
+	wcex.cbClsExtra = sizeof(SETTINGS) + (sizeof(char) * MAX_SIZE);
 	wcex.cbWndExtra = 0;
 	wcex.hInstance = hInstance;
 	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_TCP_UDP_TRANSFER_ASSGN2));
@@ -208,8 +208,9 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct){
 	st->server_port = "5150";
 	st->client_prtcl = 0;
 	st->server_prtcl = 0;
+	st->packet_size = 0;
+	st->times_to_send = 1;
 	st->client_send_ip = "127.0.0.1";
-	st->save_location = "NOTSET";
 	SetClassLongPtr(hwnd, 0, (LONG)st);
 
 	DrawDisplay(hwnd);
