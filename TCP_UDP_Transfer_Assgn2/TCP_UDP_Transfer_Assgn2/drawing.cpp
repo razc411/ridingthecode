@@ -202,22 +202,28 @@ void Init_Settings(HWND hwnd){
 	HWND hDlgSPORT	= GetDlgItem(hwnd, IDC_SPORT);
 	HWND hDlgSPRTCL	= GetDlgItem(hwnd, IDC_SPRTCL);
 	HWND hDlgPCKT   = GetDlgItem(hwnd, IDC_PACKETSIZE);
+	HWND hDlgTTS	= GetDlgItem(hwnd, IDC_TTS);
 	SETTINGS * st = (SETTINGS*) GetClassLongPtr(GetParent(hwnd), 0);
 	
-	ComboBox_AddString(hDlgPCKT, "2048");
-	ComboBox_AddString(hDlgPCKT, "1024");
-	ComboBox_AddString(hDlgPCKT, "512");
+
+	ComboBox_AddString(hDlgPCKT, "ANY");
 	ComboBox_AddString(hDlgPCKT, "256");
+	ComboBox_AddString(hDlgPCKT, "512");
+	ComboBox_AddString(hDlgPCKT, "1024");
+	ComboBox_AddString(hDlgPCKT, "2048");
 	ComboBox_SetCurSel(hDlgPCKT, st->client_prtcl);
+	
 	ComboBox_AddString(hDlgPTCL, "TCP");
 	ComboBox_AddString(hDlgPTCL, "UDP");
 	ComboBox_SetCurSel(hDlgPTCL, st->client_prtcl);
+	
 	ComboBox_AddString(hDlgSPRTCL, "TCP");
 	ComboBox_AddString(hDlgSPRTCL, "UDP");
 	ComboBox_SetCurSel(hDlgSPRTCL, st->server_prtcl);
+	
+	Edit_SetText(hDlgTTS, st->times_to_send);
 	Edit_SetText(hDlgSPORT, st->server_port);
 	Edit_SetText(hDlgPORT, st->client_port);
-	//Edit_SetText(hDlgSAVE, st->save_location);
 	Edit_SetText(hDlgIP, st->client_send_ip);
 }
 

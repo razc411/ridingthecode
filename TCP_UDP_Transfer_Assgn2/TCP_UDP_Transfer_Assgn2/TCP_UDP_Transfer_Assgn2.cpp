@@ -34,6 +34,7 @@ TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
 WPARAM glbwParam;
 LPARAM glblParam;
+static int mode;
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: main
 --
@@ -212,7 +213,7 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct){
 	st->client_prtcl = 0;
 	st->server_prtcl = 0;
 	st->packet_size = 0;
-	st->times_to_send = 1;
+	st->times_to_send = "1";
 	st->client_send_ip = "127.0.0.1";
 	SetClassLongPtr(hwnd, 0, (LONG)st);
 
@@ -240,6 +241,8 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct){
 --		are directed into their respective function paths.
 ----------------------------------------------------------------------------------------------------------------------*/
 void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify){
+	
+	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 
 	switch (id)
 	{
@@ -248,8 +251,14 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify){
 		activity("Sending data.\n", EB_STATUSBOX);
 		break;
 	case BT_DISCONNECT:
-		disconnect(hwnd);
-		activity("Connection disconnected with server.\n", EB_STATUSBOX);
+		if (mode == CLIENT){
+			disconnect(hwnd);
+			activity("Connection disconnected with server.\n", EB_STATUSBOX);
+		}
+		if (mode == SERVER){
+			FreeSocketInformation(st->server_socket);
+			activity("Connection disconnected.", EB_STATUSBOX);
+		}
 		break;
 	case BT_CONNECT:
 		client_connect(hwnd);
@@ -260,10 +269,12 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify){
 		break;
 	case ID_CONNECT_SERVERMODE:
 		init_server(hwnd);
+		mode = SERVER;
 		activity("Server mode intialized.\n", EB_STATUSBOX);
 		break;
 	case ID_CONNECT_CLIENTMODE:
 		init_client(hwnd);
+		mode = CLIENT;
 		activity("Client mode intialized.\n", EB_STATUSBOX);
 		break;
 	case ID_HELP_README:
@@ -386,7 +397,7 @@ INT_PTR CALLBACK Settings(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		case BT_SETTINGOK:
 			set_settings(hDlg);			
 			EndDialog(hDlg, LOWORD(wParam));
-			break;
+			return TRUE;
 		}
 	}
 	return FALSE;

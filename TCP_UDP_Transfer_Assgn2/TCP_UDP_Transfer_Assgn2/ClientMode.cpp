@@ -137,9 +137,11 @@ void write_data(HWND hwnd, WPARAM wParam, LPARAM lParam){
 	FILE *filept;
 	errno_t fd;
 	HANDLE hf = grab_file(hwnd);
-	int packetsizes[] = { 256, 512, 1024, 2048 };
+	int packetsizes[] = {0, 256, 512, 1024, 2048 };
 
-	int status = TransmitFile(st->client_socket, hf, 0, packetsizes[st->packet_size], 0, 0, 0);
+	for (int i = 0; i < atoi(st->times_to_send); i++){
+		int status = TransmitFile(st->client_socket, hf, packetsizes[st->packet_size], 0, 0, 0, 0);
+	}
 
 	if (WSAGetLastError() == WSAECONNABORTED){
 		activity("Failed to transmit, connection aborted.\n", EB_STATUSBOX);
@@ -151,7 +153,6 @@ void write_data(HWND hwnd, WPARAM wParam, LPARAM lParam){
 void disconnect(HWND hwnd){
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 	closesocket(st->client_socket);
-	closesocket(st->server_socket);
 }
 //UDP TRANSFER
 //char pkt[...];

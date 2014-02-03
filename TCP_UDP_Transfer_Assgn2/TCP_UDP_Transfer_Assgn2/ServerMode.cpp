@@ -113,14 +113,8 @@ int socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam){
 		case FD_ACCEPT:
 			accept_data(hwnd, wParam);
 			break;
-		case FD_WRITE:
-			write_data(hwnd, wParam, lParam);
-			break;
 		case FD_READ:
 			read_server_data(hwnd, wParam);
-			break;
-		case FD_CLOSE:
-			FreeSocketInformation(wParam);
 			break;
 		}
 	}
@@ -146,6 +140,7 @@ int socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam){
 ----------------------------------------------------------------------------------------------------------------------*/
 void accept_data(HWND hwnd, WPARAM wParam){
 	SOCKET Accept;
+	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 
 	if ((Accept = accept(wParam, NULL, NULL)) == INVALID_SOCKET)
 	{
@@ -153,12 +148,10 @@ void accept_data(HWND hwnd, WPARAM wParam){
 		return;
 	}
 
-	// Create a socket information structure to associate with the
-	// socket for processing I/O.
-
 	CreateSocketInformation(Accept);
-
+	st->server_socket = Accept;
 	WSAAsyncSelect(Accept, hwnd, WM_SOCKET, FD_READ | FD_CLOSE);
+	SetClassLongPtr(hwnd, 0, (LONG)st);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: SetFont
@@ -202,8 +195,9 @@ int read_server_data(HWND hwnd, WPARAM wParam){
 		}
 		else {
 			SocketInfo->BytesRECV = RecvBytes;
+			save_file(hwnd, SocketInfo->Buffer, SocketInfo->BytesRECV);
+			SocketInfo->BytesRECV = 0;
 		}
-		save_file(hwnd, SocketInfo->Buffer);
 	}
 }
 /*------------------------------------------------------------------------------------------------------------------

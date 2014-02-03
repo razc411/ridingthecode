@@ -60,7 +60,7 @@ HANDLE grab_file(HWND hwnd){
 	return NULL;
 }
 
-void save_file(HWND hwnd, char * buffer){
+void save_file(HWND hwnd, char * buffer, int size){
 	TCHAR   szFile[MAX_PATH] = TEXT("\0");
 	OPENFILENAME   ofn;
 	HANDLE hFile = INVALID_HANDLE_VALUE;
@@ -88,7 +88,7 @@ void save_file(HWND hwnd, char * buffer){
 		return;
 	}
 
-	WriteFile(hFile, buffer, strlen(buffer), &bytesWritten, NULL);
+	WriteFile(hFile, buffer, size, &bytesWritten, NULL);
 
 	CloseHandle(hFile);
 }
@@ -105,13 +105,14 @@ void set_settings(HWND hwnd){
 	HWND hDlgSAVE = GetDlgItem(hwnd, IDC_SDISPLAY);
 	HWND hDlgSPORT = GetDlgItem(hwnd, IDC_SPORT);
 	HWND hDlgSPRTCL = GetDlgItem(hwnd, IDC_SPRTCL);
+	HWND hDlgPCKT = GetDlgItem(hwnd, IDC_PACKETSIZE);
 
-	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
+	SETTINGS * st = (SETTINGS*)GetClassLongPtr(GetParent(hwnd), 0);
 
 	Edit_GetText(hDlgPORT, st->client_port, MAX_SIZE);
 	Edit_GetText(hDlgSPORT, st->server_port, MAX_SIZE);
 	Edit_GetText(hDlgIP, st->client_send_ip, MAX_SIZE);
-
+	st->packet_size = ComboBox_GetCurSel(hDlgPCKT);
 	st->client_prtcl = ComboBox_GetCurSel(hDlgPTCL);
 	st->server_prtcl = ComboBox_GetCurSel(hDlgSPRTCL);
 
