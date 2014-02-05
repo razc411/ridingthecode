@@ -46,6 +46,7 @@
 ----------------------------------------------------------------------------------------------------------------------*/
 void init_client(HWND hwnd){
 	DWORD Ret;
+	int status;
 	SOCKADDR_IN InternetAddr;
 	WSADATA wsaData;
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
@@ -54,11 +55,16 @@ void init_client(HWND hwnd){
 		activity("WSAStartup failed on client.\n", EB_STATUSBOX);
 		return;
 	}
-
-	if ((st->client_socket = socket(PF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET)
-	{
+	switch(st->protocol){
+	case TCP:
+		st->client_socket = socket(PF_INET, SOCK_STREAM, 0);
+		break;
+	case UDP:
+		st->client_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+		break;
+	}
+	if(st->client_socket == INVALID_SOCKET){
 		activity("Failed to create client socket.\n", EB_STATUSBOX);
-		return;
 	}
 
 	InternetAddr.sin_family = AF_INET;
@@ -136,7 +142,11 @@ void write_data(HWND hwnd, WPARAM wParam, LPARAM lParam){
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 	FILE *filept;
 	errno_t fd;
+	DWORD numBytesRead = 0;
+	DWORD numBytesSent = 0;
 	HANDLE hf = grab_file(hwnd);
+	WSABUF wsaBuffer;
+	
 	int packetsizes[] = {0, 256, 512, 1024, 2048 };
 
 	for (int i = 0; i < atoi(st->times_to_send); i++){
@@ -154,6 +164,8 @@ void disconnect(HWND hwnd){
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 	closesocket(st->client_socket);
 }
+
+
 //UDP TRANSFER
 //char pkt[...];
 //size_t pkt_length = ...;

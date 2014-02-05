@@ -99,7 +99,6 @@ void net_stats(){
 
 void set_settings(HWND hwnd){
 	
-	HWND hDlgPTCL = GetDlgItem(hwnd, IDC_PROTSLT);
 	HWND hDlgPORT = GetDlgItem(hwnd, IDC_PORT);
 	HWND hDlgIP = GetDlgItem(hwnd, IDC_IP);
 	HWND hDlgSAVE = GetDlgItem(hwnd, IDC_SDISPLAY);
@@ -113,8 +112,7 @@ void set_settings(HWND hwnd){
 	Edit_GetText(hDlgSPORT, st->server_port, MAX_SIZE);
 	Edit_GetText(hDlgIP, st->client_send_ip, MAX_SIZE);
 	st->packet_size = ComboBox_GetCurSel(hDlgPCKT);
-	st->client_prtcl = ComboBox_GetCurSel(hDlgPTCL);
-	st->server_prtcl = ComboBox_GetCurSel(hDlgSPRTCL);
+	st->protocol = ComboBox_GetCurSel(hDlgSPRTCL);
 
 	SetClassLongPtr(GetParent(hwnd), 0, (LONG)st);
 }

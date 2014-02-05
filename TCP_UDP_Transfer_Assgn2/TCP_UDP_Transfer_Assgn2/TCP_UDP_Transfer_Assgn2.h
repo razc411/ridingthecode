@@ -19,8 +19,7 @@ typedef struct _SETTINGS{
 	char* client_port;
 	char* client_send_ip;
 	SOCKET server_socket;
-	int server_prtcl;
-	int client_prtcl;
+	int protocol;
 	int packet_size;
 	char* times_to_send;
 	SOCKET client_socket;

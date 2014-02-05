@@ -211,15 +211,11 @@ void Init_Settings(HWND hwnd){
 	ComboBox_AddString(hDlgPCKT, "512");
 	ComboBox_AddString(hDlgPCKT, "1024");
 	ComboBox_AddString(hDlgPCKT, "2048");
-	ComboBox_SetCurSel(hDlgPCKT, st->client_prtcl);
-	
-	ComboBox_AddString(hDlgPTCL, "TCP");
-	ComboBox_AddString(hDlgPTCL, "UDP");
-	ComboBox_SetCurSel(hDlgPTCL, st->client_prtcl);
+	ComboBox_SetCurSel(hDlgPCKT, st->packet_size);
 	
 	ComboBox_AddString(hDlgSPRTCL, "TCP");
 	ComboBox_AddString(hDlgSPRTCL, "UDP");
-	ComboBox_SetCurSel(hDlgSPRTCL, st->server_prtcl);
+	ComboBox_SetCurSel(hDlgSPRTCL, st->protocol);
 	
 	Edit_SetText(hDlgTTS, st->times_to_send);
 	Edit_SetText(hDlgSPORT, st->server_port);

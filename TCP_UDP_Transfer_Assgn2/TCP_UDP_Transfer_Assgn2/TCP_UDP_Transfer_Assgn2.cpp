@@ -210,8 +210,7 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct){
 	SETTINGS * st = (SETTINGS*) malloc(sizeof(SETTINGS));
 	st->client_port = "5150";
 	st->server_port = "5150";
-	st->client_prtcl = 0;
-	st->server_prtcl = 0;
+	st->protocol = 0;
 	st->packet_size = 0;
 	st->times_to_send = "1";
 	st->client_send_ip = "127.0.0.1";

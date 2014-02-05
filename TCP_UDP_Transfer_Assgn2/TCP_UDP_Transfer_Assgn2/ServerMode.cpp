@@ -58,10 +58,16 @@ void init_server(HWND hwnd){
 		return;
 	}
 
-	if ((Listen = socket(PF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET)
-	{
-		activity("Failed to open server socket.\n", EB_STATUSBOX);
-		return;
+	switch(st->protocol){
+	case TCP:
+		Listen = socket(PF_INET, SOCK_STREAM, 0);
+		break;
+	case UDP:
+		Listen = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+		break;
+	}
+	if(Listen == INVALID_SOCKET){
+		activity("Failed to create client socket.\n", EB_STATUSBOX);
 	}
 
 	WSAAsyncSelect(Listen, hwnd, WM_SOCKET, FD_ACCEPT | FD_CLOSE);
