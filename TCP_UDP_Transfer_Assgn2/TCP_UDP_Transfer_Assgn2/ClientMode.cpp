@@ -142,34 +142,45 @@ void write_data(HWND hwnd, WPARAM wParam, LPARAM lParam){
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 	FILE *filept;
 	errno_t fd;
-	int status;
+	int status = 1;
 	HANDLE hf;
-	DWORD numBytesRead = 0;
-	DWORD numBytesSent = 0;
-	DWORD packetsizes[] = {5096, 256, 512, 1024, 2048 };
+	DWORD numBytesRead = 0, numBytesSent = 0;
+	int  totalBytesRead = 0;
+	DWORD packetsizes[] = { 5096, 256, 512, 1024, 2048 };
 	const int packet_size = packetsizes[st->packet_size];
-	char flags[HEADER_SIZE];
-	memset(flags, '\0', HEADER_SIZE);
-	
+	LPSTR title = grab_file(hwnd, &hf);
+
+	WSABUF wsaBuffers[MAX_PACKETS];
 	LPWSABUF wsaStartBuffer = (LPWSABUF)malloc(sizeof(WSABUF));
 	wsaStartBuffer->len = HEADER_SIZE;
-	
+
 	char * buff = (char*)malloc(sizeof(char)* packet_size);
 	memset(buff, 0, packet_size);
-	
-	LPWSABUF wsaBuffer = (LPWSABUF)malloc(sizeof(WSABUF));
-	wsaBuffer->len = packet_size;
-	wsaBuffer->buf = buff;
 
-	LPSTR title = grab_file(hwnd, &hf);
-	sprintf_s(flags, "%s,%d, %d;", , packet_size, st->times_to_send);
+	int i = 0, buffer_count = 0;
+	while (1){
+		status = ReadFile(hf, buff, packet_size, &numBytesRead, NULL);
+		if (numBytesRead == 0){
+			break;
+		}
+		wsaBuffers[i].buf = buff;
+		wsaBuffers[i++].len = numBytesRead;
+		totalBytesRead += numBytesRead;
+		buffer_count++;
+	}
+
+	char flags[HEADER_SIZE];
+	memset(flags, '\0', HEADER_SIZE);
+	sprintf_s(flags, "%d,%d,%d,%s;", totalBytesRead, packet_size, buffer_count, st->times_to_send);
 	wsaStartBuffer->buf = flags;
 
-	status = ReadFile(hf, buff, packet_size, &numBytesRead, NULL);
-
 	WSASend(st->client_socket, wsaStartBuffer, 1, &numBytesSent, NULL, NULL, NULL);
-	WSASend(st->client_socket, wsaBuffer, 1, &numBytesSent, NULL, NULL, NULL);
 
+	for (int j = 0; j < atoi(st->times_to_send); j++){
+		for (int p = 0; p < buffer_count; p++){
+			WSASend(st->client_socket, &wsaBuffers[p], 1, &numBytesSent, NULL, NULL, NULL);
+		}
+	}
 	CloseHandle(hf);
 }
 
