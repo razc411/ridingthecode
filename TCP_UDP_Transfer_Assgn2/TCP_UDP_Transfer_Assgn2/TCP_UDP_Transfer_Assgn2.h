@@ -12,6 +12,7 @@ typedef struct _SETTINGS{
 	SOCKET server_socket;
 	int protocol;
 	int packet_size;
+	int mode;
 	char* times_to_send;
 	SOCKET client_socket;
 }SETTINGS;
@@ -38,7 +39,7 @@ void				set_settings(HWND hwnd);
 //server testing functions
 void				init_server(HWND hwnd);
 int					socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam);
-int					read_server_data(HWND hwnd, WPARAM wParam, int packet_size, int totalBytes, int timestosend, int packets);
+int					read_server_data(HWND hwnd, WPARAM wParam, int packet_size, int totalBytes, int send_mode, int packets);
 void accept_data(HWND hwnd, WPARAM wParam);
 
 void     			init_client(HWND hwnd);
@@ -49,4 +50,4 @@ LPSTR grab_file(HWND hwnd, HANDLE * hf);
 void save_file(HWND hwnd, char * buffer, int size);
 void activity(char * buffer, int box);
 void disconnect(HWND hwnd);
-void process_tcp_header(HWND hwnd, SOCKET recv, int * packet_size, int * totalBytes, int * timestosend, int * packets);
+void process_tcp_header(HWND hwnd, SOCKET recv, int * packet_size, int * totalBytes, int * send_mode, int * packets);

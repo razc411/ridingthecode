@@ -171,16 +171,15 @@ void write_data(HWND hwnd, WPARAM wParam, LPARAM lParam){
 
 	char flags[HEADER_SIZE];
 	memset(flags, '\0', HEADER_SIZE);
-	sprintf_s(flags, "%d,%d,%d,%s;", totalBytesRead, packet_size, buffer_count, st->times_to_send);
+	sprintf_s(flags, "%d,%d,%d,%s;", totalBytesRead, packet_size, buffer_count, st->mode);
 	wsaStartBuffer->buf = flags;
 
 	WSASend(st->client_socket, wsaStartBuffer, 1, &numBytesSent, NULL, NULL, NULL);
-
-	for (int j = 0; j < atoi(st->times_to_send); j++){
-		for (int p = 0; p < buffer_count; p++){
-			WSASend(st->client_socket, &wsaBuffers[p], 1, &numBytesSent, NULL, NULL, NULL);
-		}
+	
+	for (int p = 0; p < buffer_count; p++){
+		WSASend(st->client_socket, &wsaBuffers[p], buffer_count, &numBytesSent, NULL, NULL, NULL);
 	}
+	
 	CloseHandle(hf);
 }
 

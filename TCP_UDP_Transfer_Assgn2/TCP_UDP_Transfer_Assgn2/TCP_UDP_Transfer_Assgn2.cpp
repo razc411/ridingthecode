@@ -213,7 +213,8 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct){
 	st->protocol = 0;
 	st->packet_size = 0;
 	st->times_to_send = "1";
-	st->client_send_ip = "127.0.0.1";
+	st->client_send_ip = "127.0.0.1";\
+	st->mode = 0;
 	SetClassLongPtr(hwnd, 0, (LONG)st);
 
 	DrawDisplay(hwnd);
@@ -327,6 +328,9 @@ void Main_OnPaint(HWND hwnd){
 --		are directed into their respective function paths.
 ----------------------------------------------------------------------------------------------------------------------*/
 void Main_OnDestroy(HWND hwnd){
+	SETTINGS * st = (SETTINGS*) GetClassLongPtr(hwnd, 0);
+	closesocket(st->client_socket);
+	closesocket(st->server_socket);
 	PostQuitMessage(0);
 }
 /*------------------------------------------------------------------------------------------------------------------

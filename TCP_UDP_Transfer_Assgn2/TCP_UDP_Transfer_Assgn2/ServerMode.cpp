@@ -26,7 +26,7 @@
 ----------------------------------------------------------------------------------------------------------------------*/
 #include "stdafx.h"
 #include "TCP_UDP_Transfer_Assgn2.h"
-static int header_recv, packet_size, totalBytes, timestosend, packets;
+static int header_recv, packet_size, totalBytes, send_mode, packets;
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: SetFont
 --
@@ -124,10 +124,10 @@ int socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam){
 		case FD_READ:
 			if (header_recv == 0){
 				process_tcp_header(hwnd, st->server_socket, &packet_size, 
-					&totalBytes, &timestosend, &packets);
+					&totalBytes, &send_mode, &packets);
 			}
 			else{
-				read_server_data(hwnd, wParam, packet_size, totalBytes, timestosend, packets);
+				read_server_data(hwnd, wParam, packet_size, totalBytes, send_mode, packets);
 			}
 
 			header_recv = 1;
@@ -184,7 +184,7 @@ void accept_data(HWND hwnd, WPARAM wParam){
 --      Generic function to change the font on an array of buttons. Requires a font name, the buttons
 --		to be chanaged handles, the number of buttons and the parent window.
 ----------------------------------------------------------------------------------------------------------------------*/
-int read_server_data(HWND hwnd, WPARAM wParam, int packet_size, int totalBytes, int timestosend, int packets){
+int read_server_data(HWND hwnd, WPARAM wParam, int packet_size, int totalBytes, int send_mode, int packets){
 
 	DWORD RecvBytes = 0;
 	DWORD Flags = 0;
@@ -201,8 +201,7 @@ int read_server_data(HWND hwnd, WPARAM wParam, int packet_size, int totalBytes, 
 	wsaBuffer->len = packet_size;
 	wsaBuffer->buf = buffer;
 
-	//issue lies here
-	for (int i = 0; i < packets; i++){
+	for(int i = 0; i < packets; i++){
 		if (WSARecv(st->server_socket, wsaBuffer, 1, &RecvBytes, &Flags, NULL, NULL) == SOCKET_ERROR){
 			if (WSAGetLastError() != WSAEWOULDBLOCK){
 				activity("WSARecv() failed.\n", EB_STATUSBOX);
@@ -210,17 +209,18 @@ int read_server_data(HWND hwnd, WPARAM wParam, int packet_size, int totalBytes, 
 				return 0;
 			}
 		}
-		strcat_s(file, wsaBuffer->len, wsaBuffer->buf);
+		strcat_s(file, RecvBytes, wsaBuffer->buf); 
 	}
-
+	
+	
 	save_file(hwnd, file, file_size);
 }
 
-void process_tcp_header(HWND hwnd, SOCKET recv, int * packet_size, int * totalBytes, int * timestosend, int * packets){
+void process_tcp_header(HWND hwnd, SOCKET recv, int * packet_size, int * totalBytes, int * send_mode, int * packets){
 	
 	DWORD RecvBytes = 0;
 	DWORD Flags = 0;
-	char psize[100], tBytes[100], tts[100], pcks[100];
+	char psize[100], tBytes[100], mode[100], pcks[100];
 	LPWSABUF wsaBuffer = (LPWSABUF)malloc(sizeof(WSABUF));
 	char * buffer = (char*)malloc(sizeof(char)* DATA_BUFSIZE);
 	memset(buffer, 0, HEADER_SIZE);
@@ -255,12 +255,12 @@ void process_tcp_header(HWND hwnd, SOCKET recv, int * packet_size, int * totalBy
 	
 	//grabs times the packets are sent
 	for (i += 1; buffer[i] != ';'; i++){
-		tts[q++] = buffer[i];
+		mode[q++] = buffer[i];
 	}
-	tts[q] = '\0';
+	mode[q] = '\0';
 
 	*totalBytes = atoi(tBytes);
 	*packet_size = atoi(psize);
-	*timestosend = atoi(tts);
+	*send_mode = atoi(mode);
 	*packets = atoi(pcks);
 }

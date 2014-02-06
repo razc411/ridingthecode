@@ -82,7 +82,7 @@ void DrawTitleText(HDC hdc){
 --      Generic function to draw buttons. Font is set at the end for all the buttons in the function.
 ----------------------------------------------------------------------------------------------------------------------*/
 void DrawButtons(HWND hwnd){
-	HWND buttons[5];
+	HWND buttons[6];
 
 	buttons[0] = CreateWindow("BUTTON", "Connect",
 		WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
@@ -109,7 +109,12 @@ void DrawButtons(HWND hwnd){
 		137, 435, 100, 35,
 		hwnd, (HMENU)ID_CONNECT_CLIENTMODE, GetModuleHandle(NULL), NULL);
 	
-	SetFont(_T("Arial"), hwnd, buttons, 5);
+	buttons[5] = CreateWindow("BUTTON", "File Mode",
+		WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+		256, 480, 100, 35,
+		hwnd, (HMENU)ID_TRANSFER_MODE, GetModuleHandle(NULL), NULL);
+	
+	SetFont(_T("Arial"), hwnd, buttons, 6);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: main
@@ -202,7 +207,7 @@ void Init_Settings(HWND hwnd){
 	HWND hDlgSPORT	= GetDlgItem(hwnd, IDC_SPORT);
 	HWND hDlgSPRTCL	= GetDlgItem(hwnd, IDC_SPRTCL);
 	HWND hDlgPCKT   = GetDlgItem(hwnd, IDC_PACKETSIZE);
-	HWND hDlgTTS	= GetDlgItem(hwnd, IDC_TTS);
+	HWND hDlgmode	= GetDlgItem(hwnd, IDC_mode);
 	SETTINGS * st = (SETTINGS*) GetClassLongPtr(GetParent(hwnd), 0);
 	
 
@@ -217,7 +222,7 @@ void Init_Settings(HWND hwnd){
 	ComboBox_AddString(hDlgSPRTCL, "UDP");
 	ComboBox_SetCurSel(hDlgSPRTCL, st->protocol);
 	
-	Edit_SetText(hDlgTTS, st->times_to_send);
+	Edit_SetText(hDlgmode, st->times_to_send);
 	Edit_SetText(hDlgSPORT, st->server_port);
 	Edit_SetText(hDlgPORT, st->client_port);
 	Edit_SetText(hDlgIP, st->client_send_ip);
