@@ -26,7 +26,7 @@
 ----------------------------------------------------------------------------------------------------------------------*/
 #include "stdafx.h"
 #include "TCP_UDP_Transfer_Assgn2.h"
-LPSOCKET_INFORMATION SocketInfoList;
+static int header_recv, packet_size, packets;
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: SetFont
 --
@@ -50,6 +50,7 @@ void init_server(HWND hwnd){
 	SOCKET Listen;
 	SOCKADDR_IN InternetAddr;
 	WSADATA wsaData;
+	header_recv = 0;
 
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 
@@ -107,10 +108,11 @@ void init_server(HWND hwnd){
 ----------------------------------------------------------------------------------------------------------------------*/
 int socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam){
 
+	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
+
 	if (WSAGETSELECTERROR(lParam))
 	{
-		//printf("Socket failed with error %d\n", WSAGETSELECTERROR(lParam));
-		FreeSocketInformation(wParam);
+		closesocket(st->server_socket);
 	}
 	else
 	{
@@ -120,7 +122,14 @@ int socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam){
 			accept_data(hwnd, wParam);
 			break;
 		case FD_READ:
-			read_server_data(hwnd, wParam);
+			if (header_recv == 0){
+				process_tcp_header(hwnd, st->server_socket, &packet_size, &packets);
+			}
+			else{
+				read_server_data(hwnd, wParam, packet_size, packets);
+			}
+
+			header_recv = 1;
 			break;
 		}
 	}
@@ -148,15 +157,13 @@ void accept_data(HWND hwnd, WPARAM wParam){
 	SOCKET Accept;
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 
-	if ((Accept = accept(wParam, NULL, NULL)) == INVALID_SOCKET)
+	if ((st->server_socket = accept(wParam, NULL, NULL)) == INVALID_SOCKET)
 	{
 		activity("Failed to accept() connection.\n", EB_STATUSBOX);
 		return;
 	}
 
-	CreateSocketInformation(Accept);
-	st->server_socket = Accept;
-	WSAAsyncSelect(Accept, hwnd, WM_SOCKET, FD_READ | FD_CLOSE);
+	WSAAsyncSelect(st->server_socket, hwnd, WM_SOCKET, FD_READ | FD_CLOSE);
 	SetClassLongPtr(hwnd, 0, (LONG)st);
 }
 /*------------------------------------------------------------------------------------------------------------------
@@ -176,139 +183,72 @@ void accept_data(HWND hwnd, WPARAM wParam){
 --      Generic function to change the font on an array of buttons. Requires a font name, the buttons
 --		to be chanaged handles, the number of buttons and the parent window.
 ----------------------------------------------------------------------------------------------------------------------*/
-int read_server_data(HWND hwnd, WPARAM wParam){
+int read_server_data(HWND hwnd, WPARAM wParam, int packet_size, int packets){
 
-	LPSOCKET_INFORMATION SocketInfo = GetSocketInformation(wParam);
-	DWORD RecvBytes;
-	DWORD Flags;
+	DWORD RecvBytes = 0;
+	DWORD Flags = 0;
+	LPWSABUF wsaBuffer = (LPWSABUF)malloc(sizeof(WSABUF));
+	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 
-	if (SocketInfo->BytesRECV != 0){
-		SocketInfo->RecvPosted = TRUE;
-		return 0;
-	}
-	else{
-		SocketInfo->DataBuf.buf = SocketInfo->Buffer;
-		SocketInfo->DataBuf.len = DATA_BUFSIZE;
+	int size = 0;
+	int file_size = packet_size * packets;
+	char * file = (char*)malloc(sizeof(char)* file_size);
+	memset(file, '\0', file_size + 1);
 
-		Flags = 0;
-		
-		if (WSARecv(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &RecvBytes, &Flags, NULL, NULL) == SOCKET_ERROR){
+	char * buffer = (char*)malloc(sizeof(char)* packet_size);
+	memset(buffer, '\0', packet_size);
+	wsaBuffer->len = packet_size;
+	wsaBuffer->buf = buffer;
+
+	for (int i = 0; i < packets; i++){
+		if (WSARecv(st->server_socket, wsaBuffer, 1, &RecvBytes, &Flags, NULL, NULL) == SOCKET_ERROR){
 			if (WSAGetLastError() != WSAEWOULDBLOCK){
 				activity("WSARecv() failed.\n", EB_STATUSBOX);
-				FreeSocketInformation(wParam);
+				closesocket(st->server_socket);
 				return 0;
 			}
 		}
-		else {
-			SocketInfo->BytesRECV = RecvBytes;
-			save_file(hwnd, SocketInfo->Buffer, SocketInfo->BytesRECV);
-			SocketInfo->BytesRECV = 0;
+		strcat_s(file, wsaBuffer->len, wsaBuffer->buf);
+	}
+
+	save_file(hwnd, file, file_size);
+}
+
+void process_tcp_header(HWND hwnd, SOCKET recv, int * packet_size, int * packets, int * timestosend){
+	
+	DWORD RecvBytes = 0;
+	DWORD Flags = 0;
+	char psize[10], packs[10], tts[10];
+	LPWSABUF wsaBuffer = (LPWSABUF)malloc(sizeof(WSABUF));
+	char * buffer = (char*)malloc(sizeof(char)* DATA_BUFSIZE);
+	memset(buffer, 0, HEADER_SIZE);
+	wsaBuffer->len = HEADER_SIZE;
+	wsaBuffer->buf = buffer;
+
+	if (WSARecv(recv, wsaBuffer, 1, &RecvBytes, &Flags, NULL, NULL) == SOCKET_ERROR){
+		if (WSAGetLastError() != WSAEWOULDBLOCK){
+			activity("WSARecv() failed.\n", EB_STATUSBOX);
+			closesocket(recv);
 		}
 	}
-}
-/*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: SetFont
---
---      DATE: January 27, 2014
---      REVISIONS: none
---
---      DESIGNER: Ramzi Chennafi
---      PROGRAMMER: Ramzi Chennafi
---
---      INTERFACE: void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons)
---
---      RETURNS: void
---
---      NOTES:
---      Generic function to change the font on an array of buttons. Requires a font name, the buttons
---		to be chanaged handles, the number of buttons and the parent window.
-----------------------------------------------------------------------------------------------------------------------*/
-void CreateSocketInformation(SOCKET s)
-{
-	LPSOCKET_INFORMATION SI;
-
-	if ((SI = (LPSOCKET_INFORMATION)GlobalAlloc(GPTR, sizeof(SOCKET_INFORMATION))) == NULL){
-		MessageBox(GetActiveWindow(), "GlobalAlloc() failed on server", "Error", MB_ICONEXCLAMATION);
-		return;
+	int i = 0, p = 0, j = 0, q = 0;
+		
+	for (; buffer[i] != ','; i++){
+		packs[j++] = buffer[i];
 	}
+	packs[j] = '\0';
 
-	SI->Socket = s;
-	SI->RecvPosted = FALSE;
-	SI->BytesSEND = 0;
-	SI->BytesRECV = 0;
-
-	SI->Next = SocketInfoList;
-
-	SocketInfoList = SI;
-}
-/*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: SetFont
---
---      DATE: January 27, 2014
---      REVISIONS: none
---
---      DESIGNER: Ramzi Chennafi
---      PROGRAMMER: Ramzi Chennafi
---
---      INTERFACE: void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons)
---
---      RETURNS: void
---
---      NOTES:
---      Generic function to change the font on an array of buttons. Requires a font name, the buttons
---		to be chanaged handles, the number of buttons and the parent window.
-----------------------------------------------------------------------------------------------------------------------*/
-LPSOCKET_INFORMATION GetSocketInformation(SOCKET s)
-{
-	SOCKET_INFORMATION *SI = SocketInfoList;
-
-	while (SI)
-	{
-		if (SI->Socket == s)
-			return SI;
-
-		SI = SI->Next;
+	for (i += 1; buffer[i] != ','; i++){
+		psize[p++] = buffer[i];
 	}
+	psize[p] = '\0';
 
-	return NULL;
-}
-/*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: SetFont
---
---      DATE: January 27, 2014
---      REVISIONS: none
---
---      DESIGNER: Ramzi Chennafi
---      PROGRAMMER: Ramzi Chennafi
---
---      INTERFACE: void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons)
---
---      RETURNS: void
---
---      NOTES:
---      Generic function to change the font on an array of buttons. Requires a font name, the buttons
---		to be chanaged handles, the number of buttons and the parent window.
-----------------------------------------------------------------------------------------------------------------------*/
-void FreeSocketInformation(SOCKET s)
-{
-	SOCKET_INFORMATION *SI = SocketInfoList;
-	SOCKET_INFORMATION *PrevSI = NULL;
-
-	while (SI)
-	{
-		if (SI->Socket == s)
-		{
-			if (PrevSI)
-				PrevSI->Next = SI->Next;
-			else
-				SocketInfoList = SI->Next;
-
-			closesocket(SI->Socket);
-			GlobalFree(SI);
-			return;
-		}
-
-		PrevSI = SI;
-		SI = SI->Next;
+	for (i += 1; buffer[i] != ';'; i++){
+		tts[q++] = buffer[i];
 	}
+	psize[q] = '\0';
+
+	*packet_size = atoi(psize);
+	*packets = atoi(packs);	
+	*timestosend = atoi(tts);
 }

@@ -27,10 +27,9 @@
 #include "stdafx.h"
 #include "TCP_UDP_Transfer_Assgn2.h"
 
-HANDLE grab_file(HWND hwnd){
+LPSTR grab_file(HWND hwnd, HANDLE * hf){
 	OPENFILENAME ofn;       // common dialog box structure
 	char szFile[260];       // buffer for file name
-	HANDLE hf;              // file handle
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 	// Initialize OPENFILENAME
 	ZeroMemory(&ofn, sizeof(ofn));
@@ -51,9 +50,9 @@ HANDLE grab_file(HWND hwnd){
 	// Display the Open dialog box. 
 
 	if (GetOpenFileName(&ofn) == TRUE){
-		hf = CreateFile(ofn.lpstrFile, GENERIC_READ, 0, NULL, 
-			OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-		return hf;
+		*hf = CreateFile(ofn.lpstrFile, GENERIC_READ, 0, NULL, 
+			OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+		return ofn.lpstrFileTitle;
 	}
 
 	MessageBox(hwnd, "Failed to get file handle", "Error", MB_ICONEXCLAMATION);

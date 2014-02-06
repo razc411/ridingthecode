@@ -142,21 +142,34 @@ void write_data(HWND hwnd, WPARAM wParam, LPARAM lParam){
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 	FILE *filept;
 	errno_t fd;
+	int status;
+	HANDLE hf;
 	DWORD numBytesRead = 0;
 	DWORD numBytesSent = 0;
-	HANDLE hf = grab_file(hwnd);
-	WSABUF wsaBuffer;
+	DWORD packetsizes[] = {5096, 256, 512, 1024, 2048 };
+	const int packet_size = packetsizes[st->packet_size];
+	char flags[HEADER_SIZE];
+	memset(flags, '\0', HEADER_SIZE);
 	
-	int packetsizes[] = {0, 256, 512, 1024, 2048 };
-
-	for (int i = 0; i < atoi(st->times_to_send); i++){
-		int status = TransmitFile(st->client_socket, hf, packetsizes[st->packet_size], 0, 0, 0, 0);
-	}
-
-	if (WSAGetLastError() == WSAECONNABORTED){
-		activity("Failed to transmit, connection aborted.\n", EB_STATUSBOX);
-	}
+	LPWSABUF wsaStartBuffer = (LPWSABUF)malloc(sizeof(WSABUF));
+	wsaStartBuffer->len = HEADER_SIZE;
 	
+	char * buff = (char*)malloc(sizeof(char)* packet_size);
+	memset(buff, 0, packet_size);
+	
+	LPWSABUF wsaBuffer = (LPWSABUF)malloc(sizeof(WSABUF));
+	wsaBuffer->len = packet_size;
+	wsaBuffer->buf = buff;
+
+	LPSTR title = grab_file(hwnd, &hf);
+	sprintf_s(flags, "%s,%d, %d;", , packet_size, st->times_to_send);
+	wsaStartBuffer->buf = flags;
+
+	status = ReadFile(hf, buff, packet_size, &numBytesRead, NULL);
+
+	WSASend(st->client_socket, wsaStartBuffer, 1, &numBytesSent, NULL, NULL, NULL);
+	WSASend(st->client_socket, wsaBuffer, 1, &numBytesSent, NULL, NULL, NULL);
+
 	CloseHandle(hf);
 }
 

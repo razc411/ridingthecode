@@ -255,7 +255,7 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify){
 			activity("Connection disconnected with server.\n", EB_STATUSBOX);
 		}
 		if (mode == SERVER){
-			FreeSocketInformation(st->server_socket);
+			closesocket(st->server_socket);
 			activity("Connection disconnected.", EB_STATUSBOX);
 		}
 		break;
