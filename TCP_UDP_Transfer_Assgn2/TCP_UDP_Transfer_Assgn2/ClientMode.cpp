@@ -26,7 +26,6 @@
 ----------------------------------------------------------------------------------------------------------------------*/
 #include "stdafx.h"
 #include "TCP_UDP_Transfer_Assgn2.h"
-#define PORTC 55011;
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: SetFont
 --
@@ -46,7 +45,6 @@
 ----------------------------------------------------------------------------------------------------------------------*/
 void init_client(HWND hwnd){
 	DWORD Ret;
-	int status;
 	SOCKADDR_IN InternetAddr;
 	WSADATA wsaData;
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
@@ -69,7 +67,7 @@ void init_client(HWND hwnd){
 
 	InternetAddr.sin_family = AF_INET;
 	InternetAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	InternetAddr.sin_port = PORTC;
+	InternetAddr.sin_port = htons(PORTC);
 
 	if (bind(st->client_socket, (PSOCKADDR)&InternetAddr, sizeof(InternetAddr)) == SOCKET_ERROR){
 		activity("bind() failed on client.\n", EB_STATUSBOX);
@@ -137,51 +135,68 @@ int client_connect(HWND hwnd){
 --      Generic function to change the font on an array of buttons. Requires a font name, the buttons
 --		to be chanaged handles, the number of buttons and the parent window.
 ----------------------------------------------------------------------------------------------------------------------*/
-void write_data(HWND hwnd, WPARAM wParam, LPARAM lParam){
+void write_client_data(HWND hwnd, WPARAM wParam, LPARAM lParam){
 
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
-	FILE *filept;
-	errno_t fd;
 	int status = 1;
 	HANDLE hf;
+	LPSTR title;
 	DWORD numBytesRead = 0, numBytesSent = 0;
 	int  totalBytesRead = 0;
 	DWORD packetsizes[] = { 5096, 256, 512, 1024, 2048 };
 	const int packet_size = packetsizes[st->packet_size];
-	LPSTR title = grab_file(hwnd, &hf);
+	
+	if (st->mode == 0){
+		title = grab_file(hwnd, &hf);
+	}
 
 	WSABUF wsaBuffers[MAX_PACKETS];
-	LPWSABUF wsaStartBuffer = (LPWSABUF)malloc(sizeof(WSABUF));
-	wsaStartBuffer->len = HEADER_SIZE;
+	LPWSABUF wsaHeaderBuf = (LPWSABUF)malloc(sizeof(WSABUF));
+	wsaHeaderBuf->len = HEADER_SIZE;
 
 	char * buff = (char*)malloc(sizeof(char)* packet_size);
 	memset(buff, 0, packet_size);
 
 	int i = 0, buffer_count = 0;
 	while (1){
-		status = ReadFile(hf, buff, packet_size, &numBytesRead, NULL);
-		if (numBytesRead == 0){
+		if (st->mode == 0){
+			status = ReadFile(hf, buff, packet_size, &numBytesRead, NULL);
+			if (numBytesRead == 0){
+				CloseHandle(hf);
+				break;
+			}
+			wsaBuffers[i].buf = buff;
+			wsaBuffers[i++].len = numBytesRead;
+			totalBytesRead += numBytesRead;
+			buffer_count++;
+		}
+		else{
+			buffer_count = atoi(st->times_to_send);
+			for (int p = 0; p < buffer_count; p++){
+				for (int g = 0; g < packet_size; g++){
+					buff[g] = 'p';
+				}
+				buff[packet_size - 1] = '\0';
+				wsaBuffers[i].buf = buff;
+				wsaBuffers[i++].len = packet_size;
+			}
+			totalBytesRead = packet_size * buffer_count;
 			break;
 		}
-		wsaBuffers[i].buf = buff;
-		wsaBuffers[i++].len = numBytesRead;
-		totalBytesRead += numBytesRead;
-		buffer_count++;
 	}
 
 	char flags[HEADER_SIZE];
 	memset(flags, '\0', HEADER_SIZE);
-	sprintf_s(flags, "%d,%d,%d,%s;", totalBytesRead, packet_size, buffer_count, st->mode);
-	wsaStartBuffer->buf = flags;
+	sprintf_s(flags, "%d,%d,%d,%d;", totalBytesRead, packet_size, buffer_count, st->mode);
+	wsaHeaderBuf->buf = flags;
 
-	WSASend(st->client_socket, wsaStartBuffer, 1, &numBytesSent, NULL, NULL, NULL);
+	WSASend(st->client_socket, wsaHeaderBuf, 1, &numBytesSent, NULL, NULL, NULL);
 	
 	for (int p = 0; p < buffer_count; p++){
 		WSASend(st->client_socket, &wsaBuffers[p], buffer_count, &numBytesSent, NULL, NULL, NULL);
 	}
-	
-	CloseHandle(hf);
 }
+
 
 void disconnect(HWND hwnd){
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);

@@ -97,19 +97,30 @@ void net_stats(){
 }
 
 void set_settings(HWND hwnd){
-	
+
+	char ** tempBuffers = (char**)malloc(sizeof(char*)* 4);
+	for (int i = 0; i < 4; i++){
+		tempBuffers[i] = (char*) malloc(sizeof(char)* MAX_SIZE);
+	}
+
 	HWND hDlgPORT = GetDlgItem(hwnd, IDC_PORT);
 	HWND hDlgIP = GetDlgItem(hwnd, IDC_IP);
 	HWND hDlgSAVE = GetDlgItem(hwnd, IDC_SDISPLAY);
 	HWND hDlgSPORT = GetDlgItem(hwnd, IDC_SPORT);
 	HWND hDlgSPRTCL = GetDlgItem(hwnd, IDC_SPRTCL);
 	HWND hDlgPCKT = GetDlgItem(hwnd, IDC_PACKETSIZE);
+	HWND hDlgTTS = GetDlgItem(hwnd, IDC_TTS);
 
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(GetParent(hwnd), 0);
 
-	Edit_GetText(hDlgPORT, st->client_port, MAX_SIZE);
-	Edit_GetText(hDlgSPORT, st->server_port, MAX_SIZE);
-	Edit_GetText(hDlgIP, st->client_send_ip, MAX_SIZE);
+	Edit_GetText(hDlgPORT, tempBuffers[0], 6);
+	st->client_port = tempBuffers[0];
+	Edit_GetText(hDlgSPORT, tempBuffers[1], 6);
+	st->server_port = tempBuffers[1];
+	Edit_GetText(hDlgIP, tempBuffers[2], 17);
+	st->client_send_ip = tempBuffers[2];
+	Edit_GetText(hDlgTTS, tempBuffers[3], 3);
+	st->times_to_send = tempBuffers[3];
 	st->packet_size = ComboBox_GetCurSel(hDlgPCKT);
 	st->protocol = ComboBox_GetCurSel(hDlgSPRTCL);
 
