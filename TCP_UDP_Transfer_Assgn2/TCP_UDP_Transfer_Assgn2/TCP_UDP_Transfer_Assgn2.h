@@ -52,14 +52,14 @@ void				set_settings(HWND hwnd);
 void				init_server(HWND hwnd);
 int					socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam);
 int					read_server_data(HWND hwnd, WPARAM wParam);
-void accept_data(HWND hwnd, WPARAM wParam);
+void				accept_data(HWND hwnd, WPARAM wParam);
 
 void     			init_client(HWND hwnd);
 int					client_connect(HWND hwnd);
 void				write_client_data(HWND hwnd, WPARAM wParam, LPARAM lParam);
 
-LPSTR grab_file(HWND hwnd, HANDLE * hf);
-void save_file(HWND hwnd, char * buffer, int size);
-void activity(char * buffer, int box);
-void disconnect(HWND hwnd);
-void process_tcp_header(HWND hwnd, SOCKET recv);
+LPSTR				grab_file(HWND hwnd, HANDLE * hf);
+void				save_file(HWND hwnd, char * buffer, int size);
+void				activity(char * buffer, int box);
+void				disconnect(HWND hwnd);
+void				process_tcp_header(HWND hwnd, SOCKET recv);

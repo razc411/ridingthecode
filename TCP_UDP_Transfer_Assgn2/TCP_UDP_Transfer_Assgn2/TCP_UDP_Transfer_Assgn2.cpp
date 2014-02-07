@@ -214,7 +214,7 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct){
 	st->packet_size = 0;
 	st->times_to_send = "1";
 	st->client_send_ip = "127.0.0.1";
-	st->mode = 1;
+	st->mode = 0;
 	SetClassLongPtr(hwnd, 0, (LONG)st);
 
 	DrawDisplay(hwnd);
@@ -243,7 +243,8 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct){
 void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify){
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 
-	switch (id){
+	switch (id)
+	{
 	case BT_SEND:
 		write_client_data(hwnd, glbwParam, glblParam);
 		activity("Sending data.\n", EB_STATUSBOX);

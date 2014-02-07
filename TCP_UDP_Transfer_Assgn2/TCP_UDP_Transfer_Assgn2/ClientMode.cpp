@@ -67,7 +67,7 @@ void init_client(HWND hwnd){
 
 	InternetAddr.sin_family = AF_INET;
 	InternetAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	InternetAddr.sin_port = htons(PORTC);
+	InternetAddr.sin_port = htons(PORT);
 
 	if (bind(st->client_socket, (PSOCKADDR)&InternetAddr, sizeof(InternetAddr)) == SOCKET_ERROR){
 		activity("bind() failed on client.\n", EB_STATUSBOX);
@@ -140,14 +140,13 @@ void write_client_data(HWND hwnd, WPARAM wParam, LPARAM lParam){
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 	int status = 1;
 	HANDLE hf;
-	LPSTR title;
 	DWORD numBytesRead = 0, numBytesSent = 0;
 	int  totalBytesRead = 0;
 	DWORD packetsizes[] = { 5096, 256, 512, 1024, 2048 };
 	const int packet_size = packetsizes[st->packet_size];
 	
 	if (st->mode == 0){
-		title = grab_file(hwnd, &hf);
+		grab_file(hwnd, &hf);
 	}
 
 	WSABUF wsaBuffers[MAX_PACKETS];
@@ -196,7 +195,6 @@ void write_client_data(HWND hwnd, WPARAM wParam, LPARAM lParam){
 		WSASend(st->client_socket, &wsaBuffers[p], buffer_count, &numBytesSent, NULL, NULL, NULL);
 	}
 }
-
 
 void disconnect(HWND hwnd){
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
