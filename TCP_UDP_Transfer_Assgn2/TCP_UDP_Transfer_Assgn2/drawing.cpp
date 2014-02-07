@@ -216,6 +216,7 @@ void Init_Settings(HWND hwnd){
 	ComboBox_AddString(hDlgPCKT, "1024");
 	ComboBox_AddString(hDlgPCKT, "2048");
 	ComboBox_AddString(hDlgPCKT, "5096");
+	ComboBox_AddString(hDlgPCKT, "10192");
 	ComboBox_SetCurSel(hDlgPCKT, st->packet_size);
 	
 	ComboBox_AddString(hDlgSPRTCL, "TCP");

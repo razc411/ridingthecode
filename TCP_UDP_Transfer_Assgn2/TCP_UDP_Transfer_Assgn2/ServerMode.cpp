@@ -27,6 +27,7 @@
 #include "stdafx.h"
 #include "TCP_UDP_Transfer_Assgn2.h"
 LPSOCKET_INFORMATION SocketInfo;
+time_t startTime;
 char * buffer;
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: SetFont
@@ -123,10 +124,12 @@ int socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam){
 			break;
 		case FD_READ:
 			if (SocketInfo->header_received == 0){
+				time(&startTime);
 				process_tcp_header(hwnd, st->server_socket);
 				buffer = (char*)malloc(sizeof(char)* (SocketInfo->packet_size * SocketInfo->packets));
-				memset(buffer, 0, SocketInfo->total_size);
 				SocketInfo->header_received = 1;
+				SocketInfo->BytesRECV = 0;
+				SocketInfo->totalRecv = 0;
 			}
 			else{
 				if (read_server_data(hwnd, wParam) == 1){
@@ -165,8 +168,6 @@ void accept_data(HWND hwnd, WPARAM wParam){
 	}
 
 	SocketInfo->header_received = 0;
-	SocketInfo->BytesRECV = 0;
-	SocketInfo->totalRecv = 0;
 
 	if ((st->server_socket = accept(wParam, NULL, NULL)) == INVALID_SOCKET)
 	{
@@ -197,10 +198,11 @@ void accept_data(HWND hwnd, WPARAM wParam){
 int read_server_data(HWND hwnd, WPARAM wParam){
 
 	DWORD Flags = 0;
+	double seconds;
 	char msg[MAX_SIZE];
-
+	time_t endTime;
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
-
+	
 	char * tempBuffer = (char*)malloc(sizeof(char)* SocketInfo->packet_size);
 	SocketInfo->DataBuf.len = SocketInfo->packet_size;
 	SocketInfo->DataBuf.buf = tempBuffer;
@@ -219,20 +221,22 @@ int read_server_data(HWND hwnd, WPARAM wParam){
 		strcat_s(buffer + SocketInfo->totalRecv, SocketInfo->BytesRECV, SocketInfo->DataBuf.buf);
 	}
 
-	sprintf_s(msg, "Recieved %d bytes, %d / %d bytes.\n", SocketInfo->BytesRECV, SocketInfo->totalRecv, SocketInfo->total_size);
-	activity(msg, EB_STATUSBOX);
-
 	SocketInfo->packets -= 1;
 	SocketInfo->totalRecv += SocketInfo->BytesRECV;
 
-	if (SocketInfo->packets <= 0 && SocketInfo->BytesRECV != 0){
+	if (SocketInfo->totalRecv == SocketInfo->total_size){
+		
+		time(&endTime);
+		seconds = difftime(endTime, startTime);
+
 		if (st->mode == 0){
 			save_file(hwnd, buffer, SocketInfo->total_size);
-			sprintf_s(msg, "Recieved %d bytes. File transfer successful.\n", SocketInfo->totalRecv);
+			sprintf_s(msg, "Recieved %d bytes. File transfer completed in %f seconds.\n", SocketInfo->totalRecv, seconds);
 			activity(msg, EB_STATUSBOX);
-			return 0;
+			return 0; 
 		}
-		sprintf_s(msg, "Recieved %d bytes. Garbage packet transfer successful.\n", SocketInfo->totalRecv);
+
+		sprintf_s(msg, "Recieved %d bytes. Garbage packet transfer completed in %f seconds.\n", SocketInfo->totalRecv, seconds);
 		activity(msg, EB_STATUSBOX);
 		return 0; // transfer completed, closing connection
 	}

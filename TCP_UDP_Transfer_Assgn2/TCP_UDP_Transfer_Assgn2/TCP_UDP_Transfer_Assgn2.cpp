@@ -212,9 +212,9 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct){
 	st->server_port = "5150";
 	st->protocol = 0;
 	st->packet_size = 0;
-	st->times_to_send = "1";
+	st->times_to_send = "2000";
 	st->client_send_ip = "127.0.0.1";
-	st->mode = 0;
+	st->mode = 1;
 	SetClassLongPtr(hwnd, 0, (LONG)st);
 
 	DrawDisplay(hwnd);
@@ -247,7 +247,6 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify){
 	{
 	case BT_SEND:
 		write_client_data(hwnd, glbwParam, glblParam);
-		activity("Sending data.\n", EB_STATUSBOX);
 		break;
 	case BT_DISCONNECT:
 		if (mode == CLIENT){

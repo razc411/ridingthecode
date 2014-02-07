@@ -16,7 +16,7 @@
 #include <Mswsock.h>
 #include <atlbase.h>
 #include <atlconv.h>
-
+#include <time.h>
 // C RunTime Header Files
 #include <stdlib.h>
 #include <malloc.h>

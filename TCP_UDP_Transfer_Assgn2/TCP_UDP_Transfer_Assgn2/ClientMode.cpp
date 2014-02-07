@@ -142,19 +142,18 @@ void write_client_data(HWND hwnd, WPARAM wParam, LPARAM lParam){
 	HANDLE hf;
 	DWORD numBytesRead = 0, numBytesSent = 0;
 	int  totalBytesRead = 0;
-	DWORD packetsizes[] = { 5096, 256, 512, 1024, 2048 };
+	DWORD packetsizes[] = {256, 512, 1024, 2048, 5096, 10192};
 	const int packet_size = packetsizes[st->packet_size];
 	
 	if (st->mode == 0){
 		grab_file(hwnd, &hf);
 	}
-
-	WSABUF wsaBuffers[MAX_PACKETS];
+	activity("Sending data...\n", EB_STATUSBOX);
+	WSABUF * wsaBuffers = (LPWSABUF)malloc(sizeof(WSABUF)* MAX_PACKETS);
 	LPWSABUF wsaHeaderBuf = (LPWSABUF)malloc(sizeof(WSABUF));
 	wsaHeaderBuf->len = HEADER_SIZE;
 
 	char * buff = (char*)malloc(sizeof(char)* packet_size);
-	memset(buff, 0, packet_size);
 
 	int i = 0, buffer_count = 0;
 	while (1){
@@ -171,11 +170,12 @@ void write_client_data(HWND hwnd, WPARAM wParam, LPARAM lParam){
 		}
 		else{
 			buffer_count = atoi(st->times_to_send);
+			for (int g = 0; g < packet_size; g++){
+				buff[g] = 'p';
+			}
+			buff[packet_size - 1] = '\0';
+
 			for (int p = 0; p < buffer_count; p++){
-				for (int g = 0; g < packet_size; g++){
-					buff[g] = 'p';
-				}
-				buff[packet_size - 1] = '\0';
 				wsaBuffers[i].buf = buff;
 				wsaBuffers[i++].len = packet_size;
 			}
@@ -194,6 +194,8 @@ void write_client_data(HWND hwnd, WPARAM wParam, LPARAM lParam){
 	for (int p = 0; p < buffer_count; p++){
 		WSASend(st->client_socket, &wsaBuffers[p], buffer_count, &numBytesSent, NULL, NULL, NULL);
 	}
+
+	free(wsaBuffers);
 }
 
 void disconnect(HWND hwnd){

@@ -113,13 +113,13 @@ void set_settings(HWND hwnd){
 
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(GetParent(hwnd), 0);
 
-	Edit_GetText(hDlgPORT, tempBuffers[0], 6);
+	Edit_GetText(hDlgPORT, tempBuffers[0], MAX_SIZE);
 	st->client_port = tempBuffers[0];
-	Edit_GetText(hDlgSPORT, tempBuffers[1], 6);
+	Edit_GetText(hDlgSPORT, tempBuffers[1], MAX_SIZE);
 	st->server_port = tempBuffers[1];
-	Edit_GetText(hDlgIP, tempBuffers[2], 17);
+	Edit_GetText(hDlgIP, tempBuffers[2], MAX_SIZE);
 	st->client_send_ip = tempBuffers[2];
-	Edit_GetText(hDlgTTS, tempBuffers[3], 3);
+	Edit_GetText(hDlgTTS, tempBuffers[3], MAX_SIZE);
 	st->times_to_send = tempBuffers[3];
 	st->packet_size = ComboBox_GetCurSel(hDlgPCKT);
 	st->protocol = ComboBox_GetCurSel(hDlgSPRTCL);
