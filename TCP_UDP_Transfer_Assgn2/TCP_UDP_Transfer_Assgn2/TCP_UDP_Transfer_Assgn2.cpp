@@ -32,8 +32,6 @@
 HINSTANCE hInst;								// current instance
 TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
-WPARAM glbwParam;
-LPARAM glblParam;
 static int mode;
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: main
@@ -172,8 +170,6 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 ----------------------------------------------------------------------------------------------------------------------*/
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	glblParam = lParam;
-	glbwParam = wParam;
 
 	switch (message){
 		HANDLE_MSG(hWnd, WM_CREATE, Main_OnCreate);
@@ -187,6 +183,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			return DefWindowProc(hWnd, message, wParam, lParam);
 			
 	}
+
+	return 0;
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: main
@@ -210,9 +208,9 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct){
 	SETTINGS * st = (SETTINGS*) malloc(sizeof(SETTINGS));
 	st->client_port = "5150";
 	st->server_port = "5150";
-	st->protocol = 0;
-	st->packet_size = 0;
-	st->times_to_send = "2000";
+	st->protocol = 1;
+	st->packet_size = 5;
+	st->times_to_send = "100";
 	st->client_send_ip = "127.0.0.1";
 	st->mode = 1;
 	SetClassLongPtr(hwnd, 0, (LONG)st);
@@ -242,21 +240,28 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct){
 ----------------------------------------------------------------------------------------------------------------------*/
 void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify){
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
+	char * msg;
 
 	switch (id)
 	{
 	case BT_SEND:
-		write_client_data(hwnd, glbwParam, glblParam);
+		(st->protocol == TCP) ? init_tcp_transfer(hwnd) : init_udp_transfer(hwnd);
 		break;
 	case BT_DISCONNECT:
 		if (mode == CLIENT){
 			disconnect(hwnd);
 			activity("Connection disconnected with server.\n", EB_STATUSBOX);
 		}
-		if (mode == SERVER){
+		else{
 			closesocket(st->server_socket);
 			activity("Connection disconnected.", EB_STATUSBOX);
 		}
+		break;
+	case ID_TRANSFER_MODE:
+		st->mode = (st->mode == 0) ? 1 : 0;
+		msg = (st->mode == 0) ? "File transfer mode activated.\n" : "Packet transfer mode activated.\n";
+		activity(msg, EB_STATUSBOX);
+		SetClassLongPtr(hwnd, 0, (LONG)st);
 		break;
 	case BT_CONNECT:
 		client_connect(hwnd);

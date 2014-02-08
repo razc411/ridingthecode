@@ -109,7 +109,7 @@ void DrawButtons(HWND hwnd){
 		137, 435, 100, 35,
 		hwnd, (HMENU)ID_CONNECT_CLIENTMODE, GetModuleHandle(NULL), NULL);
 	
-	buttons[5] = CreateWindow("BUTTON", "File Mode",
+	buttons[5] = CreateWindow("BUTTON", "Mode",
 		WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
 		256, 480, 100, 35,
 		hwnd, (HMENU)ID_TRANSFER_MODE, GetModuleHandle(NULL), NULL);
@@ -177,7 +177,7 @@ void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons){
 
 	s_hFont = CreateFontIndirect(&logFont);
 	
-	for (size_t i = 0; i < buttons; i++){
+	for (int i = 0; i < buttons; i++){
 		SendMessage(hwndButton[i], WM_SETFONT, (WPARAM)s_hFont, (LPARAM)MAKELONG(TRUE, 0));
 	}
 
