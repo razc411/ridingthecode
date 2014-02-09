@@ -52,10 +52,9 @@ void				accept_data(HWND hwnd, WPARAM wParam);
 void     			init_client(HWND hwnd);
 int					client_connect(HWND hwnd);
 // UDP Client Side
-void				init_udp_transfer(HWND hwnd);
-void				udp_deliver_packets(HWND hwnd, int totalBytesRead, int packet_size, int buffer_count, char ** buffers);
+void				udp_deliver_packets(HWND hwnd, int totalBytesRead, int packet_size, int buffer_count, WSABUF * wsaBuffers);
 // TCP Client Side
-void				init_tcp_transfer(HWND hwnd);
+void				init_transfer(HWND hwnd);
 void				tcp_deliver_packets(WSABUF * wsaBuffers, SOCKET sock, int totalBytesRead, int packet_size, int buffer_count, int mode);
 // TCP Server Side
 int					tcp_transfer_completion(HWND hwnd, int mode);

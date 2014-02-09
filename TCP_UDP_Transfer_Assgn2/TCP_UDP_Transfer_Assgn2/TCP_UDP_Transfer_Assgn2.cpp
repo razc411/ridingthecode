@@ -210,8 +210,8 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct){
 	st->server_port = "5150";
 	st->protocol = 1;
 	st->packet_size = 5;
-	st->times_to_send = "100";
-	st->client_send_ip = "127.0.0.1";
+	st->times_to_send = "1";
+	st->client_send_ip = "192.168.0.6";
 	st->mode = 1;
 	SetClassLongPtr(hwnd, 0, (LONG)st);
 
@@ -245,7 +245,7 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify){
 	switch (id)
 	{
 	case BT_SEND:
-		(st->protocol == TCP) ? init_tcp_transfer(hwnd) : init_udp_transfer(hwnd);
+		init_transfer(hwnd);
 		break;
 	case BT_DISCONNECT:
 		if (mode == CLIENT){
@@ -265,7 +265,6 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify){
 		break;
 	case BT_CONNECT:
 		client_connect(hwnd);
-		activity("Connected to server.\n", EB_STATUSBOX);
 		break;
 	case ID_FILE_SETTINGS:
 		DialogBox(hInst, MAKEINTRESOURCE(IDD_SETTINGS), hwnd, Settings);
