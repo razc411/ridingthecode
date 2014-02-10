@@ -155,7 +155,7 @@ void init_transfer(HWND hwnd){
 	HANDLE hf;
 	DWORD numBytesRead = 0;
 	int  totalBytesRead = 0;
-	DWORD packetsizes[] = {256, 512, 1024, 2048, 5096, 10192};
+	DWORD packetsizes[] = {1024, 4096, 20000, 60000, 120000, 240000};
 	const int packet_size = packetsizes[st->packet_size];
 	
 	if (st->mode == 0){
@@ -165,6 +165,7 @@ void init_transfer(HWND hwnd){
 	activity("Sending data...\n", EB_STATUSBOX);
 	WSABUF * wsaBuffers = (LPWSABUF)malloc(sizeof(WSABUF)* MAX_PACKETS);
 
+	
 	char * buff = (char*)malloc(sizeof(char)* packet_size);
 
 	int i = 0, buffer_count = 0;
@@ -189,8 +190,8 @@ void init_transfer(HWND hwnd){
 			buff[packet_size - 1] = '\0';
 
 			for (int p = 0; p < buffer_count; p++){
-				wsaBuffers[i].buf = buff;
-				wsaBuffers[i++].len = packet_size;
+				wsaBuffers[p].buf = buff;
+				wsaBuffers[p].len = packet_size;
 			}
 			totalBytesRead = packet_size * buffer_count;
 			break;
@@ -247,8 +248,10 @@ void tcp_deliver_packets(WSABUF * wsaBuffers, SOCKET sock, int totalBytesRead, i
 			activity(msg, EB_STATUSBOX);
 			return;
 		}
+		numBytesSent = 0;
 	}
 
+	activity("Data transmission complete.", EB_STATUSBOX);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: SetFont
@@ -268,9 +271,9 @@ void tcp_deliver_packets(WSABUF * wsaBuffers, SOCKET sock, int totalBytesRead, i
 --		to be chanaged handles, the number of buttons and the parent window.
 ----------------------------------------------------------------------------------------------------------------------*/
 void udp_deliver_packets(HWND hwnd, int totalBytesRead, int packet_size, int buffer_count, WSABUF * buffers){
-	
+
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
-	
+
 	int status;
 	char msg[MAX_SIZE];
 	DWORD  numBytesSent = 0;
@@ -279,7 +282,7 @@ void udp_deliver_packets(HWND hwnd, int totalBytesRead, int packet_size, int buf
 	char flags[HEADER_SIZE];
 	memset(flags, '\0', HEADER_SIZE);
 	sprintf_s(flags, "%d,%d,%d,%d;", totalBytesRead, packet_size, buffer_count, st->mode);
-	
+
 	LPWSABUF wsaHeaderBuf = (LPWSABUF)malloc(sizeof(WSABUF));
 	wsaHeaderBuf->len = HEADER_SIZE;
 	wsaHeaderBuf->buf = flags;
@@ -293,7 +296,7 @@ void udp_deliver_packets(HWND hwnd, int totalBytesRead, int packet_size, int buf
 		activity("failed to find address", EB_STATUSBOX);
 		return;
 	}
-	
+
 	if ((status = WSASendTo(st->client_socket, wsaHeaderBuf, 1, &numBytesSent, 0, (struct sockaddr *)&sin, sizeof(sin), NULL, NULL)) < 0){
 		sprintf_s(msg, "Error %d in TCP WSASend(header) with return of %d\n", WSAGetLastError(), status);
 		activity(msg, EB_STATUSBOX);
@@ -307,6 +310,7 @@ void udp_deliver_packets(HWND hwnd, int totalBytesRead, int packet_size, int buf
 		}
 	}
 
+	activity("Data transmission complete.", EB_STATUSBOX);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: SetFont

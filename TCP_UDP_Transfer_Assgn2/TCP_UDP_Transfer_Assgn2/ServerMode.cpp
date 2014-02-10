@@ -60,7 +60,7 @@ void init_server(HWND hwnd){
 		return;
 	}
 
-	switch(st->protocol){
+	switch (st->protocol){
 	case TCP:
 		Listen = socket(PF_INET, SOCK_STREAM, 0);
 		WSAAsyncSelect(Listen, hwnd, WM_SOCKET, FD_ACCEPT | FD_CLOSE);
@@ -70,7 +70,7 @@ void init_server(HWND hwnd){
 		WSAAsyncSelect(Listen, hwnd, WM_SOCKET, FD_READ | FD_CLOSE);
 		break;
 	}
-	if(Listen == INVALID_SOCKET){
+	if (Listen == INVALID_SOCKET){
 		activity("Failed to create client socket.\n", EB_STATUSBOX);
 	}
 
@@ -84,6 +84,13 @@ void init_server(HWND hwnd){
 		return;
 	}
 
+	if ((SocketInfo = (LPSOCKET_INFORMATION)GlobalAlloc(GPTR, sizeof(SOCKET_INFORMATION))) == NULL){
+		activity("GlobalAlloc() failed with error\n", EB_STATUSBOX);
+		return;
+	}
+
+	SocketInfo->header_received = 0;
+
 	if (st->protocol == TCP){
 		if (listen(Listen, 5))
 		{
@@ -92,11 +99,6 @@ void init_server(HWND hwnd){
 		}
 	}
 	else{
-		if ((SocketInfo = (LPSOCKET_INFORMATION)GlobalAlloc(GPTR, sizeof(SOCKET_INFORMATION))) == NULL){
-			activity("GlobalAlloc() failed with error\n", EB_STATUSBOX);
-			return;
-		}
-		SocketInfo->header_received = 0;
 		st->server_socket = Listen;
 		SetClassLongPtr(hwnd, 0, (LONG)st);
 		activity("UDP Server intiated", EB_STATUSBOX);
@@ -139,7 +141,13 @@ int socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam){
 			break;
 		case FD_READ:
 			if (st->protocol == TCP){
-				read_tcp(hwnd, wParam, st->server_socket);
+				if (read_tcp(hwnd, wParam, st->server_socket) >= 1){
+					if ((SocketInfo = (LPSOCKET_INFORMATION)GlobalAlloc(GPTR, sizeof(SOCKET_INFORMATION))) == NULL){
+						activity("GlobalAlloc() failed with error\n", EB_STATUSBOX);
+						return 1;
+					}
+					SocketInfo->header_received = 0;
+				}
 			}
 			else{
 				read_udp(hwnd, wParam, st->server_socket);
@@ -166,7 +174,7 @@ int socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam){
 --      Generic function to change the font on an array of buttons. Requires a font name, the buttons
 --		to be chanaged handles, the number of buttons and the parent window.
 ----------------------------------------------------------------------------------------------------------------------*/
-void read_tcp(HWND hwnd, WPARAM wParam, SOCKET sock){
+int read_tcp(HWND hwnd, WPARAM wParam, SOCKET sock){
 	if (SocketInfo->header_received == 0){
 		time(&startTime);
 		process_header(hwnd, sock);
@@ -175,9 +183,9 @@ void read_tcp(HWND hwnd, WPARAM wParam, SOCKET sock){
 		SocketInfo->header_received = 1;
 		SocketInfo->BytesRECV = 0;
 		SocketInfo->totalRecv = 0;
-		return;
+		return 0;
 	}
-	init_tcp_receive(hwnd, wParam);
+	return init_tcp_receive(hwnd, wParam);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: SetFont
@@ -205,11 +213,12 @@ void read_udp(HWND hwnd, WPARAM wParam, SOCKET sock){
 		SocketInfo->header_received = 1;
 		SocketInfo->BytesRECV = 0;
 		SocketInfo->totalRecv = 0;
+		memset(buffer, 0, SocketInfo->total_size);
 		return;
 	}
 	init_udp_receive(hwnd);
 }
-	
+
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: SetFont
 --
@@ -230,13 +239,6 @@ void read_udp(HWND hwnd, WPARAM wParam, SOCKET sock){
 void accept_data(HWND hwnd, WPARAM wParam){
 
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
-	
-	if ((SocketInfo = (LPSOCKET_INFORMATION)GlobalAlloc(GPTR, sizeof(SOCKET_INFORMATION))) == NULL){
-		activity("GlobalAlloc() failed with error\n", EB_STATUSBOX);
-		return;
-	}
-
-	SocketInfo->header_received = 0;
 
 	if ((st->server_socket = accept(wParam, NULL, NULL)) == INVALID_SOCKET)
 	{
@@ -244,6 +246,7 @@ void accept_data(HWND hwnd, WPARAM wParam){
 		return;
 	}
 
+	setsockopt(st->server_socket, SOL_SOCKET, SO_REUSEADDR, 0, 0);
 	WSAAsyncSelect(st->server_socket, hwnd, WM_SOCKET, FD_READ | FD_CLOSE);
 	SetClassLongPtr(hwnd, 0, (LONG)st);
 }
@@ -270,7 +273,7 @@ int init_tcp_receive(HWND hwnd, WPARAM wParam){
 	int status;
 	char msg[MAX_SIZE];
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
-	
+
 	char * tempBuffer = (char*)malloc(sizeof(char)* SocketInfo->packet_size);
 	SocketInfo->DataBuf.len = SocketInfo->packet_size;
 	SocketInfo->DataBuf.buf = tempBuffer;
@@ -284,7 +287,7 @@ int init_tcp_receive(HWND hwnd, WPARAM wParam){
 		return -2;
 	}
 
-	if (st->mode == 0){
+	if (SocketInfo->mode == 0){
 		SocketInfo->DataBuf.buf[SocketInfo->BytesRECV - 1] = '\0';
 		strcat_s(buffer + SocketInfo->totalRecv, SocketInfo->BytesRECV, SocketInfo->DataBuf.buf);
 	}
@@ -293,7 +296,7 @@ int init_tcp_receive(HWND hwnd, WPARAM wParam){
 	SocketInfo->totalRecv += SocketInfo->BytesRECV;
 
 	if (SocketInfo->totalRecv == SocketInfo->total_size){
-		return tcp_transfer_completion(hwnd, st->mode);
+		return tcp_transfer_completion(hwnd, SocketInfo->mode);
 	}
 	return 0; // packets remaining
 }
@@ -354,69 +357,37 @@ int tcp_transfer_completion(HWND hwnd, int mode){
 ----------------------------------------------------------------------------------------------------------------------*/
 int init_udp_receive(HWND hwnd){
 	DWORD Flags = 0;
+	int status;
+	char msg[MAX_SIZE];
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 
-	char msg[MAX_SIZE];
 	char * tempBuffer = (char*)malloc(sizeof(char)* SocketInfo->packet_size);
-	memset(buffer, 0, SocketInfo->total_size);
+	SocketInfo->DataBuf.len = SocketInfo->packet_size;
+	SocketInfo->DataBuf.buf = tempBuffer;
 
-	if ((SocketInfo->BytesRECV = recvfrom(st->server_socket, tempBuffer, SocketInfo->packet_size, 0, NULL, NULL)) < 0)
-	{
-		sprintf_s(msg, "Error %d in UDP WSARecv(data) with return of %d\n", WSAGetLastError(), SocketInfo->BytesRECV);
-		activity(msg, EB_STATUSBOX);
+	if ((status = WSARecvFrom(st->server_socket, &SocketInfo->DataBuf, 1, &SocketInfo->BytesRECV, &Flags, NULL, NULL, NULL, NULL)) == SOCKET_ERROR){
+		if (WSAGetLastError() != WSAEWOULDBLOCK){
+			sprintf_s(msg, "Error %d in TCP WSARecv(data) with return of %d\n", WSAGetLastError(), status);
+			activity(msg, EB_STATUSBOX);
+			return -1;
+		}
 		return -2;
 	}
 
-	if (st->mode == 0){
-		tempBuffer[SocketInfo->BytesRECV - 1] = '\0';
-		strcat_s(buffer + SocketInfo->totalRecv, SocketInfo->BytesRECV, tempBuffer);
+	if (SocketInfo->mode == 0){
+		SocketInfo->DataBuf.buf[SocketInfo->BytesRECV - 1] = '\0';
+		strcat_s(buffer + SocketInfo->totalRecv, SocketInfo->BytesRECV, SocketInfo->DataBuf.buf);
 	}
 
+	SocketInfo->packets -= 1;
 	SocketInfo->totalRecv += SocketInfo->BytesRECV;
-	
+
 	if (SocketInfo->totalRecv == SocketInfo->total_size){
-		return udp_transfer_completion(hwnd, st->mode);
+		return tcp_transfer_completion(hwnd, SocketInfo->mode);
 	}
-
-	return -1;
+	return 0; // packets remaining
 }
-/*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: SetFont
---
---      DATE: January 27, 2014
---      REVISIONS: none
---
---      DESIGNER: Ramzi Chennafi
---      PROGRAMMER: Ramzi Chennafi
---
---      INTERFACE: void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons)
---
---      RETURNS: void
---
---      NOTES:
---      Generic function to change the font on an array of buttons. Requires a font name, the buttons
---		to be chanaged handles, the number of buttons and the parent window.
-----------------------------------------------------------------------------------------------------------------------*/
-int udp_transfer_completion(HWND hwnd, int mode){
-	time_t endTime;
-	double seconds;
-	char msg[MAX_SIZE];
 
-	time(&endTime);
-
-	seconds = difftime(endTime, startTime);
-
-	if (mode == 0){
-		save_file(hwnd, buffer, SocketInfo->total_size);
-		sprintf_s(msg, "Recieved %d bytes. File transfer completed in %f seconds.\n", SocketInfo->totalRecv, seconds);
-		activity(msg, EB_STATUSBOX);
-		return 1;
-	}
-
-	sprintf_s(msg, "Recieved %d bytes. Garbage packet transfer completed in %f seconds.\n", SocketInfo->totalRecv, seconds);
-	activity(msg, EB_STATUSBOX);
-	return 2; // transfer completed, closing connection
-}
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: SetFont
 --
@@ -435,13 +406,14 @@ int udp_transfer_completion(HWND hwnd, int mode){
 --		to be chanaged handles, the number of buttons and the parent window.
 ----------------------------------------------------------------------------------------------------------------------*/
 void process_header(HWND hwnd, SOCKET recv){
-	
+
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 	DWORD RecvBytes = 0, Flags = 0;
-	int recvBytes, status;
-	
+	int recvBytes, status, server_len;
+	struct	sockaddr_in server;
+
 	char msg[MAX_SIZE];
-	char hdBuffer[HEADER_SIZE];
+	char * hdBuffer = (char*)malloc(sizeof(char)* HEADER_SIZE);
 	memset(hdBuffer, 0, HEADER_SIZE);
 
 	LPWSABUF wsaBuffer = (LPWSABUF)malloc(sizeof(WSABUF));
@@ -451,18 +423,18 @@ void process_header(HWND hwnd, SOCKET recv){
 	if (st->protocol == TCP){
 		if ((status = WSARecv(recv, wsaBuffer, 1, &RecvBytes, &Flags, NULL, NULL)) == SOCKET_ERROR){
 			if (WSAGetLastError() != WSAEWOULDBLOCK){
-				sprintf_s(msg,"Error %d in TCP WSARecv(header) with return of %d\n", WSAGetLastError(), status);
+				sprintf_s(msg, "Error %d in TCP WSARecv(header) with return of %d\n", WSAGetLastError(), status);
 				activity(msg, EB_STATUSBOX);
 				return;
 			}
 		}
 	}
 	else{
-		if ((recvBytes = recvfrom(st->server_socket, hdBuffer, HEADER_SIZE, 0, NULL, NULL)) < 0)
-		{
-			sprintf_s(msg, "Error %d in UDP WSARecv(header) with return of %d\n", WSAGetLastError(), recvBytes);
-			activity(msg, EB_STATUSBOX);
-			return;
+		server_len = sizeof(server);
+		while (1){
+			if ((status = WSARecvFrom(st->server_socket, wsaBuffer, 1, &RecvBytes, &Flags, (struct sockaddr *)&server, &server_len, NULL, NULL)) == 0){
+				break;
+			}
 		}
 	}
 
@@ -486,7 +458,7 @@ void process_header(HWND hwnd, SOCKET recv){
 --		to be chanaged handles, the number of buttons and the parent window.
 ----------------------------------------------------------------------------------------------------------------------*/
 void grab_header_info(char * hdBuffer){
-	
+
 	char psize[100], tBytes[100], mode[100], pcks[100];
 
 	int i = 0, p = 0, j = 0, q = 0, r = 0;

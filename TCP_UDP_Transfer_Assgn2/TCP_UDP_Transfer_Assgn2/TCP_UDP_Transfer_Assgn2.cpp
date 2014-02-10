@@ -208,11 +208,11 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct){
 	SETTINGS * st = (SETTINGS*) malloc(sizeof(SETTINGS));
 	st->client_port = "5150";
 	st->server_port = "5150";
-	st->protocol = 1;
-	st->packet_size = 5;
+	st->protocol = 0;
+	st->packet_size = 2;
 	st->times_to_send = "1";
-	st->client_send_ip = "192.168.0.6";
-	st->mode = 1;
+	st->client_send_ip = "127.0.0.1";
+	st->mode = 0;
 	SetClassLongPtr(hwnd, 0, (LONG)st);
 
 	DrawDisplay(hwnd);

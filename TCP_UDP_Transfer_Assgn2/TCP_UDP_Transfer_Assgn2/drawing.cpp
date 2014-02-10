@@ -210,13 +210,10 @@ void Init_Settings(HWND hwnd){
 	HWND hDlgTTS	= GetDlgItem(hwnd, IDC_TTS);
 	SETTINGS * st = (SETTINGS*) GetClassLongPtr(GetParent(hwnd), 0);
 	
-
-	ComboBox_AddString(hDlgPCKT, "256");
-	ComboBox_AddString(hDlgPCKT, "512");
-	ComboBox_AddString(hDlgPCKT, "1024");
-	ComboBox_AddString(hDlgPCKT, "2048");
-	ComboBox_AddString(hDlgPCKT, "5096");
-	ComboBox_AddString(hDlgPCKT, "10192");
+	char * packetsizes[] = { "1024", "4096", "20000", "60000", "120000", "240000"};
+	for (int i = 0; i < 6; i++){
+		ComboBox_AddString(hDlgPCKT, packetsizes[i]);
+	}
 	ComboBox_SetCurSel(hDlgPCKT, st->packet_size);
 	
 	ComboBox_AddString(hDlgSPRTCL, "TCP");
