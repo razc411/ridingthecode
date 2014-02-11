@@ -58,10 +58,10 @@ void				init_transfer(HWND hwnd);
 void				tcp_deliver_packets(WSABUF * wsaBuffers, SOCKET sock, int totalBytesRead, int packet_size, int buffer_count, int mode);
 // TCP Server Side
 int					tcp_transfer_completion(HWND hwnd, int mode);
-int				read_tcp(HWND hwnd, WPARAM wParam, SOCKET sock);
+int					read_tcp(HWND hwnd, WPARAM wParam, SOCKET sock);
 int					init_tcp_receive(HWND hwnd, WPARAM wParam);
 // UDP Server Side
-void				read_udp(HWND hwnd, WPARAM wParam, SOCKET sock);
+int					read_udp(HWND hwnd, WPARAM wParam, SOCKET sock);
 int					init_udp_receive(HWND hwnd);
 int					udp_transfer_completion(HWND hwnd, int mode);
 // Both protocols, server side

@@ -297,10 +297,13 @@ void udp_deliver_packets(HWND hwnd, int totalBytesRead, int packet_size, int buf
 		return;
 	}
 
+	
 	if ((status = WSASendTo(st->client_socket, wsaHeaderBuf, 1, &numBytesSent, 0, (struct sockaddr *)&sin, sizeof(sin), NULL, NULL)) < 0){
 		sprintf_s(msg, "Error %d in TCP WSASend(header) with return of %d\n", WSAGetLastError(), status);
 		activity(msg, EB_STATUSBOX);
 	}
+	
+	Sleep(1);
 
 	for (int p = 0; p < buffer_count; p++){
 		if ((status = WSASendTo(st->client_socket, &buffers[p], 1, &numBytesSent, 0, (struct sockaddr *)&sin, sizeof(sin), NULL, NULL)) < 0){

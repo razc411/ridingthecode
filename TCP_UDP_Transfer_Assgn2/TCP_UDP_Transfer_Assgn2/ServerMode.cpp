@@ -29,6 +29,7 @@
 LPSOCKET_INFORMATION SocketInfo;
 time_t startTime;
 char * buffer;
+
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: SetFont
 --
@@ -144,13 +145,17 @@ int socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam){
 				if (read_tcp(hwnd, wParam, st->server_socket) >= 1){
 					if ((SocketInfo = (LPSOCKET_INFORMATION)GlobalAlloc(GPTR, sizeof(SOCKET_INFORMATION))) == NULL){
 						activity("GlobalAlloc() failed with error\n", EB_STATUSBOX);
-						return 1;
 					}
 					SocketInfo->header_received = 0;
 				}
 			}
 			else{
-				read_udp(hwnd, wParam, st->server_socket);
+				if (read_udp(hwnd, wParam, st->server_socket) >= 1){
+					if ((SocketInfo = (LPSOCKET_INFORMATION)GlobalAlloc(GPTR, sizeof(SOCKET_INFORMATION))) == NULL){
+						activity("GlobalAlloc() failed with error\n", EB_STATUSBOX);
+					}
+					SocketInfo->header_received = 0;
+				}
 			}
 		}
 	}
@@ -204,7 +209,7 @@ int read_tcp(HWND hwnd, WPARAM wParam, SOCKET sock){
 --      Generic function to change the font on an array of buttons. Requires a font name, the buttons
 --		to be chanaged handles, the number of buttons and the parent window.
 ----------------------------------------------------------------------------------------------------------------------*/
-void read_udp(HWND hwnd, WPARAM wParam, SOCKET sock){
+int read_udp(HWND hwnd, WPARAM wParam, SOCKET sock){
 	if (SocketInfo->header_received == 0){
 		time(&startTime);
 		process_header(hwnd, sock);
@@ -214,9 +219,9 @@ void read_udp(HWND hwnd, WPARAM wParam, SOCKET sock){
 		SocketInfo->BytesRECV = 0;
 		SocketInfo->totalRecv = 0;
 		memset(buffer, 0, SocketInfo->total_size);
-		return;
+		return 0;
 	}
-	init_udp_receive(hwnd);
+	return init_udp_receive(hwnd);
 }
 
 /*------------------------------------------------------------------------------------------------------------------
@@ -282,9 +287,9 @@ int init_tcp_receive(HWND hwnd, WPARAM wParam){
 		if (WSAGetLastError() != WSAEWOULDBLOCK){
 			sprintf_s(msg, "Error %d in TCP WSARecv(data) with return of %d\n", WSAGetLastError(), status);
 			activity(msg, EB_STATUSBOX);
-			return -1;
+			return 0;
 		}
-		return -2;
+		return -1;
 	}
 
 	if (SocketInfo->mode == 0){
@@ -295,10 +300,10 @@ int init_tcp_receive(HWND hwnd, WPARAM wParam){
 	SocketInfo->packets -= 1;
 	SocketInfo->totalRecv += SocketInfo->BytesRECV;
 
-	if (SocketInfo->totalRecv == SocketInfo->total_size){
+	if (SocketInfo->totalRecv == SocketInfo->total_size || SocketInfo->packets == 0){
 		return tcp_transfer_completion(hwnd, SocketInfo->mode);
 	}
-	return 0; // packets remaining
+	return -2; // packets remaining
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: SetFont
@@ -369,9 +374,9 @@ int init_udp_receive(HWND hwnd){
 		if (WSAGetLastError() != WSAEWOULDBLOCK){
 			sprintf_s(msg, "Error %d in TCP WSARecv(data) with return of %d\n", WSAGetLastError(), status);
 			activity(msg, EB_STATUSBOX);
-			return -1;
+			return 0;
 		}
-		return -2;
+		return -1;
 	}
 
 	if (SocketInfo->mode == 0){
@@ -382,10 +387,10 @@ int init_udp_receive(HWND hwnd){
 	SocketInfo->packets -= 1;
 	SocketInfo->totalRecv += SocketInfo->BytesRECV;
 
-	if (SocketInfo->totalRecv == SocketInfo->total_size){
+	if (SocketInfo->totalRecv == SocketInfo->total_size || SocketInfo->packets == 0){
 		return tcp_transfer_completion(hwnd, SocketInfo->mode);
 	}
-	return 0; // packets remaining
+	return -2; // packets remaining
 }
 
 /*------------------------------------------------------------------------------------------------------------------
@@ -430,11 +435,15 @@ void process_header(HWND hwnd, SOCKET recv){
 		}
 	}
 	else{
-		server_len = sizeof(server);
 		while (1){
-			if ((status = WSARecvFrom(st->server_socket, wsaBuffer, 1, &RecvBytes, &Flags, (struct sockaddr *)&server, &server_len, NULL, NULL)) == 0){
+			server_len = sizeof(server);
+			if ((status = WSARecvFrom(st->server_socket, wsaBuffer, 1, &RecvBytes, &Flags, (struct sockaddr *)&server, &server_len, NULL, NULL)) == SOCKET_ERROR){
+				activity("ERROR", EB_STATUSBOX);
+			}
+			if (RecvBytes == HEADER_SIZE){
 				break;
 			}
+			memset(hdBuffer, 0, HEADER_SIZE);
 		}
 	}
 
