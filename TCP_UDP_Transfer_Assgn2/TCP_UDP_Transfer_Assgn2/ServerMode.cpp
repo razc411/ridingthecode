@@ -50,7 +50,7 @@ char * buffer;
 void init_server(HWND hwnd){
 
 	DWORD Ret;
-	SOCKET Listen;
+	SOCKET Listen, Send;
 	WSADATA wsaData;
 	SOCKADDR_IN InternetAddr;
 
@@ -67,6 +67,7 @@ void init_server(HWND hwnd){
 		WSAAsyncSelect(Listen, hwnd, WM_SOCKET, FD_ACCEPT | FD_CLOSE);
 		break;
 	case UDP:
+		Send = socket(AF_INET, SOCK_DGRAM, 0);
 		Listen = socket(AF_INET, SOCK_DGRAM, 0);
 		WSAAsyncSelect(Listen, hwnd, WM_SOCKET, FD_READ | FD_CLOSE);
 		break;
@@ -101,6 +102,7 @@ void init_server(HWND hwnd){
 	}
 	else{
 		st->server_socket = Listen;
+		st->client_socket = Send;
 		SetClassLongPtr(hwnd, 0, (LONG)st);
 		activity("UDP Server intiated", EB_STATUSBOX);
 	}
@@ -181,10 +183,12 @@ int socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam){
 ----------------------------------------------------------------------------------------------------------------------*/
 int read_tcp(HWND hwnd, WPARAM wParam, SOCKET sock){
 	if (SocketInfo->header_received == 0){
-		time(&startTime);
-		process_header(hwnd, sock);
+		if (process_header(hwnd, sock) == -1){
+			return -1;
+		}
 		buffer = (char*)malloc(sizeof(char)* (SocketInfo->packet_size * SocketInfo->packets));
-		memset(buffer, 0, SocketInfo->packet_size * SocketInfo->packets);
+		memset(buffer, 0, (SocketInfo->packet_size * SocketInfo->packets));
+		time(&startTime);
 		SocketInfo->header_received = 1;
 		SocketInfo->BytesRECV = 0;
 		SocketInfo->totalRecv = 0;
@@ -211,14 +215,15 @@ int read_tcp(HWND hwnd, WPARAM wParam, SOCKET sock){
 ----------------------------------------------------------------------------------------------------------------------*/
 int read_udp(HWND hwnd, WPARAM wParam, SOCKET sock){
 	if (SocketInfo->header_received == 0){
-		time(&startTime);
-		process_header(hwnd, sock);
+		if (process_header(hwnd, sock) == -1){
+			return -1;
+		}
 		buffer = (char*)malloc(sizeof(char)* (SocketInfo->packet_size * SocketInfo->packets));
-		memset(buffer, 0, SocketInfo->packet_size * SocketInfo->packets);
+		memset(buffer, 0, (SocketInfo->packet_size * SocketInfo->packets));
+		time(&startTime);
 		SocketInfo->header_received = 1;
 		SocketInfo->BytesRECV = 0;
 		SocketInfo->totalRecv = 0;
-		memset(buffer, 0, SocketInfo->total_size);
 		return 0;
 	}
 	return init_udp_receive(hwnd);
@@ -300,8 +305,8 @@ int init_tcp_receive(HWND hwnd, WPARAM wParam){
 	SocketInfo->packets -= 1;
 	SocketInfo->totalRecv += SocketInfo->BytesRECV;
 
-	if (SocketInfo->totalRecv == SocketInfo->total_size || SocketInfo->packets == 0){
-		return tcp_transfer_completion(hwnd, SocketInfo->mode);
+	if (SocketInfo->totalRecv == SocketInfo->total_size){
+		return transfer_completion(hwnd, SocketInfo->mode);
 	}
 	return -2; // packets remaining
 }
@@ -322,7 +327,7 @@ int init_tcp_receive(HWND hwnd, WPARAM wParam){
 --      Generic function to change the font on an array of buttons. Requires a font name, the buttons
 --		to be chanaged handles, the number of buttons and the parent window.
 ----------------------------------------------------------------------------------------------------------------------*/
-int tcp_transfer_completion(HWND hwnd, int mode){
+int transfer_completion(HWND hwnd, int mode){
 
 	time_t endTime;
 	double seconds;
@@ -333,13 +338,13 @@ int tcp_transfer_completion(HWND hwnd, int mode){
 	seconds = difftime(endTime, startTime);
 
 	if (mode == 0){
-		save_file(hwnd, buffer, SocketInfo->total_size);
+		save_file(hwnd, buffer, SocketInfo->totalRecv);
 		sprintf_s(msg, "Recieved %d bytes. File transfer completed in %f seconds.\n", SocketInfo->totalRecv, seconds);
 		activity(msg, EB_STATUSBOX);
-		return 1;
+		return 3;
 	}
 
-	sprintf_s(msg, "Recieved %d bytes. Garbage packet transfer completed in %f seconds.\n", SocketInfo->totalRecv, seconds);
+	sprintf_s(msg, "Recieved %d bytes. Garbage transfer completed in %f seconds.\n", SocketInfo->totalRecv, seconds);
 	activity(msg, EB_STATUSBOX);
 	return 2; // transfer completed, closing connection
 }
@@ -366,18 +371,18 @@ int init_udp_receive(HWND hwnd){
 	char msg[MAX_SIZE];
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 
+	char ack[6] = ";ACK;";
+
 	char * tempBuffer = (char*)malloc(sizeof(char)* SocketInfo->packet_size);
 	SocketInfo->DataBuf.len = SocketInfo->packet_size;
 	SocketInfo->DataBuf.buf = tempBuffer;
 
 	if ((status = WSARecvFrom(st->server_socket, &SocketInfo->DataBuf, 1, &SocketInfo->BytesRECV, &Flags, NULL, NULL, NULL, NULL)) == SOCKET_ERROR){
-		if (WSAGetLastError() != WSAEWOULDBLOCK){
-			sprintf_s(msg, "Error %d in TCP WSARecv(data) with return of %d\n", WSAGetLastError(), status);
-			activity(msg, EB_STATUSBOX);
-			return 0;
-		}
-		return -1;
+		sprintf_s(msg, "Error %d in TCP WSARecv(data) with return of %d\n", WSAGetLastError(), status);
+		activity(msg, EB_STATUSBOX);
+		return 0;
 	}
+	acknowledge(hwnd);
 
 	if (SocketInfo->mode == 0){
 		SocketInfo->DataBuf.buf[SocketInfo->BytesRECV - 1] = '\0';
@@ -388,7 +393,7 @@ int init_udp_receive(HWND hwnd){
 	SocketInfo->totalRecv += SocketInfo->BytesRECV;
 
 	if (SocketInfo->totalRecv == SocketInfo->total_size || SocketInfo->packets == 0){
-		return tcp_transfer_completion(hwnd, SocketInfo->mode);
+		return transfer_completion(hwnd, SocketInfo->mode);
 	}
 	return -2; // packets remaining
 }
@@ -410,11 +415,11 @@ int init_udp_receive(HWND hwnd){
 --      Generic function to change the font on an array of buttons. Requires a font name, the buttons
 --		to be chanaged handles, the number of buttons and the parent window.
 ----------------------------------------------------------------------------------------------------------------------*/
-void process_header(HWND hwnd, SOCKET recv){
+int process_header(HWND hwnd, SOCKET recv){
 
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
 	DWORD RecvBytes = 0, Flags = 0;
-	int recvBytes, status, server_len;
+	int status, server_len;
 	struct	sockaddr_in server;
 
 	char msg[MAX_SIZE];
@@ -427,27 +432,24 @@ void process_header(HWND hwnd, SOCKET recv){
 
 	if (st->protocol == TCP){
 		if ((status = WSARecv(recv, wsaBuffer, 1, &RecvBytes, &Flags, NULL, NULL)) == SOCKET_ERROR){
-			if (WSAGetLastError() != WSAEWOULDBLOCK){
-				sprintf_s(msg, "Error %d in TCP WSARecv(header) with return of %d\n", WSAGetLastError(), status);
-				activity(msg, EB_STATUSBOX);
-				return;
-			}
+			sprintf_s(msg, "Error %d in TCP WSARecv(header) with return of %d\n", WSAGetLastError(), status);
+			activity(msg, EB_STATUSBOX);
+		}
+
+		if (wsaBuffer->buf[0] != ';'){ // I really should have used an uncommon character here
+			return -1;
 		}
 	}
 	else{
-		while (1){
-			server_len = sizeof(server);
-			if ((status = WSARecvFrom(st->server_socket, wsaBuffer, 1, &RecvBytes, &Flags, (struct sockaddr *)&server, &server_len, NULL, NULL)) == SOCKET_ERROR){
-				activity("ERROR", EB_STATUSBOX);
-			}
-			if (RecvBytes == HEADER_SIZE){
-				break;
-			}
-			memset(hdBuffer, 0, HEADER_SIZE);
+		server_len = sizeof(server);
+		if ((status = WSARecvFrom(st->server_socket, wsaBuffer, 1, &RecvBytes, &Flags, (struct sockaddr *)&server, &server_len, NULL, NULL)) == SOCKET_ERROR){
+			return -1;
 		}
+		acknowledge(hwnd);
 	}
 
 	grab_header_info(hdBuffer);
+	return 1;
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: SetFont
@@ -470,7 +472,7 @@ void grab_header_info(char * hdBuffer){
 
 	char psize[100], tBytes[100], mode[100], pcks[100];
 
-	int i = 0, p = 0, j = 0, q = 0, r = 0;
+	int i = 1, p = 0, j = 0, q = 0, r = 0;
 
 	//grabs total bytes
 	for (; hdBuffer[i] != ','; i++){
@@ -500,4 +502,26 @@ void grab_header_info(char * hdBuffer){
 	SocketInfo->packet_size = atoi(psize);
 	SocketInfo->mode = atoi(mode);
 	SocketInfo->packets = atoi(pcks);
+}
+
+void acknowledge(HWND hwnd){
+
+	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
+	struct sockaddr_in sin;
+	int status;
+	char ack[ACK_SIZE] = ";ACK;";
+
+	memset(&sin, 0, sizeof(sin));
+	sin.sin_family = AF_INET;
+	sin.sin_port = htons(atoi(st->client_port));
+
+	if ((sin.sin_addr.s_addr = inet_addr(st->client_send_ip)) == INADDR_NONE)
+	{
+		activity("Failed to find transfer address\n", EB_STATUSBOX);
+		return;
+	}
+
+	if ((status = sendto(st->client_socket, ack, ACK_SIZE, 0, (const sockaddr *)&sin, sizeof(sin))) < 0){
+		activity("Failed to acknowledge, run before it blows up!\n", EB_STATUSBOX);
+	}
 }

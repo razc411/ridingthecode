@@ -59,17 +59,29 @@ void init_client(HWND hwnd){
 		st->client_socket = socket(PF_INET, SOCK_STREAM, 0);
 		break;
 	case UDP:
-		st->client_socket = socket(AF_INET, SOCK_DGRAM, 0);
+		st->server_socket = socket(AF_INET, SOCK_DGRAM, 0);
+		if ((st->client_socket = socket(AF_INET, SOCK_DGRAM, 0)) == INVALID_SOCKET){
+			activity("Failed to create transfer socket.\n", EB_STATUSBOX);
+		}
+		
+		InternetAddr.sin_family = AF_INET;
+		InternetAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+		InternetAddr.sin_port = htons(atoi(st->server_port));
+
+		if (bind(st->server_socket, (PSOCKADDR)&InternetAddr, sizeof(InternetAddr)) == SOCKET_ERROR){
+			activity("bind() failed on receiving socket.\n", EB_STATUSBOX);
+		}
 		break;
 	}
 
 	SetClassLongPtr(hwnd, 0, (LONG)st);
 
 	if(st->client_socket == INVALID_SOCKET){
-		activity("Failed to create client socket.\n", EB_STATUSBOX);
+		activity("Failed to create receiving socket.\n", EB_STATUSBOX);
 	}
 
 	if (st->protocol == UDP){
+		activity("UDP Client intialized, ready to transfer.\n", EB_STATUSBOX);
 		return;
 	}
 
@@ -80,7 +92,8 @@ void init_client(HWND hwnd){
 	if (bind(st->client_socket, (PSOCKADDR)&InternetAddr, sizeof(InternetAddr)) == SOCKET_ERROR){
 		activity("bind() failed on client.\n", EB_STATUSBOX);
 	}
-	
+
+	activity("TCP Client intialized, ready to connect.\n", EB_STATUSBOX);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: SetFont
@@ -155,7 +168,7 @@ void init_transfer(HWND hwnd){
 	HANDLE hf;
 	DWORD numBytesRead = 0;
 	int  totalBytesRead = 0;
-	DWORD packetsizes[] = {1024, 4096, 20000, 60000, 120000, 240000};
+	DWORD packetsizes[] = {1024, 4096, 20000, 60000};
 	const int packet_size = packetsizes[st->packet_size];
 	
 	if (st->mode == 0){
@@ -205,6 +218,8 @@ void init_transfer(HWND hwnd){
 		udp_deliver_packets(hwnd, totalBytesRead, packet_size, buffer_count, wsaBuffers);
 	else
 		tcp_deliver_packets(wsaBuffers, st->client_socket, totalBytesRead, packet_size, buffer_count, st->mode);
+
+	free(wsaBuffers);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: SetFont
@@ -231,7 +246,7 @@ void tcp_deliver_packets(WSABUF * wsaBuffers, SOCKET sock, int totalBytesRead, i
 	
 	char flags[HEADER_SIZE];
 	memset(flags, '\0', HEADER_SIZE);
-	sprintf_s(flags, "%d,%d,%d,%d;", totalBytesRead, packet_size, buffer_count, mode);
+	sprintf_s(flags, ";%d,%d,%d,%d;", totalBytesRead, packet_size, buffer_count, mode);
 	
 	LPWSABUF wsaHeaderBuf = (LPWSABUF)malloc(sizeof(WSABUF));
 	wsaHeaderBuf->len = HEADER_SIZE;
@@ -248,10 +263,9 @@ void tcp_deliver_packets(WSABUF * wsaBuffers, SOCKET sock, int totalBytesRead, i
 			activity(msg, EB_STATUSBOX);
 			return;
 		}
-		numBytesSent = 0;
 	}
 
-	activity("Data transmission complete.", EB_STATUSBOX);
+	activity("Data transmission complete.\n", EB_STATUSBOX);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: SetFont
@@ -281,7 +295,7 @@ void udp_deliver_packets(HWND hwnd, int totalBytesRead, int packet_size, int buf
 
 	char flags[HEADER_SIZE];
 	memset(flags, '\0', HEADER_SIZE);
-	sprintf_s(flags, "%d,%d,%d,%d;", totalBytesRead, packet_size, buffer_count, st->mode);
+	sprintf_s(flags, ";%d,%d,%d,%d;", totalBytesRead, packet_size, buffer_count, st->mode);
 
 	LPWSABUF wsaHeaderBuf = (LPWSABUF)malloc(sizeof(WSABUF));
 	wsaHeaderBuf->len = HEADER_SIZE;
@@ -293,23 +307,28 @@ void udp_deliver_packets(HWND hwnd, int totalBytesRead, int packet_size, int buf
 
 	if ((sin.sin_addr.s_addr = inet_addr(st->client_send_ip)) == INADDR_NONE)
 	{
-		activity("failed to find address", EB_STATUSBOX);
+		activity("Failed to find address\n", EB_STATUSBOX);
 		return;
 	}
-
 	
-	if ((status = WSASendTo(st->client_socket, wsaHeaderBuf, 1, &numBytesSent, 0, (struct sockaddr *)&sin, sizeof(sin), NULL, NULL)) < 0){
-		sprintf_s(msg, "Error %d in TCP WSASend(header) with return of %d\n", WSAGetLastError(), status);
-		activity(msg, EB_STATUSBOX);
-	}
-	
-	Sleep(1);
-
-	for (int p = 0; p < buffer_count; p++){
-		if ((status = WSASendTo(st->client_socket, &buffers[p], 1, &numBytesSent, 0, (struct sockaddr *)&sin, sizeof(sin), NULL, NULL)) < 0){
-			sprintf_s(msg, "Error %d in sendto(buffer) with return of %d\n", WSAGetLastError(), status);
+	while (1){
+		if ((status = WSASendTo(st->client_socket, wsaHeaderBuf, 1, &numBytesSent, 0, (struct sockaddr *)&sin, sizeof(sin), NULL, NULL)) < 0){
+			sprintf_s(msg, "Error %d in TCP WSASend(header) with return of %d\n", WSAGetLastError(), status);
 			activity(msg, EB_STATUSBOX);
-			return;
+		}
+
+		if (receive_acknowledge(hwnd) == 1) { break; }
+	}
+		
+	for (int p = 0; p < buffer_count; p++){
+		while (1){
+			if ((status = WSASendTo(st->client_socket, &buffers[p], 1, &numBytesSent, 0, (struct sockaddr *)&sin, sizeof(sin), NULL, NULL)) < 0){
+				sprintf_s(msg, "Error %d in sendto(buffer) with return of %d\n", WSAGetLastError(), status);
+				activity(msg, EB_STATUSBOX);
+				return;
+			}
+
+			if (receive_acknowledge(hwnd) == 1){ break; }
 		}
 	}
 
@@ -332,7 +351,15 @@ void udp_deliver_packets(HWND hwnd, int totalBytesRead, int packet_size, int buf
 --      Generic function to change the font on an array of buttons. Requires a font name, the buttons
 --		to be chanaged handles, the number of buttons and the parent window.
 ----------------------------------------------------------------------------------------------------------------------*/
-void disconnect(HWND hwnd){
+int receive_acknowledge(HWND hwnd){
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
-	closesocket(st->client_socket);
+	char ack[6];
+	int status, ackrecv;
+	
+	if ((status = recvfrom(st->server_socket, ack, ACK_SIZE, 0, 0, 0)) == -1){
+		activity("Error in acknowledgement, run before it blows up!", EB_STATUSBOX);
+	}
+
+	ackrecv = (strcmp(ack, ";ACK;") == 0) ? 1 : 0;
+	return ackrecv;
 }

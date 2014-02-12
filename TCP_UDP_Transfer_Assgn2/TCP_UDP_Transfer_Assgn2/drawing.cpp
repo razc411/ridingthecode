@@ -210,8 +210,8 @@ void Init_Settings(HWND hwnd){
 	HWND hDlgTTS	= GetDlgItem(hwnd, IDC_TTS);
 	SETTINGS * st = (SETTINGS*) GetClassLongPtr(GetParent(hwnd), 0);
 	
-	char * packetsizes[] = { "1024", "4096", "20000", "60000", "120000", "240000"};
-	for (int i = 0; i < 6; i++){
+	char * packetsizes[] = { "1024", "4096", "20000", "60000"};
+	for (int i = 0; i < 4; i++){
 		ComboBox_AddString(hDlgPCKT, packetsizes[i]);
 	}
 	ComboBox_SetCurSel(hDlgPCKT, st->packet_size);
