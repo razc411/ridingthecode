@@ -7,7 +7,7 @@ Server
 Draw GUI -> Server Selected -> Choose connection type -> Set to TCP or UDP connecton -> 
 Listen for connections -> Connect with client when found -> Read data -> Save Data -> Display the data -> Display statistics
 
-Functions Client - 2 Threads, 1 for send or recieve, 1 for main client
+Program = Single Threaded
 
 Possible Additional Features
 -WAN communication

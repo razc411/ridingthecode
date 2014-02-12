@@ -1,43 +1,51 @@
 /*--------------------------------------------------------------------------------------------------------------------
---	SOURCE: Assignment1Term4SPII.cpp
+--	SOURCE: utils.cpp
 --
---	PROGRAM : Raw Terminal Input through Forks and Pipes
+--	PROGRAM : TCP/UDP Transfer Win32 Assign2
 --
 --	FUNCTIONS :
---		int main()
---		void process_input(int rawp[2], int transp[2], pid_t * children)
---		void translate_input(int frmtp[2], int transp[2])
---		void print_output(int rawp[2], int frmtp[2])
---		void fatal_error(char * error)
+--		void set_settings(HWND hwnd)
+--		LPSTR grab_file(HWND hwnd, HANDLE * hf)
+--		void save_file(HWND hwnd, char * buffer, int size)
 --
---	DATE: January 20, 2014
+--	DATE: Febuary 3, 2014
 --	REVISIONS : none
 --
 --	DESIGNER : Ramzi Chennafi
 --  PROGRAMMER : Ramzi Chennafi
 --
 --	NOTES :
---	A program which disables terminal text processing and handles it instead.Several methods of character input have
---	changed, as well as methods of terminating the program.Prints out one line of raw input, then upon typing "E",
---	prints out a formatted line of text.All 'a' characters are changed to 'z', all 'z' characters are changed to 'a',
---	and control letters such as X, E, K and T are not printed in the formatted text.
---
---
+--	Contains various utility functions for the program. Performs the opening and saving of files, as well as the network
+--	statistics and prints them to their respective file/interface. Also manages the program wide settings.
 ----------------------------------------------------------------------------------------------------------------------*/
 #include "stdafx.h"
 #include "TCP_UDP_Transfer_Assgn2.h"
-
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: init_server
+--
+--      DATE: Febuary 6 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: LPSTR grab_file(HWND hwnd, HANDLE * hf), takes the parent window HWND and a pointer to a file handle as arguments.
+--
+--      RETURNS: A LPSTR containing the file name. Also sets the *hf to the file specified by the user.
+--
+--      NOTES:
+--		Takes the passed in file point and opens the Common Dialog Box so the user can choose a file to send. Sets the file
+--		pointer to the file they have chosen and opens it for reading.
+----------------------------------------------------------------------------------------------------------------------*/
 LPSTR grab_file(HWND hwnd, HANDLE * hf){
-	OPENFILENAME ofn;       // common dialog box structure
-	char szFile[260];       // buffer for file name
-	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
-	// Initialize OPENFILENAME
+	OPENFILENAME ofn;       
+	char szFile[260];       
+	
 	ZeroMemory(&ofn, sizeof(ofn));
 	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = hwnd;
 	ofn.lpstrFile = szFile;
-	// Set lpstrFile[0] to '\0' so that GetOpenFileName does not 
-	// use the contents of szFile to initialize itself.
+
 	ofn.lpstrFile[0] = '\0';
 	ofn.nMaxFile = sizeof(szFile);
 	ofn.lpstrFilter = "All\0*.*\0Text\0*.TXT\0";
@@ -47,18 +55,34 @@ LPSTR grab_file(HWND hwnd, HANDLE * hf){
 	ofn.lpstrInitialDir = NULL;
 	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
-	// Display the Open dialog box. 
-
 	if (GetOpenFileName(&ofn) == TRUE){
 		*hf = CreateFile(ofn.lpstrFile, GENERIC_READ, 0, NULL, 
 			OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 		return ofn.lpstrFileTitle;
 	}
 
-	MessageBox(hwnd, "Failed to get file handle", "Error", MB_ICONEXCLAMATION);
+	activity("Failed to get file handle.\n", EB_STATUSBOX);
 	return NULL;
 }
-
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: save_file
+--
+--      DATE: Febuary 6 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void save_file(HWND hwnd, char * buffer, int size) : takes the parent window HWND, a buffer containing
+--		the data received and an int specifying the size of the buffer. Saves the file to the user specified location after
+--		it has brought up the common dialog box.
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Takes the passed in data and saves it to a file using the Common Dialog Box. User may choose the filename and place
+--		to save it using this.
+----------------------------------------------------------------------------------------------------------------------*/
 void save_file(HWND hwnd, char * buffer, int size){
 	TCHAR   szFile[MAX_PATH] = TEXT("\0");
 	OPENFILENAME   ofn;
@@ -91,11 +115,43 @@ void save_file(HWND hwnd, char * buffer, int size){
 
 	CloseHandle(hFile);
 }
-
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: init_server
+--
+--      DATE: Febuary 6 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void init_server(HWND hwnd) , takes the parent HWND as an argument.
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Intializes the server, the type of intialization depends on the chosen protocol in the settings. Listens to the socket
+--		whenever the connection is TCP.
+----------------------------------------------------------------------------------------------------------------------*/
 void net_stats(){
 
 }
-
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: set_settings
+--
+--      DATE: Febuary 6 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void set_settings(HWND hwnd), takes the parent window HWND as an argument.
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Whenever the user hits "OK" on the settings dialog box, this function is called. The function will set the current
+--		value of the SETTINGS data in the Class Long Ptr to whatever is currently present in the settings dialog box.
+----------------------------------------------------------------------------------------------------------------------*/
 void set_settings(HWND hwnd){
 
 	char ** tempBuffers = (char**)malloc(sizeof(char*)* 4);

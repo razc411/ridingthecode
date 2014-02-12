@@ -46,21 +46,21 @@ void				SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons);
 // Connection Establishment
 // Server
 void				init_server(HWND hwnd);
-int					socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam);
+void				socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam);
 void				accept_data(HWND hwnd, WPARAM wParam);
 // Client
 void     			init_client(HWND hwnd);
-int					client_connect(HWND hwnd);
+void				client_connect(HWND hwnd);
 // UDP Client Side
 void				udp_deliver_packets(HWND hwnd, int totalBytesRead, int packet_size, int buffer_count, WSABUF * wsaBuffers);
 // TCP Client Side
 void				init_transfer(HWND hwnd);
 void				tcp_deliver_packets(WSABUF * wsaBuffers, SOCKET sock, int totalBytesRead, int packet_size, int buffer_count, int mode);
 // TCP Server Side
-int					read_tcp(HWND hwnd, WPARAM wParam, SOCKET sock);
-int					init_tcp_receive(HWND hwnd, WPARAM wParam);
+int					read_tcp(HWND hwnd, SOCKET sock);
+int					init_tcp_receive(HWND hwnd);
 // UDP Server Side
-int					read_udp(HWND hwnd, WPARAM wParam, SOCKET sock);
+int					read_udp(HWND hwnd, SOCKET sock);
 int					init_udp_receive(HWND hwnd);
 int					udp_transfer_completion(HWND hwnd, int mode);
 // Both protocols, server side
@@ -75,3 +75,4 @@ LPSTR				grab_file(HWND hwnd, HANDLE * hf);
 void				save_file(HWND hwnd, char * buffer, int size);
 void				activity(char * buffer, int box);
 void				disconnect(HWND hwnd);
+int					grab_header(HWND hwnd, SOCKET sock);

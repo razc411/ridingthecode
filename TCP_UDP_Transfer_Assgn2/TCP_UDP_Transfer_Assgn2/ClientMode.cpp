@@ -6,10 +6,11 @@
 --	FUNCTIONS :
 --		void init_client(HWND hwnd)
 --		int client_connect(HWND hwnd)
---		void init_tcp_transfer(HWND hwnd)
+--		void init_transfer(HWND hwnd)
 --		void tcp_deliver_packets(WSABUF * wsaBuffers, SOCKET sock, int totalBytesRead, int packet_size, int buffer_count, int mode)
---		void udp_deliver_packets(HWND hwnd, int totalBytesRead, int packet_size, int buffer_count, char ** buffers)
---
+--		void udp_deliver_packets(HWND hwnd, int totalBytesRead, int packet_size, int buffer_count, WSABUF * buffers)
+--		int receive_acknowledge(HWND hwnd)
+--	
 --	DATE: Febuary 6, 2014
 --	REVISIONS : none
 --
@@ -17,31 +18,33 @@
 --  PROGRAMMER : Ramzi Chennafi
 --
 --	NOTES :
---	A program which disables terminal text processing and handles it instead.Several methods of character input have
---	changed, as well as methods of terminating the program.Prints out one line of raw input, then upon typing "E",
---	prints out a formatted line of text.All 'a' characters are changed to 'z', all 'z' characters are changed to 'a',
---	and control letters such as X, E, K and T are not printed in the formatted text.
+--	Deals with the program when it is started as a client in the client/server connection. Intializes, connects and sends packets
+--	out from the client to the server. If using UDP, will take into consideration both the setting for Server Port and Client port.
+--	Only considers the Client port on the TCP side.
 --
+--	The UDP here has minor reliability, in that dropped packets will be resent based on acknowledgements from the server side, along with
+--	a header that accompanies both TCP and UDP. 
 --
+--	Data can only be sent when the Client side is intialized. Problems may arise if the user disconnects and jumps between UDP/TCP.
 ----------------------------------------------------------------------------------------------------------------------*/
 #include "stdafx.h"
 #include "TCP_UDP_Transfer_Assgn2.h"
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: SetFont
+--      FUNCTION: init_client
 --
---      DATE: January 27, 2014
+--      DATE: Febuary 6 2014
 --      REVISIONS: none
 --
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons)
+--      INTERFACE: void init_client(HWND hwnd) , takes the parent HWND as an argument.
 --
 --      RETURNS: void
 --
 --      NOTES:
---      Generic function to change the font on an array of buttons. Requires a font name, the buttons
---		to be chanaged handles, the number of buttons and the parent window.
+--      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
+--		the connection is TCP.
 ----------------------------------------------------------------------------------------------------------------------*/
 void init_client(HWND hwnd){
 	DWORD Ret;
@@ -96,23 +99,23 @@ void init_client(HWND hwnd){
 	activity("TCP Client intialized, ready to connect.\n", EB_STATUSBOX);
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: SetFont
+--      FUNCTION: client_connect
 --
---      DATE: January 27, 2014
+--      DATE: Febuary 6 2014
 --      REVISIONS: none
 --
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons)
+--      INTERFACE: void client_connect(HWND hwnd), takes the parent window HWND as an argument.
 --
 --      RETURNS: void
 --
 --      NOTES:
---      Generic function to change the font on an array of buttons. Requires a font name, the buttons
---		to be chanaged handles, the number of buttons and the parent window.
+--      When the client is in TCP mode, will connect the client to the TCP server. Returns messages on failure. After 
+--		performing a connect the client is ready to transfer files.
 ----------------------------------------------------------------------------------------------------------------------*/
-int client_connect(HWND hwnd){
+void client_connect(HWND hwnd){
 	SOCKADDR_IN InternetAddr;
 	hostent *hp;
 	int iRc;
@@ -126,7 +129,7 @@ int client_connect(HWND hwnd){
 	if ((hp = gethostbyname(st->client_send_ip)) == NULL)
 	{
 		activity("Could not find the specified server address.\n", EB_STATUSBOX);
-		return 0;
+		return;
 	}
 
 	memcpy((char *)&InternetAddr.sin_addr, hp->h_addr, hp->h_length);
@@ -134,31 +137,32 @@ int client_connect(HWND hwnd){
 	iRc = connect(st->client_socket, (PSOCKADDR)&InternetAddr, sizeof(InternetAddr));
 	if (iRc != 0){
 		activity("Failed to connect to server.\n", EB_STATUSBOX);
-		return -1;
+		return;
 	}
 
 	setsockopt(st->client_socket, SOL_SOCKET, SO_REUSEADDR, 0, 0);
 	SetClassLongPtr(hwnd, 0, (LONG)st);
 	activity("Connected to server.\n", EB_STATUSBOX);
 	
-	return 0;
+	return;
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: SetFont
+--      FUNCTION: init_transfer
 --
---      DATE: January 27, 2014
+--      DATE: Febuary 6 2014
 --      REVISIONS: none
 --
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons)
+--      INTERFACE: void init_transfer(HWND hwnd), takes the parent window HWND.
 --
 --      RETURNS: void
 --
 --      NOTES:
---      Generic function to change the font on an array of buttons. Requires a font name, the buttons
---		to be chanaged handles, the number of buttons and the parent window.
+--      Intializes a UDP or TCP transfer based on the current settings. Will generate dummy packets if the program is in
+--		dummy packet transfer mode, otherwise reads a file and generates packets for the file. Passes the created packets
+--		to their respective UDP/TCP functions.
 ----------------------------------------------------------------------------------------------------------------------*/
 void init_transfer(HWND hwnd){
 
@@ -171,19 +175,18 @@ void init_transfer(HWND hwnd){
 	DWORD packetsizes[] = {1024, 4096, 20000, 60000};
 	const int packet_size = packetsizes[st->packet_size];
 	
-	if (st->mode == 0){
+	if (st->mode == FILEMODE){
 		grab_file(hwnd, &hf);
 	}
 
 	activity("Sending data...\n", EB_STATUSBOX);
 	WSABUF * wsaBuffers = (LPWSABUF)malloc(sizeof(WSABUF)* MAX_PACKETS);
-
 	
 	char * buff = (char*)malloc(sizeof(char)* packet_size);
 
 	int i = 0, buffer_count = 0;
 	while (1){
-		if (st->mode == 0){
+		if (st->mode == FILEMODE){
 			status = ReadFile(hf, buff, packet_size, &numBytesRead, NULL);
 			if (numBytesRead == 0){
 				CloseHandle(hf);
@@ -222,21 +225,24 @@ void init_transfer(HWND hwnd){
 	free(wsaBuffers);
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: SetFont
+--      FUNCTION: tcp_deliver_packets
 --
---      DATE: January 27, 2014
+--      DATE: Febuary 6 2014
 --      REVISIONS: none
 --
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons)
+--      INTERFACE: void tcp_deliver_packets(WSABUF * wsaBuffers, SOCKET sock, int totalBytesRead, int packet_size, int buffer_count, int mode)
 --
 --      RETURNS: void
 --
 --      NOTES:
---      Generic function to change the font on an array of buttons. Requires a font name, the buttons
---		to be chanaged handles, the number of buttons and the parent window.
+--		Takes the parent window HWND, the total bytes to be transferred (totalBytesRead), the current packet size, the amount of packets
+--		an an array of WSABUFs each containing a packet of data.
+--
+--		Delivers TCP packets to the specified host. Intially sends a header containing the int variables passed to the function
+--		before sending the actual data. Must be passed an array of WSABUFs, with each WSABUF containing a packet of data.
 ----------------------------------------------------------------------------------------------------------------------*/
 void tcp_deliver_packets(WSABUF * wsaBuffers, SOCKET sock, int totalBytesRead, int packet_size, int buffer_count, int mode){
 	
@@ -268,21 +274,27 @@ void tcp_deliver_packets(WSABUF * wsaBuffers, SOCKET sock, int totalBytesRead, i
 	activity("Data transmission complete.\n", EB_STATUSBOX);
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: SetFont
+--      FUNCTION: udp_deliver_packets
 --
---      DATE: January 27, 2014
---      REVISIONS: none
+--      DATE: Febuary 6 2014
+--      REVISIONS: Countless. Most recent, turning it into somewhat reliable UDP.
 --
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons)
+--      INTERFACE: void udp_deliver_packets(HWND hwnd, int totalBytesRead, int packet_size, int buffer_count, WSABUF * buffers)
 --
 --      RETURNS: void
 --
 --      NOTES:
---      Generic function to change the font on an array of buttons. Requires a font name, the buttons
---		to be chanaged handles, the number of buttons and the parent window.
+--      Takes the parent window HWND, the total bytes to be transferred (totalBytesRead), the current packet size, the amount of packets
+--		an an array of WSABUFs each containing a packet of data.
+--		
+--		Delivers the packets over UDP to the specified IP and port, and has some reliability for dropped packets by 
+--		incorporating an acknowledgement system as well as a header packet containing the info passed to the function. 
+--		If an error occurs in the recvfrom portion of the acknowledgement, consider the transfer dead and restart the program.
+--
+--		* WILL loop endlessly if the user decides to terminate the server during a transfer. Will continously wait for ACKs.
 ----------------------------------------------------------------------------------------------------------------------*/
 void udp_deliver_packets(HWND hwnd, int totalBytesRead, int packet_size, int buffer_count, WSABUF * buffers){
 
@@ -311,17 +323,17 @@ void udp_deliver_packets(HWND hwnd, int totalBytesRead, int packet_size, int buf
 		return;
 	}
 	
-	while (1){
+	while (1){ // transferring the header packet
 		if ((status = WSASendTo(st->client_socket, wsaHeaderBuf, 1, &numBytesSent, 0, (struct sockaddr *)&sin, sizeof(sin), NULL, NULL)) < 0){
 			sprintf_s(msg, "Error %d in TCP WSASend(header) with return of %d\n", WSAGetLastError(), status);
 			activity(msg, EB_STATUSBOX);
 		}
 
-		if (receive_acknowledge(hwnd) == 1) { break; }
+		if (receive_acknowledge(hwnd) == 1) { break; } 
 	}
 		
 	for (int p = 0; p < buffer_count; p++){
-		while (1){
+		while (1){ // transferring the actual data
 			if ((status = WSASendTo(st->client_socket, &buffers[p], 1, &numBytesSent, 0, (struct sockaddr *)&sin, sizeof(sin), NULL, NULL)) < 0){
 				sprintf_s(msg, "Error %d in sendto(buffer) with return of %d\n", WSAGetLastError(), status);
 				activity(msg, EB_STATUSBOX);
@@ -335,21 +347,22 @@ void udp_deliver_packets(HWND hwnd, int totalBytesRead, int packet_size, int buf
 	activity("Data transmission complete.", EB_STATUSBOX);
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: SetFont
+--      FUNCTION: receive_acknowledge
 --
---      DATE: January 27, 2014
+--      DATE: Febuary 6 2014
 --      REVISIONS: none
 --
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons)
+--      INTERFACE: int receive_acknowledge(HWND hwnd), where hwnd is the HWND of the main parent window.
 --
---      RETURNS: void
+--      RETURNS: int, returns 1 if an acknowledgement is received. 
 --
 --      NOTES:
---      Generic function to change the font on an array of buttons. Requires a font name, the buttons
---		to be chanaged handles, the number of buttons and the parent window.
+--      Checks if the packet received after sending a packet is an "ACK" packet. An ACK packet contains the text ";ACK;".
+--		*Yes this may be prone to problems, for our purposes it makes it easier. Can easily be changed.
+--		*Only used on the UDP side, provides reliability for the client. TCP already does this for us.
 ----------------------------------------------------------------------------------------------------------------------*/
 int receive_acknowledge(HWND hwnd){
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);

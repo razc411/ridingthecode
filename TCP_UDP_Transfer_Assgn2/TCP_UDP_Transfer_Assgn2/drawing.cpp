@@ -4,11 +4,12 @@
 --	PROGRAM : UDP/TCP Transfer in Win32
 --
 --	FUNCTIONS :
---		int main()
---		void process_input(int rawp[2], int transp[2], pid_t * children)
---		void translate_input(int frmtp[2], int transp[2])
---		void print_output(int rawp[2], int frmtp[2])
---		void fatal_error(char * error)
+--		void DrawTitleText(HDC hdc)
+--		void DrawButtons(HWND hwnd)
+--		void DrawDisplay(HWND hwnd)
+--		void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons)
+--		void Init_Settings(HWND hwnd)
+--		void activity(char * buffer, int box)
 --
 --	DATE: January 20, 2014
 --	REVISIONS : none
@@ -17,12 +18,7 @@
 --  PROGRAMMER : Ramzi Chennafi
 --
 --	NOTES :
---	A program which disables terminal text processing and handles it instead.Several methods of character input have
---	changed, as well as methods of terminating the program.Prints out one line of raw input, then upon typing "E",
---	prints out a formatted line of text.All 'a' characters are changed to 'z', all 'z' characters are changed to 'a',
---	and control letters such as X, E, K and T are not printed in the formatted text.
---
---
+--	Deals with the graphical interface of the program including the Settings dialog. Draws buttons and text.
 ----------------------------------------------------------------------------------------------------------------------*/
 #include "stdafx.h"
 #include "TCP_UDP_Transfer_Assgn2.h"
@@ -30,7 +26,7 @@
 --      FUNCTION: DrawTitleText
 --
 --      DATE: January 27, 2014
---      REVISIONS: none
+--      REVISIONS: Adapted for current program.
 --
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
@@ -41,35 +37,28 @@
 --
 --      NOTES:
 --      Generic function that draws various GUI text labels in the program. Called by WM_PAINT each screen refresh.
+--		Takes the painting HDC as an argument.
 ----------------------------------------------------------------------------------------------------------------------*/
 void DrawTitleText(HDC hdc){
 
-	RECT titleRects[] = { { 500, 500, 1000, 900 } };
-	LPCSTR titles[] = { "UDP/TCP Transfer in Win32"};
-	HFONT hFont = CreateFont(20, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET,
-		OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
+	RECT titleRect = { 500, 500, 1000, 900 };
+	LPCSTR title = "UDP/TCP Transfer in Win32";
 
-	SelectObject(hdc, hFont);
-	SetTextColor(hdc, RGB(255, 255, 255));
 	SetBkMode(hdc, TRANSPARENT);
 
-	for (int i = 1; i < (sizeof(titleRects) / sizeof(titleRects[0])); i++){
-		DrawText(hdc, titles[i], -1, &titleRects[i], 0);
-	}
-
-	hFont = CreateFont(38, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET,
+	HFONT hFont = CreateFont(38, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET,
 		OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
 
 	SelectObject(hdc, hFont);
 	SetTextColor(hdc, RGB(255, 0, 0));
 
-	DrawText(hdc, titles[0], -1, &titleRects[0], 0);
+	DrawText(hdc, title, -1, &titleRect, 0);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: DrawButtons
 --
 --      DATE: January 27, 2014
---      REVISIONS: none
+--      REVISIONS: Adapted for current program.
 --
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
@@ -117,21 +106,21 @@ void DrawButtons(HWND hwnd){
 	SetFont(_T("Arial"), hwnd, buttons, 6);
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: main
+--      FUNCTION: DrawDisplay
 --
 --      DATE: January 20, 2014
---      REVISIONS: none
+--      REVISIONS: Adapted for current program.
 --
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: void main(void)
+--      INTERFACE: void DrawDisplay(HWND hwnd)
 --
 --      RETURNS: void
 --
 --      NOTES:
---      Program entry point. Disables terminal processing, creates 3 pipes and 2 children processes. These processes
---		are directed into their respective function paths.
+--      Draws the 2 display boxes for the program. The first being the EB_STATUSBOX, or the status display and the second
+--		being the EB_STATBOX, or the statistics display box.
 ----------------------------------------------------------------------------------------------------------------------*/
 void DrawDisplay(HWND hwnd){
 	HWND buttons[2];
@@ -151,7 +140,7 @@ void DrawDisplay(HWND hwnd){
 --      FUNCTION: SetFont
 --
 --      DATE: January 27, 2014
---      REVISIONS: none
+--      REVISIONS: Adapted for current program.
 --
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
@@ -186,7 +175,7 @@ void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons){
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: Init_Settings
 --
---      DATE: January 27, 2014
+--      DATE: Febuary 3, 2014
 --      REVISIONS: none
 --
 --      DESIGNER: Ramzi Chennafi
@@ -197,7 +186,8 @@ void SetFont(TCHAR* font, HWND hwnd, HWND* hwndButton, int buttons){
 --      RETURNS: void
 --
 --      NOTES:
---      Sets the default settings
+--      Draws the default connection settings to the Settings dialog box. Takes the parent HWND as an argument in order
+--		to retrieve the current settings.
 ----------------------------------------------------------------------------------------------------------------------*/
 void Init_Settings(HWND hwnd){
 	HWND hDlgPTCL	= GetDlgItem(hwnd, IDC_PROTSLT);
@@ -225,7 +215,23 @@ void Init_Settings(HWND hwnd){
 	Edit_SetText(hDlgPORT, st->client_port);
 	Edit_SetText(hDlgIP, st->client_send_ip);
 }
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: activity
+--
+--      DATE: January 27, 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void activity(char * buffer, int box)
 
+--      RETURNS: void
+--
+--      NOTES:
+--		Takes a char* containing a message and either EB_STATUSBOX or EB_STATBOX. Will draw the message to either box
+--		without erasing its current contents.
+----------------------------------------------------------------------------------------------------------------------*/
 void activity(char * buffer, int box){
 	HWND hDlgStat = GetDlgItem(GetActiveWindow(), EB_STATBOX);
 	HWND hDlgStatus = GetDlgItem(GetActiveWindow(), EB_STATUSBOX);
