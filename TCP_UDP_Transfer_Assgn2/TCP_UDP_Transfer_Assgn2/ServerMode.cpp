@@ -23,16 +23,16 @@
 --  PROGRAMMER : Ramzi Chennafi
 --
 --	NOTES :
---	Server side of the UDP/TCP transfer program. Processes WM_SOCKET messages and responds accordingly based on the 
+--	Server side of the UDP/TCP transfer program. Processes WM_SOCKET messages and responds accordingly based on the
 --	intial header transfered on both the UDP and TCP protocols. Processes TCP data and saves/tosses based on the header mode
---	and on the UDP side will do the same, except each UDP packet is acknowledged by the server to the client. 
+--	and on the UDP side will do the same, except each UDP packet is acknowledged by the server to the client.
 ----------------------------------------------------------------------------------------------------------------------*/
 #include "stdafx.h"
 #include "TCP_UDP_Transfer_Assgn2.h"
 LPSOCKET_INFORMATION SocketInfo; // struct which holds crucial header data
-static time_t startTime; // transfer start time
-static time_t endTime;	//	transfer end time
-static double seconds;
+static DWORD startTime; // transfer start time
+static DWORD endTime;	//	transfer end time
+static DWORD seconds;
 char * buffer; // buffer allocated for holding transfer data
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: init_server
@@ -48,7 +48,7 @@ char * buffer; // buffer allocated for holding transfer data
 --      RETURNS: void
 --
 --      NOTES:
---      Intializes the server, the type of intialization depends on the chosen protocol in the settings. Listens to the socket 
+--      Intializes the server, the type of intialization depends on the chosen protocol in the settings. Listens to the socket
 --		whenever the connection is TCP.
 ----------------------------------------------------------------------------------------------------------------------*/
 void init_server(HWND hwnd){
@@ -108,9 +108,9 @@ void init_server(HWND hwnd){
 		st->server_socket = Listen;
 		st->client_socket = Send;
 		SetClassLongPtr(hwnd, 0, (LONG)st);
-		activity("UDP Server intiated", EB_STATUSBOX);
+		activity("UDP Server intiated.\n", EB_STATUSBOX);
 	}
-	activity("TCP Server intiated", EB_STATUSBOX);
+	activity("TCP Server intiated.\n", EB_STATUSBOX);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: socket_event
@@ -127,8 +127,8 @@ void init_server(HWND hwnd){
 --      RETURNS: void
 --
 --      NOTES:
---      Asynchronously responds to socket accept and read events on the server side of the program. Will reallocate the 
---		SocketInfo structure whenever a transfer ends. 
+--      Asynchronously responds to socket accept and read events on the server side of the program. Will reallocate the
+--		SocketInfo structure whenever a transfer ends.
 ----------------------------------------------------------------------------------------------------------------------*/
 void socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam){
 
@@ -182,7 +182,7 @@ void socket_event(HWND hwnd, WPARAM wParam, LPARAM lParam){
 --      RETURNS: int, many return values, if the value is >= to 1 - it is assumed the transfer has ended. Otherwise it continues.
 --
 --      NOTES:
---		Interface for reading the TCP data and header. 
+--		Interface for reading the TCP data and header.
 ----------------------------------------------------------------------------------------------------------------------*/
 int read_tcp(HWND hwnd, SOCKET sock){
 	if (SocketInfo->header_received == 0){
@@ -204,7 +204,7 @@ int read_tcp(HWND hwnd, SOCKET sock){
 --      RETURNS: int, many return values, if the value is >= to 1 - it is assumed the transfer has ended. Otherwise it continues.
 --
 --      NOTES:
---      Interface for reading the UDP data and header. 
+--      Interface for reading the UDP data and header.
 ----------------------------------------------------------------------------------------------------------------------*/
 int read_udp(HWND hwnd, SOCKET sock){
 	if (SocketInfo->header_received == 0){
@@ -234,7 +234,7 @@ int grab_header(HWND hwnd, SOCKET sock){
 	}
 	buffer = (char*)malloc(sizeof(char)* (SocketInfo->packet_size * SocketInfo->packets));
 	memset(buffer, 0, (SocketInfo->packet_size * SocketInfo->packets));
-	time(&startTime);
+	startTime = GetTickCount();
 	SocketInfo->header_received = 1;
 	SocketInfo->BytesRECV = 0;
 	SocketInfo->totalRecv = 0;
@@ -286,7 +286,7 @@ void accept_data(HWND hwnd, WPARAM wParam){
 --
 --      NOTES:
 --      Takes a HWND to the parent window.
---	
+--
 --		Sets up the system to accept a TCP data transfer, reads the packet and adds it to the main buffer. Once the transfer
 --		has been completed a message is printed or the data is saved, based on the specified mode.
 ----------------------------------------------------------------------------------------------------------------------*/
@@ -302,9 +302,9 @@ int init_tcp_receive(HWND hwnd){
 	SocketInfo->DataBuf.buf = tempBuffer;
 
 	if ((status = WSARecv(st->server_socket, &SocketInfo->DataBuf, 1, &SocketInfo->BytesRECV, &Flags, NULL, NULL)) == SOCKET_ERROR){
-			sprintf_s(msg, "Error %d in TCP WSARecv(data) with return of %d\n", WSAGetLastError(), status);
-			activity(msg, EB_STATUSBOX);
-			return 0;
+		sprintf_s(msg, "Error %d in TCP WSARecv(data) with return of %d\n", WSAGetLastError(), status);
+		activity(msg, EB_STATUSBOX);
+		return 0;
 	}
 
 	if (SocketInfo->mode == FILEMODE){
@@ -316,8 +316,8 @@ int init_tcp_receive(HWND hwnd){
 	SocketInfo->totalRecv += SocketInfo->BytesRECV;
 
 	if (SocketInfo->totalRecv == SocketInfo->total_size){
-		time(&endTime);
-		seconds = difftime(endTime, startTime);
+		endTime = GetTickCount();
+		seconds = endTime - startTime;
 		return transfer_completion(hwnd, SocketInfo->mode);
 	}
 	return -2; // packets remaining
@@ -369,7 +369,8 @@ int init_udp_receive(HWND hwnd){
 	SocketInfo->totalRecv += SocketInfo->BytesRECV;
 
 	if (SocketInfo->totalRecv == SocketInfo->total_size || SocketInfo->packets == 0){
-		time(&endTime);
+		endTime = GetTickCount();
+		seconds = endTime - startTime;
 		return transfer_completion(hwnd, SocketInfo->mode);
 	}
 	return -2; // packets remaining
@@ -396,15 +397,15 @@ int init_udp_receive(HWND hwnd){
 int transfer_completion(HWND hwnd, int mode){
 
 	char msg[MAX_SIZE];
-	
+
 	if (mode == 0){
 		save_file(hwnd, buffer, SocketInfo->totalRecv);
-		sprintf_s(msg, "Recieved %d bytes. File transfer completed in %f seconds.\n", SocketInfo->totalRecv, seconds);
+		sprintf_s(msg, "Recieved %d bytes. File transfer completed in %d milliseconds.\n", SocketInfo->totalRecv, seconds);
 		activity(msg, EB_STATUSBOX);
 		return 3;
 	}
 
-	sprintf_s(msg, "Recieved %d bytes. Garbage transfer completed in %f seconds.\n", SocketInfo->totalRecv, seconds);
+	sprintf_s(msg, "Recieved %d bytes. Garbage transfer completed in %d milliseconds.\n", SocketInfo->totalRecv, seconds);
 	activity(msg, EB_STATUSBOX);
 	return 2; // transfer completed, closing connection
 }

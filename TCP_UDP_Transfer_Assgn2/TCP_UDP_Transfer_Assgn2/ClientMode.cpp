@@ -29,9 +29,9 @@
 ----------------------------------------------------------------------------------------------------------------------*/
 #include "stdafx.h"
 #include "TCP_UDP_Transfer_Assgn2.h"
-static time_t startTime; // transfer start time
-static time_t endTime;	//	transfer end time
-static double seconds;
+static DWORD startTime; // transfer start time
+static DWORD endTime;	//	transfer end time
+static DWORD seconds;
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: init_client
 --
@@ -266,7 +266,7 @@ void tcp_deliver_packets(HWND hwnd, WSABUF * wsaBuffers, SOCKET sock, int totalB
 		activity(msg, EB_STATUSBOX);
 	}
 
-	time(&startTime);
+	startTime = GetTickCount();
 
 	for (int p = 0; p < buffer_count; p++){
 		if ((status = WSASend(sock, &wsaBuffers[p], 1, &numBytesSent, NULL, NULL, NULL)) < 0){
@@ -276,9 +276,10 @@ void tcp_deliver_packets(HWND hwnd, WSABUF * wsaBuffers, SOCKET sock, int totalB
 		}
 	}
 
-	time(&endTime);
-	seconds = difftime(endTime, startTime);
-	activity("Data transmission complete.\n", EB_STATUSBOX);
+	endTime = GetTickCount();
+	seconds = endTime - startTime;
+	sprintf_s(msg, "Data transmission completed in %d milliseconds.\n", seconds);
+	activity(msg, EB_STATUSBOX);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: udp_deliver_packets
@@ -341,7 +342,7 @@ void udp_deliver_packets(HWND hwnd, int totalBytesRead, int packet_size, int buf
 		packets_lost++;
 	}
 	
-	time(&startTime);
+	startTime = GetTickCount();
 
 	for (int p = 0; p < buffer_count; p++){
 		while (1){ // transferring the actual data
@@ -356,9 +357,9 @@ void udp_deliver_packets(HWND hwnd, int totalBytesRead, int packet_size, int buf
 		}
 	}
 
-	time(&endTime);
-	seconds = difftime(endTime, startTime);
-	sprintf_s(msg, "Data transmission completed in %f seconds.", seconds);
+	endTime = GetTickCount();
+	seconds = endTime - startTime;
+	sprintf_s(msg, "Data transmission completed in %d milliseconds.\n", seconds);
 	activity(msg, EB_STATUSBOX);
 }
 /*------------------------------------------------------------------------------------------------------------------
@@ -385,7 +386,7 @@ int receive_acknowledge(HWND hwnd){
 	int status, ackrecv;
 	
 	if ((status = recvfrom(st->server_socket, ack, ACK_SIZE, 0, 0, 0)) == -1){
-		activity("Error in acknowledgement, run before it blows up!", EB_STATUSBOX);
+		activity("Error in acknowledgement, run before it blows up!\n", EB_STATUSBOX);
 	}
 
 	ackrecv = (strcmp(ack, ";ACK;") == 0) ? 1 : 0;

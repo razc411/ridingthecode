@@ -216,7 +216,7 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct){
 	SETTINGS * st = (SETTINGS*) malloc(sizeof(SETTINGS));
 	st->client_port = "5150";
 	st->server_port = "5151";
-	st->protocol = TCP;
+	st->protocol = UDP;
 	st->packet_size = 2; // defaults to 20kb
 	st->times_to_send = "1";
 	st->client_send_ip = "169.254.93.101";
