@@ -278,7 +278,6 @@ void tcp_deliver_packets(HWND hwnd, WSABUF * wsaBuffers, SOCKET sock, int totalB
 
 	time(&endTime);
 	seconds = difftime(endTime, startTime);
-	set_transfer_stats_client(hwnd, 0, (buffer_count * packet_size), seconds, packet_size);
 	activity("Data transmission complete.\n", EB_STATUSBOX);
 }
 /*------------------------------------------------------------------------------------------------------------------
@@ -356,10 +355,11 @@ void udp_deliver_packets(HWND hwnd, int totalBytesRead, int packet_size, int buf
 			packets_lost++;
 		}
 	}
+
 	time(&endTime);
 	seconds = difftime(endTime, startTime);
-	set_transfer_stats_client(hwnd, packets_lost, (buffer_count * packet_size), seconds, packet_size);
-	activity("Data transmission complete.", EB_STATUSBOX);
+	sprintf_s(msg, "Data transmission completed in %f seconds.", seconds);
+	activity(msg, EB_STATUSBOX);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: receive_acknowledge

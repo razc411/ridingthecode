@@ -20,7 +20,6 @@
 ----------------------------------------------------------------------------------------------------------------------*/
 #include "stdafx.h"
 #include "TCP_UDP_Transfer_Assgn2.h"
-static LPSTR stats = "statistics.txt";
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: init_server
 --
@@ -115,65 +114,6 @@ void save_file(HWND hwnd, char * buffer, int size){
 	WriteFile(hFile, buffer, size, &bytesWritten, NULL);
 
 	CloseHandle(hFile);
-}
-/*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: init_server
---
---      DATE: Febuary 6 2014
---      REVISIONS: none
---
---      DESIGNER: Ramzi Chennafi
---      PROGRAMMER: Ramzi Chennafi
---
---      INTERFACE: void init_server(HWND hwnd) , takes the parent HWND as an argument.
---
---      RETURNS: void
---
---      NOTES:
---      Intializes the server, the type of intialization depends on the chosen protocol in the settings. Listens to the socket
---		whenever the connection is TCP.
-----------------------------------------------------------------------------------------------------------------------*/
-void set_transfer_stats_server(HWND hwnd, LPSOCKET_INFORMATION SocketInfo, double seconds){
-	
-	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
-	char buffer[MAX_SIZE]; 
-	char * prot;
-	prot = (st->protocol == 0) ? "TCP" : "UDP";
-	sprintf_s(buffer, "Recieved %d bytes in %f seconds. %d packets were sent over %s.\n", SocketInfo->totalRecv, seconds, SocketInfo->packets, prot);
-	
-	HANDLE hFile = CreateFile(stats, FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
-	if (hFile == INVALID_HANDLE_VALUE){
-		activity("Failed to save statistics.\n", EB_STATUSBOX);
-		return;
-	}
-	
-	WriteFile(hFile, buffer, strlen(buffer), NULL, NULL);
-
-	CloseHandle(hFile);
-
-}
-void set_transfer_stats_client(HWND hwnd, int lost_packets, int total_size, double seconds, int packet_size){
-
-	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
-	char buffer[MAX_SIZE];
-
-	if (st->protocol == TCP){
-		sprintf_s(buffer, "Sent %d bytes in %f seconds. %d packets were sent over TCP.\n", total_size, seconds, (total_size/packet_size));
-	}
-	else{
-		sprintf_s(buffer, "Sent %d bytes in %f seconds. %d packets were sent over UDP. %d packets were lost.\n", total_size, seconds, (total_size / packet_size), lost_packets);
-	}
-
-	HANDLE hFile = CreateFile(stats, FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
-	if (hFile == INVALID_HANDLE_VALUE){
-		activity("Failed to save statistics.\n", EB_STATUSBOX);
-		return;
-	}
-
-	WriteFile(hFile, buffer, strlen(buffer), NULL, NULL);
-
-	CloseHandle(hFile);
-
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: set_settings

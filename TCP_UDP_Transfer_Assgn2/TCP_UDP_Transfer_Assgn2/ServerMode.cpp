@@ -110,6 +110,7 @@ void init_server(HWND hwnd){
 		SetClassLongPtr(hwnd, 0, (LONG)st);
 		activity("UDP Server intiated", EB_STATUSBOX);
 	}
+	activity("TCP Server intiated", EB_STATUSBOX);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: socket_event
@@ -317,7 +318,6 @@ int init_tcp_receive(HWND hwnd){
 	if (SocketInfo->totalRecv == SocketInfo->total_size){
 		time(&endTime);
 		seconds = difftime(endTime, startTime);
-		set_transfer_stats_server(hwnd, SocketInfo, seconds);
 		return transfer_completion(hwnd, SocketInfo->mode);
 	}
 	return -2; // packets remaining
@@ -370,7 +370,6 @@ int init_udp_receive(HWND hwnd){
 
 	if (SocketInfo->totalRecv == SocketInfo->total_size || SocketInfo->packets == 0){
 		time(&endTime);
-		set_transfer_stats_server(hwnd, SocketInfo, seconds);
 		return transfer_completion(hwnd, SocketInfo->mode);
 	}
 	return -2; // packets remaining
@@ -397,7 +396,7 @@ int init_udp_receive(HWND hwnd){
 int transfer_completion(HWND hwnd, int mode){
 
 	char msg[MAX_SIZE];
-
+	
 	if (mode == 0){
 		save_file(hwnd, buffer, SocketInfo->totalRecv);
 		sprintf_s(msg, "Recieved %d bytes. File transfer completed in %f seconds.\n", SocketInfo->totalRecv, seconds);

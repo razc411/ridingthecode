@@ -219,7 +219,7 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct){
 	st->protocol = TCP;
 	st->packet_size = 2; // defaults to 20kb
 	st->times_to_send = "1";
-	st->client_send_ip = "127.0.0.1";
+	st->client_send_ip = "169.254.93.101";
 	st->mode = PACKETMODE;
 	SetClassLongPtr(hwnd, 0, (LONG)st);
 
