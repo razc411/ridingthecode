@@ -127,13 +127,8 @@ void DrawDisplay(HWND hwnd){
 
 	buttons[0] = CreateWindow("EDIT", "",
 			ES_LEFT | ES_MULTILINE | WS_VSCROLL | WS_VISIBLE | WS_CHILD | ES_READONLY,
-			20, 20, 600, 400,
+			20, 20, 880, 400,
 			hwnd, (HMENU)EB_STATUSBOX, GetModuleHandle(NULL), NULL);
-	
-	buttons[1] = CreateWindow("EDIT", "",
-			ES_LEFT | ES_MULTILINE | WS_VISIBLE | WS_CHILD | ES_READONLY,
-			630, 20, 280, 400,
-			hwnd, (HMENU)EB_STATBOX, GetModuleHandle(NULL), NULL);
 
 }
 /*------------------------------------------------------------------------------------------------------------------

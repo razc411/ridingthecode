@@ -29,6 +29,9 @@
 ----------------------------------------------------------------------------------------------------------------------*/
 #include "stdafx.h"
 #include "TCP_UDP_Transfer_Assgn2.h"
+static time_t startTime; // transfer start time
+static time_t endTime;	//	transfer end time
+static double seconds;
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: init_client
 --
@@ -220,7 +223,7 @@ void init_transfer(HWND hwnd){
 	if(st->protocol == UDP)
 		udp_deliver_packets(hwnd, totalBytesRead, packet_size, buffer_count, wsaBuffers);
 	else
-		tcp_deliver_packets(wsaBuffers, st->client_socket, totalBytesRead, packet_size, buffer_count, st->mode);
+		tcp_deliver_packets(hwnd, wsaBuffers, st->client_socket, totalBytesRead, packet_size, buffer_count, st->mode);
 
 	free(wsaBuffers);
 }
@@ -233,7 +236,7 @@ void init_transfer(HWND hwnd){
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: void tcp_deliver_packets(WSABUF * wsaBuffers, SOCKET sock, int totalBytesRead, int packet_size, int buffer_count, int mode)
+--      INTERFACE: void tcp_deliver_packets(HWND hwnd, WSABUF * wsaBuffers, SOCKET sock, int totalBytesRead, int packet_size, int buffer_count, int mode)
 --
 --      RETURNS: void
 --
@@ -244,12 +247,12 @@ void init_transfer(HWND hwnd){
 --		Delivers TCP packets to the specified host. Intially sends a header containing the int variables passed to the function
 --		before sending the actual data. Must be passed an array of WSABUFs, with each WSABUF containing a packet of data.
 ----------------------------------------------------------------------------------------------------------------------*/
-void tcp_deliver_packets(WSABUF * wsaBuffers, SOCKET sock, int totalBytesRead, int packet_size, int buffer_count, int mode){
+void tcp_deliver_packets(HWND hwnd, WSABUF * wsaBuffers, SOCKET sock, int totalBytesRead, int packet_size, int buffer_count, int mode){
 	
 	int status;
 	char msg[MAX_SIZE];
 	DWORD  numBytesSent = 0;
-	
+
 	char flags[HEADER_SIZE];
 	memset(flags, '\0', HEADER_SIZE);
 	sprintf_s(flags, ";%d,%d,%d,%d;", totalBytesRead, packet_size, buffer_count, mode);
@@ -263,6 +266,8 @@ void tcp_deliver_packets(WSABUF * wsaBuffers, SOCKET sock, int totalBytesRead, i
 		activity(msg, EB_STATUSBOX);
 	}
 
+	time(&startTime);
+
 	for (int p = 0; p < buffer_count; p++){
 		if ((status = WSASend(sock, &wsaBuffers[p], 1, &numBytesSent, NULL, NULL, NULL)) < 0){
 			sprintf_s(msg, "Error %d in TCP WSASend(buffer) with return of %d\n", WSAGetLastError(), status);
@@ -271,6 +276,9 @@ void tcp_deliver_packets(WSABUF * wsaBuffers, SOCKET sock, int totalBytesRead, i
 		}
 	}
 
+	time(&endTime);
+	seconds = difftime(endTime, startTime);
+	set_transfer_stats_client(hwnd, 0, (buffer_count * packet_size), seconds, packet_size);
 	activity("Data transmission complete.\n", EB_STATUSBOX);
 }
 /*------------------------------------------------------------------------------------------------------------------
@@ -299,7 +307,8 @@ void tcp_deliver_packets(WSABUF * wsaBuffers, SOCKET sock, int totalBytesRead, i
 void udp_deliver_packets(HWND hwnd, int totalBytesRead, int packet_size, int buffer_count, WSABUF * buffers){
 
 	SETTINGS * st = (SETTINGS*)GetClassLongPtr(hwnd, 0);
-
+	
+	int packets_lost = 0;
 	int status;
 	char msg[MAX_SIZE];
 	DWORD  numBytesSent = 0;
@@ -330,8 +339,11 @@ void udp_deliver_packets(HWND hwnd, int totalBytesRead, int packet_size, int buf
 		}
 
 		if (receive_acknowledge(hwnd) == 1) { break; } 
+		packets_lost++;
 	}
-		
+	
+	time(&startTime);
+
 	for (int p = 0; p < buffer_count; p++){
 		while (1){ // transferring the actual data
 			if ((status = WSASendTo(st->client_socket, &buffers[p], 1, &numBytesSent, 0, (struct sockaddr *)&sin, sizeof(sin), NULL, NULL)) < 0){
@@ -341,9 +353,12 @@ void udp_deliver_packets(HWND hwnd, int totalBytesRead, int packet_size, int buf
 			}
 
 			if (receive_acknowledge(hwnd) == 1){ break; }
+			packets_lost++;
 		}
 	}
-
+	time(&endTime);
+	seconds = difftime(endTime, startTime);
+	set_transfer_stats_client(hwnd, packets_lost, (buffer_count * packet_size), seconds, packet_size);
 	activity("Data transmission complete.", EB_STATUSBOX);
 }
 /*------------------------------------------------------------------------------------------------------------------

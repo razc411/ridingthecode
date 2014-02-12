@@ -30,7 +30,9 @@
 #include "stdafx.h"
 #include "TCP_UDP_Transfer_Assgn2.h"
 LPSOCKET_INFORMATION SocketInfo; // struct which holds crucial header data
-time_t startTime; // transfer start time
+static time_t startTime; // transfer start time
+static time_t endTime;	//	transfer end time
+static double seconds;
 char * buffer; // buffer allocated for holding transfer data
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: init_server
@@ -313,6 +315,9 @@ int init_tcp_receive(HWND hwnd){
 	SocketInfo->totalRecv += SocketInfo->BytesRECV;
 
 	if (SocketInfo->totalRecv == SocketInfo->total_size){
+		time(&endTime);
+		seconds = difftime(endTime, startTime);
+		set_transfer_stats_server(hwnd, SocketInfo, seconds);
 		return transfer_completion(hwnd, SocketInfo->mode);
 	}
 	return -2; // packets remaining
@@ -364,6 +369,8 @@ int init_udp_receive(HWND hwnd){
 	SocketInfo->totalRecv += SocketInfo->BytesRECV;
 
 	if (SocketInfo->totalRecv == SocketInfo->total_size || SocketInfo->packets == 0){
+		time(&endTime);
+		set_transfer_stats_server(hwnd, SocketInfo, seconds);
 		return transfer_completion(hwnd, SocketInfo->mode);
 	}
 	return -2; // packets remaining
@@ -389,13 +396,7 @@ int init_udp_receive(HWND hwnd){
 ----------------------------------------------------------------------------------------------------------------------*/
 int transfer_completion(HWND hwnd, int mode){
 
-	time_t endTime;
-	double seconds;
 	char msg[MAX_SIZE];
-
-	time(&endTime);
-
-	seconds = difftime(endTime, startTime);
 
 	if (mode == 0){
 		save_file(hwnd, buffer, SocketInfo->totalRecv);
@@ -508,6 +509,7 @@ void grab_header_info(char * hdBuffer){
 	}
 	mode[q] = '\0';
 
+	SocketInfo->initPackets = atoi(pcks);
 	SocketInfo->total_size = atoi(tBytes);
 	SocketInfo->packet_size = atoi(psize);
 	SocketInfo->mode = atoi(mode);

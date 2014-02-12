@@ -17,6 +17,7 @@ typedef struct _SETTINGS{
 typedef struct _SOCKET_INFORMATION {
 	WSABUF DataBuf;
 	DWORD BytesRECV;
+	int initPackets;
 	int packets;
 	int packet_size;
 	int total_size;
@@ -55,7 +56,7 @@ void				client_connect(HWND hwnd);
 void				udp_deliver_packets(HWND hwnd, int totalBytesRead, int packet_size, int buffer_count, WSABUF * wsaBuffers);
 // TCP Client Side
 void				init_transfer(HWND hwnd);
-void				tcp_deliver_packets(WSABUF * wsaBuffers, SOCKET sock, int totalBytesRead, int packet_size, int buffer_count, int mode);
+void				tcp_deliver_packets(HWND hwnd, WSABUF * wsaBuffers, SOCKET sock, int totalBytesRead, int packet_size, int buffer_count, int mode);
 // TCP Server Side
 int					read_tcp(HWND hwnd, SOCKET sock);
 int					init_tcp_receive(HWND hwnd);
@@ -76,3 +77,5 @@ void				save_file(HWND hwnd, char * buffer, int size);
 void				activity(char * buffer, int box);
 void				disconnect(HWND hwnd);
 int					grab_header(HWND hwnd, SOCKET sock);
+void				set_transfer_stats_server(HWND hwnd, LPSOCKET_INFORMATION SocketInfo, double seconds);
+void				set_transfer_stats_client(HWND hwnd, int lost_packets, int total_size, double seconds, int packet_size);

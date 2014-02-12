@@ -14,6 +14,7 @@ Features
 Issues
 - Can freeze and have the connection bug out when trying to disconnect a TCP connection.
 - Cannot be used on localhost
+- Never got a chance to get the stat screen working
 
 Things to Know when using this program:
 
