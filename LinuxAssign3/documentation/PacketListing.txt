@@ -1,0 +1,58 @@
+=========Server Packets
+
+PKT0
+server_kick_pkt
+	char * channel_name
+	char * kick_msg
+
+# Sent whenever the server admin types /kick <channel name> <client name> <msg>.
+# Forces the player to leave the channel.
+
+PKT1
+server_msg_pkt
+	char * client_name
+	char * msg
+	char * channel_name
+
+# Sent whenever the server recieves a message from a client. This packet is 
+# broadcasted to everyone who is in the same channel as the client. It contains
+# the message that client sent to the server.
+
+PKT2
+channel_info_pkt
+	int code
+	char * channel name
+	char * channel_clients
+
+# Sent whenever a user attempts to establish a connection or a new client joins 
+# the channel session. In the case of connection code a 0 indicates 
+# REJECTED CONNECTION, code 1 represents a CONNECTION ACCEPTED and 2 represents
+# a CLIENT_LIST_UPDATE which simply passes data so the clients chat userlist is
+# updated.
+
+==========Client Packets
+
+PKT3
+client_msg_pkt
+	char * client_name
+	char * msg
+
+# Sent whenever the user hits enter after typing in a message,
+# recieved by the channels devoted thread and processed, a PKT1
+# is sent by the server to all clients in the channel of the sending
+# client.
+
+PKT4
+client_quit_pkt
+	quit code
+
+# Sent whenever the user types the /leave <channel_name> command and hits enter.
+# Will tell the server channel thread to drop that client from the channel.
+
+PKT5
+client_join_pkt
+	char* client_name
+	char* channel_name
+
+# Sent whenever a client wishes to join a channel. The server responds with a  # channel code telling the client if they were accepted or not. If they were, 
+# the data is taken and used to setup a channel.

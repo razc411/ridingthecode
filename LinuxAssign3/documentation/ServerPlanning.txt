@@ -1,0 +1,43 @@
+main 
+	intializes any specified channel threads
+	intializes semaphore for channel list
+	starts up channels and connection thread
+	if an input command is recieved
+		if quit
+			close all connections
+			close threads
+			exit
+		if kick <user> <channel>
+			send out kick packet to user
+			close socket
+		if shutdown <channel>
+			send out kick packet to all users of channel
+			close sockets
+			close channel thread
+		if create <channel>
+			creates a new channel thread
+			adds channel to channel list
+
+accept_thread
+	listen for incoming connections
+	if connection found
+		establish connection
+		add to client list
+		increment channel semaphore
+
+channel_thread
+	checks for any new clients in client list
+		if new client in list signal recieved
+			add to internal client list
+	if a command is recieved respond
+		if join, send connection code and data		
+		if quit, remove client from list, close socket
+		if kick, remove client from list
+		if leave, remove from channel client list
+		if msg, broadcast to other clients	
+
+===================================================
+
+Server will be command line, accepts typed input, plans to have 
+data listing functions such as listing players in a channel, all 
+open channels.
