@@ -1,0 +1,26 @@
+main
+	starts up channels and connection thread
+	if a client is recieved
+		add to client list for proper channel
+
+channel_thread
+	checks for any new clients in client list
+		if new client in list signal recieved
+			add to internal client list
+	if a command is recieved respond
+		if join, send connection code and data		
+		if quit, remove client from list, close socket
+		if kick, remove client from list
+		if leave, remove from channel client list
+		if msg, broadcast to other clients	
+
+
+
+
+main
+	
+	intializes any specified channel threads
+	intializes semaphore for channel list
+	listens for new connections
+		if client connected
+			add to client list and channel
