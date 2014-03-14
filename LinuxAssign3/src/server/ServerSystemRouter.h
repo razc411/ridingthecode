@@ -1,11 +1,7 @@
-#define TCP_PORT 			43534
-#define MAX_CHANNELS 		50
-#define READ 				0
-#define WRITE 				1
-#define MAX_CHANNEL_NAME 	20
+#include "utils.h"
+
 
 typedef struct{
-	int **client_list;
 	char **channel_name_list;
 	int channel_num;
 	sem_t channel_name_sem;
@@ -15,8 +11,13 @@ typedef struct{
 } CHANNEL_DATA;
 
 typedef struct{
-	int **client_list;
-	sem_t client_list_sem;
 	int write_pipe;
 	int read_pipe;
 } CMANAGERDATA;
+
+void kick_client(int read_pipe);
+void channel_close(int input_pipe);
+void close_server(int cm_pipe[2], int input_pipe[2]);
+void* InputManager(void * pipes);
+void add_channel(CHANNEL_DATA * chdata, int * max_fd, fd_set * listen_fds, int input_pipe);
+void add_client(int cm_pipe);

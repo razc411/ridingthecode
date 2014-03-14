@@ -1,3 +1,5 @@
+#include "utils.h"
+
 /*
 	Wrapper function for resolve host.
 */
@@ -60,11 +62,11 @@ int recv_tcp(TCPsocket sock, void *buf, size_t bufsize)
 	if(numread == -1)
 	{
     	fprintf(stderr, "SDLNet_TCP_Recv: %s\n", SDLNet_GetError());
-    	return cnt_errno = ERR_TCP_RECV_FAIL;
+    	return -1;
 	}
 	else if(numread == 0){
         fprintf(stderr, "recv_tcp: Connection closed or reset.\n");
-		return cnt_errno = ERR_CONN_CLOSED;
+		return 0;
 	}
 	
 	return numread;
@@ -97,20 +99,17 @@ void *recv_tcp_packet(TCPsocket sock, uint32_t *packet_type, uint64_t *timestamp
 
 	numread = recv_tcp(sock, packet_type, sizeof(uint32_t));
 	if(numread < 0){
-		cnt_errno = ERR_TCP_RECV_FAIL;
 		return NULL;
 	}
 	else if(numread == 0){
-		cnt_errno = ERR_CONN_CLOSED;
 		return NULL;
 	}
 
-	packet_size = packet_sizes[(*packet_type) - 1];
+	packet_size = 1;//packet_sizes[(*packet_type) - 1];
 
 	if((packet = malloc(packet_size)) == NULL)
 	{
 		perror("recv_ tcp_packet: malloc");
-		cnt_errno = errno;
 		return NULL;
 	}
 
@@ -131,4 +130,24 @@ int dispatch_thread(void *(*function)(void *), void *params, pthread_t *handle)
 
 	pthread_detach(*handle);
 	return 0;
+}
+
+int read_pipe(int fd, void *buf, size_t count)
+{
+    int ret = read(fd, buf, count);
+    
+    if(ret == -1)
+        perror("read_pipe");        
+
+    return ret;
+}
+
+int write_pipe(int fd, const void *buf, size_t count)
+{
+    int ret = write(fd, buf, count);
+    
+    if(ret == -1)
+        perror("write_pipe");        
+
+    return ret;
 }

@@ -1,11 +1,21 @@
 #ifndef PACKETS_H
 #define PACKETS_H
 
+#define MAX_CLIENTS 		100
+#define MAX_STRING 			1024
+#define TCP_PORT 			43534
+#define MAX_CHANNELS 		50
+#define READ 				0
+#define WRITE 				1
+#define MAX_CHANNEL_NAME 	20
+#define MAX_USER_NAME		20
+#define TYPE_SIZE			sizeof(uint32_t)
+
 //INTERNAL SERVER PKT DEFS
 #define CLIENT_KICK  	0
 #define CLIENT_ADD   	1
 #define CLIENT_QUIT	 	2
-#define CHANNEL_EXIT 	3
+#define SERVER_EXIT 	3
 #define CHANNEL_CREATE 	4
 #define CHANNEL_CLOSE 	5
 
@@ -46,7 +56,7 @@ typedef struct pkt1
 
 typedef struct pkt2
 {
-	int code;
+	uint32_t code;
 	char * channel_name;
 	char ** channel_clients;
 } S_CHANNEL_INFO_PKT;
