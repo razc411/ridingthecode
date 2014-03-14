@@ -56,3 +56,47 @@ client_join_pkt
 
 # Sent whenever a client wishes to join a channel. The server responds with a  # channel code telling the client if they were accepted or not. If they were, 
 # the data is taken and used to setup a channel.
+
+================INTERNAL SERVER PACKETS
+
+TYPE 0 
+	DEFINES CLIENT KICK
+		char * client_name
+
+TYPE 1 
+	DEFINES CLIENT ADD
+		char * client_socket
+
+TYPE 2
+	DEFINES CLIENT QUIT
+		char * client_name
+
+TYPE 3
+	DEFINES CHANNEL EXIT
+		int channel num
+
+TYPE 4
+	DEFINES CHANNEL CREATE
+		char * channel_name
+
+TYPE 5
+	DEFINES CHANNEL CLOSE
+		int channel_num
+
+===============INTERNAL CLIENT PACKETS
+
+TYPE 0
+	DEFINES JOIN CHANNEL
+		char * channel_name
+
+TYPE 1
+	DEFINES QUIT CHANNEL
+		char * channel_name
+
+TYPE 2
+	DEFINES EXIT PROGRAM
+		no data
+
+TYPE 3
+	DEFINES CLIENT MESSAGE
+		char * msg
