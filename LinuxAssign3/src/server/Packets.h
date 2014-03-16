@@ -1,6 +1,7 @@
 #ifndef PACKETS_H
 #define PACKETS_H
 
+#define MAX_ARGS 			3
 #define MAX_CLIENTS 		100
 #define MAX_STRING 			1024
 #define TCP_PORT 			43534

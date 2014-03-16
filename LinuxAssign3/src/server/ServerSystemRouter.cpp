@@ -33,6 +33,7 @@ int main()
     fd_set      active;
 
     sem_t       channel_name_sem;
+    uint32_t    type;
 
 	CMANAGERDATA * cmdata = (CMANAGERDATA*)malloc(sizeof(CMANAGERDATA));
 	CHANNEL_DATA * chdata = (CHANNEL_DATA*)malloc(sizeof(CHANNEL_DATA));
@@ -60,7 +61,7 @@ int main()
     FD_SET(input_pipe[READ], &listen_fds);
     FD_SET(cm_pipe[READ], &listen_fds);
 
-    uint32_t type = -1;
+    type = -1;
 
     while(1)
     {
@@ -71,9 +72,7 @@ int main()
     	if(ret && FD_ISSET(input_pipe[READ], &active))
     	{  
 
-            if(read_pipe(input_pipe[READ], &type, TYPE_SIZE) == -1){
-
-            }
+            if(read_pipe(input_pipe[READ], &type, TYPE_SIZE) == -1){}
 
             else if(type == CHANNEL_CREATE)
     		{
@@ -202,8 +201,8 @@ void kick_client(int input_pipe)
         if(strcmp(channel_name_list[i], channel_name) == 0)
         {
             write_pipe(channel_pipes[channel_num][WRITE], &type, TYPE_SIZE);    
-            write_pipe(channel_pipes[channel_num][WRITE], &clientname, MAX_USER_NAME);
-            write_pipe(channel_pipes[channel_num][WRITE], &msg, MAX_STRING);
+            write_pipe(channel_pipes[channel_num][WRITE], clientname, MAX_USER_NAME);
+            write_pipe(channel_pipes[channel_num][WRITE], msg, MAX_STRING);
             break;
         }
     }
@@ -247,7 +246,44 @@ void close_server(int cm_pipe[2], int input_pipe[2])
     printf("Server exiting.\n");
 }
 
-void* InputManager(void * pipes)
+void* InputManager(void * indata)
 {
-    //recieve keyboard input
+    CMANAGERDATA * input_data = (CMANAGERDATA*) indata;
+
+    uint32_t type;
+    char * temp = NULL;
+    char cmd[MAX_STRING];
+    char arguments[MAX_ARGUMENTS][MAX_STRING];
+    size_t nbytes = MAX_STRING;
+
+    while(getline(&temp, &nbytes, stdin))
+    {
+        sscanf(temp, "%s", cmd);
+        
+        if(strcmp(cmd, "/create") == 0)
+        {
+            write_type(input_data->write_pipe, CHANNEL_CREATE);
+        }
+        if(strcmp(cmd, "/kick") == 0)
+        {
+            write_type(input_data->write_pipe, CLIENT_KICK);
+        }
+        if(strcmp(cmd, "/exit") == 0)
+        {
+            write_type(input_data->write_pipe, SERVER_EXIT);
+            break;
+        }
+        if(strcmp(cmd, "/close") == 0)
+        {
+            write_type(input_data->write_pipe, CHANNEL_CLOSE);
+        }
+    }
+}
+
+void write_type(int pipe, int type)
+{
+    if(write_pipe(pipe, &type, TYPE_SIZE) == -1)
+    {
+        perror("Failed to write type.");
+    }
 }

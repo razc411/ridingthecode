@@ -21,3 +21,4 @@ void close_server(int cm_pipe[2], int input_pipe[2]);
 void* InputManager(void * pipes);
 void add_channel(CHANNEL_DATA * chdata, int * max_fd, fd_set * listen_fds, int input_pipe);
 void add_client(int cm_pipe);
+void write_type(int pipe, int type);
