@@ -66,17 +66,19 @@ typedef struct pkt3
 {
 	char * client_name;
 	char * msg;
+	char * channel_name;
 } C_MSG_PKT;
 
 typedef struct pkt4
 {
 	int code;
+	char * channel_name;
 } C_QUIT_PKT;
 
 typedef struct pkt5{
 	char * client_name;
 	char * channel_name;
-	TCPsocket socket;
+	int tcp_socket;
 } C_JOIN_PKT;
 
 #endif
