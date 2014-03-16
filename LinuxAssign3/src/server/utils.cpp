@@ -1,121 +1,5 @@
 #include "server_defs.h"
-/*
-	Wrapper function for resolve host.
-*/
-int resolve_host(IPaddress *ip_addr, const uint16_t port, const char *host_ip_string)
-{
-    if(SDLNet_ResolveHost(ip_addr, host_ip_string, port) == -1)
-    {
-        fprintf(stderr, "SDLNet_ResolveHost: %s\n", SDLNet_GetError());
-        return -1;
-    }
-    return 0;
-}
-/**
- * Creates an IPaddress struct holding the IP address and port information for the SDL network functions.
- *
- * @param[in] num_sockets The number of sockets to be added to the set.
- * @param[in] ...         A list of size @a num_sockets of TCPsocket and UDPsocket structs 
- *                        to add to the set.
- *
- * @return An SDLNet_SocketSet pointer on success, or NULL on failure.
- *
- * @designer Shane Spoor
- * @author Shane Spoor
- *
- * @date Febuary 15, 2014
- */
-SDLNet_SocketSet make_socket_set(int num_sockets, ...)
-{
-    int i;
-	va_list socket_list; 	
-	SDLNet_SocketSet set = SDLNet_AllocSocketSet(num_sockets);
-
-	if(!set)
-	{
-		fprintf(stderr, "SDLNet_AllocSocketSet: %s\n", SDLNet_GetError());
-		return NULL;
-	}
-	
-	va_start(socket_list, num_sockets);
-	for(i = 0; i < num_sockets; i++)
-	{
-		if(SDLNet_AddSocket(set, va_arg(socket_list, SDLNet_GenericSocket)) == -1)
-		{
-			fprintf(stderr, "SDLNet_AddSocket: %s\n", SDLNet_GetError());
-			return NULL;
-		}
-	}
-
-	va_end(socket_list);
-	return set;
-}
-
-/*
-	Wrapper function for SDL TCP Recv.
-*/
-int recv_tcp(TCPsocket sock, void *buf, size_t bufsize)
-{
-	int numread = SDLNet_TCP_Recv(sock, buf, bufsize);
-	
-	if(numread == -1)
-	{
-    	fprintf(stderr, "SDLNet_TCP_Recv: %s\n", SDLNet_GetError());
-    	return -1;
-	}
-	else if(numread == 0){
-        fprintf(stderr, "recv_tcp: Connection closed or reset.\n");
-		return 0;
-	}
-	
-	return numread;
-}
-
-/*
-	Wrapper for checking a sdl socket set.
-*/
-int check_sockets(SDLNet_SocketSet set)
-{
-	int numready = SDLNet_CheckSockets(set, 100000);
-
-	if(numready == -1)
-	{
-		fprintf(stderr, "SDLNet_CheckSockets: %s\n", SDLNet_GetError());
-		perror("SDLNet_CheckSockets");
-	}
-
-	return numready;
-}
-
-/*
-	Wrapper for recving tcp packets.
-*/
-void* recv_tcp_packet(TCPsocket sock, uint32_t *packet_type)
-{
-	void     *packet;
-	int      numread;
-    uint32_t packet_size;
-
-	numread = recv_tcp(sock, packet_type, sizeof(uint32_t));
-	if(numread < 0){
-		return NULL;
-	}
-	else if(numread == 0){
-		return NULL;
-	}
-
-	packet_sizes[(*packet_type) - 1];
-
-	if((packet = malloc(packet_size)) == NULL)
-	{
-		perror("recv_ tcp_packet: malloc");
-		return NULL;
-	}
-
-	numread = recv_tcp(sock, packet, packet_size);
-	return packet;
-}
-
+#include "utils.h"
 /*
 	Wrapper for starting threads.
 */
@@ -149,4 +33,88 @@ int write_pipe(int fd, const void *buf, size_t count)
         perror("write_pipe");        
 
     return ret;
+}
+/*
+	Creates an accept socket.
+*/
+int create_accept_socket(){
+
+    int listen_sd, arg = 1;
+    struct sockaddr_in server;
+
+    if ((listen_sd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    {
+        perror("Cannot Create Socket!");
+    	return -1;
+    }
+    if (setsockopt (listen_sd, SOL_SOCKET, SO_REUSEADDR, &arg, sizeof(arg)) == -1)
+    {
+        perror("setsockopt");
+        return -2;
+    }
+    bzero((char *)&server, sizeof(struct sockaddr_in));
+    server.sin_family = AF_INET;
+    server.sin_port = htons(TCP_PORT);
+    server.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    if (bind(listen_sd, (struct sockaddr *)&server, sizeof(server)) == -1)
+    {
+        perror("bind error");
+        return -3;
+    }
+
+    return listen_sd;
+}
+/*
+	Accepts a new client
+*/
+int accept_new_client(int listen_sd)
+{
+	unsigned int client_len;
+	int client_sd = 0;
+	struct sockaddr_in client_addr;
+
+	client_len = sizeof(client_addr);
+	if ((client_sd = accept(listen_sd, (struct sockaddr *) &client_addr, &client_len)) == -1)
+	{
+	    perror("accept error");
+	    return -1;
+	}
+	
+	printf(" Remote Address:  %s\n", inet_ntoa(client_addr.sin_addr));
+
+	return client_sd;
+}
+
+int tcp_recieve(int sockfd, int bytes_to_read, char * packet)
+{
+	int type_size = TYPE_SIZE;
+	int numread = 0;
+	int * type_buffer;
+	
+	while ((numread = read(sockfd, type_buffer, type_size)) > 0)
+	{
+		type_buffer += numread;
+		type_size -= numread;
+	}
+
+	if(*type_buffer > 0)
+	{
+		fprintf(stderr, "Failed to read packet type.\n");
+		return -1;
+	}
+
+	while ((numread = read(sockfd, packet, bytes_to_read)) > 0)
+	{
+		packet += numread;
+		bytes_to_read -= numread;
+	}
+
+	if(bytes_to_read > 0)
+	{
+		fprintf(stderr, "Failed to read packet.\n");
+		return -2;
+	}
+
+	return *type_buffer;
 }

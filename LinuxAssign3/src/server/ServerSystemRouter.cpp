@@ -1,10 +1,11 @@
 #include "server_defs.h"
+#include "utils.h"
 
 int last_channel 		= 0;
 int open_channels 		= 0;
 int num_clients 		= 0;
 char **channel_name_list = (char**) malloc((sizeof(char) * MAX_CHANNEL_NAME) * MAX_CHANNELS);	
-TCPsocket * socket_list = (TCPsocket*) malloc(sizeof(TCPsocket) * MAX_CLIENTS);
+int * router_socket_list = (int*) malloc(sizeof(int) * MAX_CLIENTS);
 static int channel_pipes[MAX_CHANNELS][2];
 static pthread_t   thread_channel[MAX_CHANNELS];
 
@@ -27,46 +28,46 @@ static pthread_t   thread_channel[MAX_CHANNELS];
 ----------------------------------------------------------------------------------------------------------------------*/
 int main()
 {
-    pthread_t 	thread_cManager;
     pthread_t 	thread_input;
 
     int         input_pipe[2];
-    int 		cm_pipe[2];
   
-    int 		max_fd;
+    int 		max_fd, client_sd;
     fd_set      listen_fds;
     fd_set      active;
 
-    sem_t       channel_name_sem;
-    uint32_t    type;
+    uint32_t    type = -1;
 
-	CMANAGERDATA * cmdata = (CMANAGERDATA*)malloc(sizeof(CMANAGERDATA));
-	CHANNEL_DATA * chdata = (CHANNEL_DATA*)malloc(sizeof(CHANNEL_DATA));
+    THREAD_DATA * idata = (THREAD_DATA*)malloc(sizeof(THREAD_DATA));
+    CHANNEL_DATA * chdata = (CHANNEL_DATA*)malloc(sizeof(CHANNEL_DATA*));
 
 	pipe(input_pipe);
-	pipe(cm_pipe);
 
-	cmdata->write_pipe = cm_pipe[WRITE];
-    cmdata->read_pipe = cm_pipe[READ];
+    idata->write_pipe = input_pipe[WRITE];
+    idata->read_pipe = input_pipe[READ];
 
-    dispatch_thread(ConnectionManager, (void*)cmdata, &thread_cManager);
-    dispatch_thread(InputManager, (void*)input_pipe, &thread_input);
+    dispatch_thread(InputManager, (void*)idata, &thread_input);
 
-    max_fd = input_pipe[READ] > cm_pipe[READ] ? input_pipe[READ] : cm_pipe[READ];
+    int listen_sd = create_accept_socket();
+    
+    max_fd = input_pipe[READ] > listen_sd ? input_pipe[READ] : listen_sd;
 
 	FD_ZERO(&listen_fds);
     FD_SET(input_pipe[READ], &listen_fds);
-    FD_SET(cm_pipe[READ], &listen_fds);
-
-    type = -1;
+    FD_SET(listen_sd, &listen_fds);
 
     while(1)
     {
-    	int ret;
         active = listen_fds;
-    	ret = select(max_fd + 1, &active, NULL, NULL, NULL);
+    	select(max_fd + 1, &active, NULL, NULL, NULL);
 
-    	if(ret && FD_ISSET(input_pipe[READ], &active))
+        if(FD_ISSET(listen_sd, &active))
+        {
+            client_sd = accept_new_client(listen_sd);
+            add_client(client_sd);
+        }
+
+    	if(FD_ISSET(input_pipe[READ], &active))
     	{  
 
             if(read_pipe(input_pipe[READ], &type, TYPE_SIZE) == -1){}
@@ -88,45 +89,23 @@ int main()
 
     		else if(type == SERVER_EXIT)
             {
-                close_server(cm_pipe, input_pipe);
                 break;
             }
-
-    		ret--;
-    	}
-
-    	if(ret && FD_ISSET(cm_pipe[READ], &active))
-    	{
-    		if(read_pipe(cm_pipe[READ], &type, TYPE_SIZE) == -1){}
-
-    		else if(type == CLIENT_ADD)
-            {
-                add_client(cm_pipe[READ]);
-            }
-
-    		ret--;
     	}
 
     	for(int i = 0; i < open_channels; i++)
     	{
-    		if(ret && FD_ISSET(channel_pipes[i][READ], &active))
+    		if(FD_ISSET(channel_pipes[i][READ], &active))
     		{
     			//respond to channel quit
     			//clean channel data up
-    			ret--;
     		}
     	}
     }
 
-    free(cmdata);
-    free(chdata);
-    free(channel_name_list);
-    free(socket_list);
-    sem_close(&channel_name_sem);
+    free(idata);
     close(input_pipe[READ]);
-    close(cm_pipe[READ]);
     close(input_pipe[WRITE]);
-    close(cm_pipe[WRITE]);
 
     return 0;
 }
@@ -147,20 +126,24 @@ int main()
 --      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
 --      the connection is TCP.
 ----------------------------------------------------------------------------------------------------------------------*/
-void add_client(int cm_pipe)
+void add_client(int client_sd)
 {
-    C_JOIN_PKT info_packet;
+    C_JOIN_PKT * info_packet = (C_JOIN_PKT*)malloc(sizeof(C_JOIN_PKT));
 
-    read_pipe(cm_pipe, &info_packet, sizeof(C_JOIN_PKT));
+    if(tcp_recieve(client_sd, sizeof(C_JOIN_PKT), (char*)info_packet) != CLIENT_ADD)
+    {
+        perror("Failed to add client at tcp_recieve");
+        return;
+    }
 
     uint32_t type = CLIENT_ADD;
 
     for(int i = 0; i < open_channels; i++)
     {
-        if(strcmp(channel_name_list[i], info_packet.channel_name) == 0)
+        if(strcmp(channel_name_list[i], info_packet->channel_name) == 0)
         {
             write_pipe(channel_pipes[i][WRITE], &type, TYPE_SIZE);
-            write_pipe(channel_pipes[i][WRITE], &info_packet, sizeof(C_JOIN_PKT));
+            write_pipe(channel_pipes[i][WRITE], info_packet, sizeof(C_JOIN_PKT));
             break;
         }
     }
@@ -307,7 +290,6 @@ void close_server(int cm_pipe[2], int input_pipe[2])
 
     type = SERVER_EXIT;
 
-    write_pipe(cm_pipe[WRITE], &type, TYPE_SIZE);
     write_pipe(input_pipe[WRITE], &type, TYPE_SIZE);
 
     for(int i = 0; i < open_channels; i++)
@@ -337,13 +319,13 @@ void close_server(int cm_pipe[2], int input_pipe[2])
 ----------------------------------------------------------------------------------------------------------------------*/
 void* InputManager(void * indata)
 {
-    CMANAGERDATA * input_data = (CMANAGERDATA*) indata;
+    THREAD_DATA * input_data = (THREAD_DATA*) indata;
 
     uint32_t type;
     char *   temp = NULL;
     char     cmd[MAX_STRING];
-    char *   channelname;
-    char *   name;
+    char *   channelname = NULL;
+    char *   name = NULL;
     size_t   nbytes = MAX_STRING;
 
     while(getline(&temp, &nbytes, stdin))
@@ -354,7 +336,7 @@ void* InputManager(void * indata)
         {
             type = CHANNEL_CREATE;
             write_pipe(input_data->write_pipe, &type, TYPE_SIZE);
-            sscanf(temp, "%s %s %s", cmd, channelname);
+            sscanf(temp, "%s %s", cmd, channelname);
             write_pipe(input_data->write_pipe, channelname, MAX_CHANNEL_NAME);
         }
         else if(strcmp(cmd, "/kick") == 0)
@@ -379,4 +361,6 @@ void* InputManager(void * indata)
             write_pipe(input_data->write_pipe, channelname, MAX_CHANNEL_NAME);
         }
     }
+
+    return NULL;
 }

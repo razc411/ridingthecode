@@ -46,6 +46,7 @@ typedef struct pkt0
 {	
 	char * channel_name;
 	char * kick;
+	char * msg;
 } S_KICK_PKT;
 
 typedef struct pkt1
