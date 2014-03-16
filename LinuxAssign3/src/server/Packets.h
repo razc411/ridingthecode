@@ -76,6 +76,7 @@ typedef struct pkt4
 typedef struct pkt5{
 	char * client_name;
 	char * channel_name;
+	TCPsocket socket;
 } C_JOIN_PKT;
 
 #endif

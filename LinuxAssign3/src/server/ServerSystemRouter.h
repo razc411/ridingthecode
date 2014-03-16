@@ -1,6 +1,5 @@
 #include "utils.h"
 
-
 typedef struct{
 	char **channel_name_list;
 	int channel_num;

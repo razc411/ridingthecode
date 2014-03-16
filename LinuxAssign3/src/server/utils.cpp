@@ -1,5 +1,4 @@
 #include "utils.h"
-
 /*
 	Wrapper function for resolve host.
 */
@@ -91,7 +90,7 @@ int check_sockets(SDLNet_SocketSet set)
 /*
 	Wrapper for recving tcp packets.
 */
-void *recv_tcp_packet(TCPsocket sock, uint32_t *packet_type, uint64_t *timestamp)
+void* recv_tcp_packet(TCPsocket sock, uint32_t *packet_type)
 {
 	void     *packet;
 	int      numread;
@@ -105,7 +104,7 @@ void *recv_tcp_packet(TCPsocket sock, uint32_t *packet_type, uint64_t *timestamp
 		return NULL;
 	}
 
-	packet_size = 1;//packet_sizes[(*packet_type) - 1];
+	packet_sizes[(*packet_type) - 1];
 
 	if((packet = malloc(packet_size)) == NULL)
 	{
