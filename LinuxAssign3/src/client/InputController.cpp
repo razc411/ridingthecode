@@ -1,3 +1,5 @@
+#include "client_defs.h"
+
 void* InputManager(void * indata)
 {
     CMANAGERDATA * input_data = (CMANAGERDATA*) indata;

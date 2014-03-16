@@ -1,8 +1,4 @@
-#include "ServerSystemRouter.h"
-#include "Packets.h"
-#include "utils.h"
-#include "ConnectionManager.h"
-#include "ChannelSystem.h"
+#include "server_defs.h"
 
 int last_channel 		= 0;
 int open_channels 		= 0;
@@ -11,14 +7,7 @@ char **channel_name_list = (char**) malloc((sizeof(char) * MAX_CHANNEL_NAME) * M
 TCPsocket * socket_list = (TCPsocket*) malloc(sizeof(TCPsocket) * MAX_CLIENTS);
 static int channel_pipes[MAX_CHANNELS][2];
 static pthread_t   thread_channel[MAX_CHANNELS];
-static uint32_t packet_sizes[] = {
-	sizeof(S_KICK_PKT),
-	sizeof(S_MSG_PKT),
-	sizeof(S_CHANNEL_INFO_PKT),
-	sizeof(C_MSG_PKT),
-	sizeof(C_QUIT_PKT),
-	sizeof(C_JOIN_PKT)
-};
+
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: init_client
 --
@@ -57,16 +46,8 @@ int main()
 	pipe(input_pipe);
 	pipe(cm_pipe);
 
-	if(!sem_init(&channel_name_sem, 0, 1))
-	{
-		perror("Creating channel_name_sem : ");
-	}
-
 	cmdata->write_pipe = cm_pipe[WRITE];
     cmdata->read_pipe = cm_pipe[READ];
-
-    chdata->channel_name_list = channel_name_list;
-    chdata->channel_name_sem = channel_name_sem;
 
     dispatch_thread(ConnectionManager, (void*)cmdata, &thread_cManager);
     dispatch_thread(InputManager, (void*)input_pipe, &thread_input);

@@ -1,4 +1,4 @@
-#include "utils.h"
+#include "server_defs.h"
 /*
 	Wrapper function for resolve host.
 */

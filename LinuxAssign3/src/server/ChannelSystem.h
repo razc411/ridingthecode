@@ -1,1 +1,0 @@
-void* ChannelManager(void * chdata);

@@ -1,10 +1,4 @@
-#include "ServerSystemRouter.h"
-#include "Packets.h"
-#include "utils.h"
-#include "ConnectionManager.h"
-#include "ChannelSystem.h"
-#define MAIN_CHANNEL 0
-int num_channels = 1;
+#include "client_defs.h"
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: init_client
 --
@@ -22,6 +16,9 @@ int num_channels = 1;
 --      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
 --      the connection is TCP.
 ----------------------------------------------------------------------------------------------------------------------*/
+
+int num_channels = 1;
+
 int main()
 {
     pthread_t 	thread_recv;
