@@ -21,6 +21,10 @@ int num_channels = 1;
 
 int main()
 {
+    int sd, port;
+    struct hostent  *hp;
+    struct sockaddr_in server;
+
     pthread_t 	thread_recv;
     pthread_t 	thread_send;
     pthread_t   thread_input[MAX_CHANNELS];
@@ -60,6 +64,12 @@ int main()
         active = listen_fds;
     	ret = select(max_fd + 1, &active, NULL, NULL, NULL);
 
+        //connect to the remote server
+        if(connect_to_server(sd, port, server, *hp) != 0_{
+            printf("Failed to connect, exiting program.\n");
+            exit(1);
+        }
+
         for(int i = 0; i < num_channels; i++)
         {
             if(ret && FD_ISSET(input_pipe[i][READ], &active))
@@ -68,23 +78,27 @@ int main()
 
                 else if(type == JOIN_CHANNEL)
                 {
-                    //send client join pkt to send
+                   //join_channel();
                 }
 
                 else if(type == QUIT_CHANNEL)
                 {
-                    //send client quit pkt to send
-                    //exit channel
+                    //quit_channel();
                 }
 
                 else if(type == CLIENT_MSG)
                 {
                     //send c_msg_pkt to send thread
+                    if(tcp_send(sd, sizeof(C_MSG_PKT), (char*)info_packet) != CLIENT_MSG)
+                    {
+                        perror("Failed to send message");
+                        return;
+                    }
                 }
 
                 else if(type == EXIT)
                 {
-                    //cleanup and exit
+                    break;
                 }
             }
         }
@@ -96,7 +110,10 @@ int main()
             else if(type == SERVER_KICK_PKT)
             {
                 //print message
+                printf("You have been kicked by the server.\n");
+
                 //close channel and connection
+                channel_close(input_pipe[READ]);
             }
 
             else if(type == SERVER_MSG_PKT)
@@ -120,7 +137,108 @@ int main()
 
     }
 
+    for(int i = 0; i < num_channels; i++)
+    {
+        close(input_pipe[i][READ]);
+        close(input_pipe[i][WRITE]);
+    }
+    close(recv_pipe[READ]);
+    close(recv_pipe[WRITE]);
+    close(send_pipe[READ]);
+    close(send_pipe[WRITE]);
+
     return 0;
+}
+
+int connect_to_server(int sd, int port, sockaddr_in server, hostent *hp){
+    // Create the socket
+    if ((sd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    {
+        perror("Cannot create socket");
+        exit(1);
+    }
+
+    // clear memory for server socket
+    bzero((char *)&server, sizeof(struct sockaddr_in));
+
+    // initialize server socket
+    server.sin_family = AF_INET;
+    server.sin_port = htons(port);
+
+    // get host ip
+    if ((hp = gethostbyip(host)) == NULL)
+    {
+        fprintf(stderr, "Unknown server ip address\n");
+        exit(1);
+    }
+    bcopy(hp->h_addr, (char *)&server.sin_addr, hp->h_length);
+
+    // Connecting to the server
+    if (connect (sd, (struct sockaddr *)&server, sizeof(server)) == -1)
+    {
+        fprintf(stderr, "Can't connect to server\n");
+        perror("connect");
+        exit(1);
+    }
+
+    return 0;
+}
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: init_client
+--
+--      DATE: Febuary 6 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void init_client(HWND hwnd) , takes the parent HWND as an argument.
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
+--      the connection is TCP.
+----------------------------------------------------------------------------------------------------------------------*/
+void join_channel(int cm_pipe)
+{
+    C_JOIN_PKT * info_packet = (C_JOIN_PKT*)malloc(sizeof(C_JOIN_PKT));
+
+    //send client join pkt to send
+    if(tcp_send(sd, sizeof(C_JOIN_PKT), (char*)info_packet) != CLIENT_JOIN)
+    {
+        perror("Failed to join channel");
+        return;
+    }
+}
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: init_client
+--
+--      DATE: Febuary 6 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void init_client(HWND hwnd) , takes the parent HWND as an argument.
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
+--      the connection is TCP.
+----------------------------------------------------------------------------------------------------------------------*/
+void quit_channel(int cm_pipe)
+{
+    C_QUIT_PKT * info_packet = (C_QUIT_PKT*)malloc(sizeof(C_QUIT_PKT));
+
+    //send client quit pkt to send
+    if(tcp_send(sd, sizeof(C_QUIT_PKT), (char*)info_packet) != CLIENT_QUIT)
+    {
+        perror("Failed to quit channel");
+        return;
+    }
+    channel_close(cm_pipe);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: init_client
