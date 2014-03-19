@@ -24,7 +24,7 @@ fi
 FILE="Makefile"
 
 FLAGS="-Wall"
-LIBS="-lSDL2 -lSDL2_net"
+LIBS="-lSDL2 -pthread"
 CC="g++"
 
 SRC_FILES=""
