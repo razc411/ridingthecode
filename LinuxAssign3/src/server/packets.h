@@ -1,10 +1,10 @@
 #ifndef PACKETS_H
 #define PACKETS_H
 
-#define MAX_ARGS 			3
+#define MAX_ARGS 			4
 #define MAX_CLIENTS 		100
 #define MAX_STRING 			1024
-#define TCP_PORT 			43534
+#define TCP_PORT 			4333
 #define MAX_CHANNELS 		50
 #define READ 				0
 #define WRITE 				1
@@ -27,7 +27,7 @@
 #define CLIENT_MSG    	3
 
 //CONNECTION CODES
-#define REJECTED_CONNECTION -1
+#define CONNECTION_REJECTED -1
 #define CONNECTION_ACCEPTED  1
 #define CLIENT_LIST_UPDATE	 0
 
@@ -35,15 +35,18 @@
 #define SERVER_KICK_PKT		0
 #define SERVER_MSG_PKT		1
 #define CHANNEL_INFO_PKT 	2
+#define CHANNEL_ERROR		3
 
 //CLIENT SIDE OUTGOING PKTS
-#define CLIENT_MSG_PKT		3
-#define CLIENT_QUIT_PKT		4
-#define CLIENT_JOIN_PKT		5
+#define CLIENT_MSG_PKT		4
+#define CLIENT_QUIT_PKT		5
+#define CLIENT_JOIN_PKT		6
+#define CLIENT_ERROR		7
 
 // OUTGOING PACKET DEFS
 typedef struct pkt0
 {	
+	char * client_name;
 	char * channel_name;
 	char * msg;
 } S_KICK_PKT;
@@ -64,15 +67,12 @@ typedef struct pkt2
 
 typedef struct pkt3
 {
-	char * client_name;
 	char * msg;
-	char * channel_name;
 } C_MSG_PKT;
 
 typedef struct pkt4
 {
 	int code;
-	char * channel_name;
 } C_QUIT_PKT;
 
 typedef struct pkt5{
