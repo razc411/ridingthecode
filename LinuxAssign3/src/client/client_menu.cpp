@@ -1,58 +1,50 @@
-#include "SDL/SDL.h"
-#include "SDL/SDL_image.h"
-#include "SDL/SDL_ttf.h"
-#include <string>
+#include "client_defs.h"
 
-const int SCREEN_WIDTH = 1280;
-const int SCREEN_HEIGHT = 768;
-const int SCREEN_BPP = 32;
+SDL_Surface *button = NULL;
+SDL_Surface *screen = NULL;
+SDL_Event event;
+
 
 SDL_Surface *background = NULL;
 SDL_Surface *textbox = NULL;
-SDL_Surface *message = NULL;
-SDL_Surface *name_label = NULL;
-SDL_Surface *ip_label = NULL;
-SDL_Surface *port_label = NULL;
-SDL_Surface *button;
-SDL_Surface *screen = NULL;
-SDL_Event event;
+
 TTF_Font *font = NULL;
 SDL_Color textColor = { 0xFF, 0xFF, 0xFF };
-int x;  // mouse position x
-int y;  // mouse position y
+int x = 0;  // mouse position x
+int y = 0;  // mouse position y
 bool namebox_clicked = false;
 bool ipbox_clicked = false;
-bool portnumber_clicked = false;
+bool portbox_clicked = false;
+bool button_clicked = false;
+
 bool namebox_filled = false;
 bool ipbox_filled = false;
-bool portnumber_filled = false;
+bool portbox_filled = false;
 
 //The key press interpreter
-class string_input{
+class client_utils{
 
     private:
     //The storage string
-    std::string str1;
-    std::string str2;
-    std::string str3;
+    std::string str;
 
     //The text surface
-    SDL_Surface *text1;
-    SDL_Surface *text2;
-    SDL_Surface *text3;
+    SDL_Surface *text;
 
     public:
     // constructor
-    string_input();
+    client_utils();
 
     // deconstructor
-    ~string_input();
+    ~client_utils();
 
     // handles input
-    void handle_input();
+    void create_textbox();
+    void create_ipbox();
+    void create_portbox();
 
     // displays the message on screen
-    void display(SDL_Surface*);
+    void display(int, int);
 };
 
 SDL_Surface *load_image(std::string filename){
@@ -111,7 +103,7 @@ bool init()
     }
 
     // set caption
-    SDL_WM_SetCaption( "High Score", NULL );
+    SDL_WM_SetCaption( "Chat Program", NULL );
 
     return true;
 }
@@ -124,7 +116,7 @@ bool load_background()
     }
 
     // open font
-    if((font = TTF_OpenFont("../assets/sixty.ttf", 42 )) == NULL){
+    if((font = TTF_OpenFont("../assets/marlbo.ttf", 42 )) == NULL){
         return false;
     }
 
@@ -141,237 +133,169 @@ bool load_textbox()
     return true;
 }
 
-void clean_up(){
+client_utils::client_utils(){
+    str = "";
 
-    SDL_FreeSurface(background);
-    SDL_FreeSurface(message);
-
-    TTF_CloseFont(font);
-
-    // close ttf
-    TTF_Quit();
-
-    // close SDL
-    SDL_Quit();
-}
-
-string_input::string_input(){
-    str1 = "";
-    str2 = "";
-    str3 = "";
-
-    text1 = NULL;
-    text2 = NULL;
-    text3 = NULL;
+    text = NULL;
 
     SDL_EnableUNICODE(SDL_ENABLE);
 }
 
-string_input::~string_input(){
-    SDL_FreeSurface(text1);
-    SDL_FreeSurface(text2);
-    SDL_FreeSurface(text3);
+client_utils::~client_utils(){
+    SDL_FreeSurface(text);
 
     SDL_EnableUNICODE( SDL_DISABLE );
 }
 
-void string_input::handle_input(){
-
-    // namebox is clicked
-    if(event.type == SDL_MOUSEBUTTONDOWN){
-        if(event.button.button == SDL_BUTTON_LEFT){
-            x = event.button.x;
-            y = event.button.y;
-
-            // if namebox is clicked
-            if((x > (SCREEN_WIDTH - textbox->w) / 2 + 200)
-                && (x < (SCREEN_WIDTH - textbox->w) / 2 + 200 + textbox->w)
-                && (y > ((SCREEN_HEIGHT / 2) - textbox->h) / 2 + 100)
-                && (y < ((SCREEN_HEIGHT / 2) - textbox->h) / 2 + 100 + textbox->h)){
-                
-                namebox_clicked = true;
-                ipbox_clicked = false;
-                portnumber_clicked = false;
-                //show_menu = true;
-            }
-
-            // if ipbox is clicked
-            if((x > (SCREEN_WIDTH - textbox->w) / 2 + 200)
-                && (x < (SCREEN_WIDTH - textbox->w) / 2 + 200 + textbox->w)
-                && (y > ((SCREEN_HEIGHT / 2) - textbox->h) / 2 + 180)
-                && (y < ((SCREEN_HEIGHT / 2) - textbox->h) / 2 + 180 + textbox->h)){
-                
-                namebox_clicked = false;
-                ipbox_clicked = true;
-                portnumber_clicked = false;
-                //show_menu = true;
-            }
-
-            // if portnumber is clicked
-            if((x > (SCREEN_WIDTH - textbox->w) / 2 + 200)
-                && (x < (SCREEN_WIDTH - textbox->w) / 2 + 200 + textbox->w)
-                && (y > ((SCREEN_HEIGHT / 2) - textbox->h) / 2 + 260)
-                && (y < ((SCREEN_HEIGHT / 2) - textbox->h) / 2 + 260 + textbox->h)){
-                
-                namebox_clicked = false;
-                ipbox_clicked = false;
-                portnumber_clicked = true;
-                //show_menu = true;
-            }
-        }
-    }
-
+void client_utils::create_textbox(){
     // if a key was pressed
     if(event.type == SDL_KEYDOWN){
-        std::string temp1 = str1;
-        std::string temp2 = str2;
-        std::string temp3 = str3;
+        std::string temp = str;
 
-
-        if(namebox_clicked){
-            // if the string less than maximum size
-            if(str1.length() <= 16 ){
-                
-                //If the key is a number
-                if((event.key.keysym.unicode >= (Uint16)'0' ) && ( event.key.keysym.unicode <= (Uint16)'9')){
-                    str1 += (char)event.key.keysym.unicode;
-                    namebox_filled = true;
-                }
-
-                //If the key is a uppercase letter
-                else if((event.key.keysym.unicode >= (Uint16)'A' ) && ( event.key.keysym.unicode <= (Uint16)'Z')){
-                    str1 += (char)event.key.keysym.unicode;
-                    namebox_filled = true;
-                }
-
-                //If the key is a lowercase letter
-                else if((event.key.keysym.unicode >= (Uint16)'a' ) && ( event.key.keysym.unicode <= (Uint16)'z')){
-                    str1 += (char)event.key.keysym.unicode;
-                    namebox_filled = true;
-                }
+        // if the string less than maximum size
+        if(str.length() <= 16 ){
+            
+            //If the key is a number
+            if((event.key.keysym.unicode >= (Uint16)'0') && ( event.key.keysym.unicode <= (Uint16)'9')){
+                str += (char)event.key.keysym.unicode;
+                namebox_filled = true;
             }
 
-            if(str1.length() == 0){
+            //If the key is a uppercase letter
+            else if((event.key.keysym.unicode >= (Uint16)'A') && ( event.key.keysym.unicode <= (Uint16)'Z')){
+                str += (char)event.key.keysym.unicode;
+                namebox_filled = true;
+            }
+
+            //If the key is a lowercase letter
+            else if((event.key.keysym.unicode >= (Uint16)'a') && ( event.key.keysym.unicode <= (Uint16)'z')){
+                str += (char)event.key.keysym.unicode;
+                namebox_filled = true;
+            }
+        }
+
+        //If backspace was pressed and the string isn't blank
+        if((event.key.keysym.sym == SDLK_BACKSPACE) && namebox_clicked && (str.length() != 0)){
+            // erase the last character
+            str.erase(str.length() - 1);
+
+            if(str.length() == 0){
                 namebox_filled = false;
             }
         }
 
-        if(ipbox_clicked){
-            // if the string less than maximum size
-            if(str2.length() <= 14 ){
+        // update old text surface
+        if(str != temp){
+            // free the old surface
+            SDL_FreeSurface(text);
 
-                //If the key is a space
-                if(event.key.keysym.unicode == (Uint16)'.'){
-                    str2 += (char)event.key.keysym.unicode;
-                    ipbox_filled = true;
-                }
-                //If the key is a number
-                else if((event.key.keysym.unicode >= (Uint16)'0' ) && ( event.key.keysym.unicode <= (Uint16)'9')){
-                    str2 += (char)event.key.keysym.unicode;
-                    ipbox_filled = true;
-                }
+            // render new text surface
+            textColor = { 0x00, 0x00, 0x00 };
+            text = TTF_RenderText_Solid(font, str.c_str(), textColor);
+            textColor = { 0xFF, 0xFF, 0xFF };
+        }
+    }
+}
+
+void client_utils::create_ipbox(){
+    // if a key was pressed
+    if(event.type == SDL_KEYDOWN){
+        std::string temp = str;
+
+        // if the string less than maximum size
+        if(str.length() <= 14 ){
+
+            //If the key is a space
+            if(event.key.keysym.unicode == (Uint16)'.'){
+                str += (char)event.key.keysym.unicode;
+                ipbox_filled = true;
             }
+            //If the key is a number
+            else if((event.key.keysym.unicode >= (Uint16)'0') && ( event.key.keysym.unicode <= (Uint16)'9')){
+                str += (char)event.key.keysym.unicode;
+                ipbox_filled = true;
+            }
+        }
 
-            if(str2.length() == 0){
+        //If backspace was pressed and the string isn't blank
+        if((event.key.keysym.sym == SDLK_BACKSPACE) && ipbox_clicked && (str.length() != 0)){
+            // erase the last character
+            str.erase(str.length() - 1);
+
+            if(str.length() == 0){
                 ipbox_filled = false;
             }
         }
 
-        if(portnumber_clicked){
-            // if the string less than maximum size
-            if(str3.length() <= 4){
-
-                //If the key is a number
-                if((event.key.keysym.unicode >= (Uint16)'0' ) && ( event.key.keysym.unicode <= (Uint16)'9')){
-                    str3 += (char)event.key.keysym.unicode;
-                    portnumber_filled = true;
-                }
-            }
-
-            if(str3.length() == 0){
-                portnumber_filled = false;
-            }
-        }
-        
-
-        //If backspace was pressed and the string isn't blank
-        if((event.key.keysym.sym == SDLK_BACKSPACE) && namebox_clicked && (str1.length() != 0)){
-            // erase the last character
-            str1.erase(str1.length() - 1);
-        }
-
-        //If backspace was pressed and the string isn't blank
-        if((event.key.keysym.sym == SDLK_BACKSPACE) && ipbox_clicked && (str2.length() != 0)){
-            // erase the last character
-            str2.erase(str2.length() - 1);
-        }
-
-        //If backspace was pressed and the string isn't blank
-        if((event.key.keysym.sym == SDLK_BACKSPACE) && portnumber_clicked && (str3.length() != 0)){
-            // erase the last character
-            str3.erase(str3.length() - 1);
-        }
-
         // update old text surface
-        if(str1 != temp1){
+        if(str != temp){
             // free the old surface
-            SDL_FreeSurface(text1);
+            SDL_FreeSurface(text);
 
             // render new text surface
             textColor = { 0x00, 0x00, 0x00 };
-            text1 = TTF_RenderText_Solid(font, str1.c_str(), textColor);
-            textColor = { 0xFF, 0xFF, 0xFF };
-        }
-
-        // update old text surface
-        if(str2 != temp2){
-            // free the old surface
-            SDL_FreeSurface(text2);
-
-            // render new text surface
-            textColor = { 0x00, 0x00, 0x00 };
-            text2 = TTF_RenderText_Solid(font, str2.c_str(), textColor);
-            textColor = { 0xFF, 0xFF, 0xFF };
-        }
-
-        // update old text surface
-        if(str3 != temp3){
-            // free the old surface
-            SDL_FreeSurface(text3);
-
-            // render new text surface
-            textColor = { 0x00, 0x00, 0x00 };
-            text3 = TTF_RenderText_Solid(font, str3.c_str(), textColor);
+            text = TTF_RenderText_Solid(font, str.c_str(), textColor);
             textColor = { 0xFF, 0xFF, 0xFF };
         }
     }
 }
 
-void string_input::display(SDL_Surface *surf){
-	// if text is not null
-    if(text1 != NULL || text2 != NULL || text3 != NULL){
+void client_utils::create_portbox(){
+    // if a key was pressed
+    if(event.type == SDL_KEYDOWN){
+        std::string temp = str;
 
-        //Show the name
-        if(namebox_filled){
-            apply_surface((SCREEN_WIDTH - text1->w) / 2 + 200, ((SCREEN_HEIGHT / 2) - text1->h) / 2 + 102, text1, screen);
+        // if the string less than maximum size
+        if(str.length() <= 4){
+
+            //If the key is a number
+            if((event.key.keysym.unicode >= (Uint16)'0') && ( event.key.keysym.unicode <= (Uint16)'9')){
+                str += (char)event.key.keysym.unicode;
+                portbox_filled = true;
+            }
         }
 
-        //Show the ip
-        if(ipbox_filled){
-            apply_surface((SCREEN_WIDTH - text2->w) / 2 + 200, ((SCREEN_HEIGHT / 2) - text2->h) / 2 + 182, text2, screen);
+        //If backspace was pressed and the string isn't blank
+        if((event.key.keysym.sym == SDLK_BACKSPACE) && portbox_clicked && (str.length() != 0)){
+            // erase the last character
+            str.erase(str.length() - 1);
+
+            if(str.length() == 0){
+                portbox_filled = false;
+            }
         }
 
-        //Show the port number
-        if(portnumber_filled){
-            apply_surface((SCREEN_WIDTH - text3->w) / 2 + 200, ((SCREEN_HEIGHT / 2) - text3->h) / 2 + 262, text3, screen);
+        // update old text surface
+        if(str != temp){
+            // free the old surface
+            SDL_FreeSurface(text);
+
+            // render new text surface
+            textColor = { 0x00, 0x00, 0x00 };
+            text = TTF_RenderText_Solid(font, str.c_str(), textColor);
+            textColor = { 0xFF, 0xFF, 0xFF };
         }
+    }
+}
+
+void client_utils::display(int x, int y){
+    // if surface is not null
+    if(text != NULL){
+        apply_surface((SCREEN_WIDTH - text->w) / 2 + x,
+            ((SCREEN_HEIGHT / 2) - text->h) / 2 + y, text, screen);
     }
 }
 
 int main(int argc, char* args[]){
+    SDL_Surface *name_label = NULL;
+    SDL_Surface *ip_label = NULL;
+    SDL_Surface *port_label = NULL;
+
+    SDL_Surface *message = NULL;
+
+
     bool done = false;
 
-    //Keep track if whether or not the user has entered their name
     bool ip_entered = false;
 
     // initialize SDL and ttl
@@ -380,7 +304,9 @@ int main(int argc, char* args[]){
     }
 
     // IP address
-    string_input input;
+    client_utils input1;
+    client_utils input2;
+    client_utils input3;
 
     // load background
     if(load_background() == false){
@@ -403,9 +329,82 @@ int main(int argc, char* args[]){
     while(done == false){
         while(SDL_PollEvent(&event)){
             if(ip_entered == false){
-                
+                // namebox is clicked
+                if(event.type == SDL_MOUSEBUTTONDOWN){
+                    if(event.button.button == SDL_BUTTON_LEFT){
+                        x = event.button.x;
+                        y = event.button.y;
+
+                        // if namebox is clicked
+                        if((x > (SCREEN_WIDTH - textbox->w) / 2 + 200)
+                            && (x < (SCREEN_WIDTH - textbox->w) / 2 + 200 + textbox->w)
+                            && (y > ((SCREEN_HEIGHT / 2) - textbox->h) / 2 + 100)
+                            && (y < ((SCREEN_HEIGHT / 2) - textbox->h) / 2 + 100 + textbox->h)){
+                            
+                            namebox_clicked = true;
+                            ipbox_clicked = false;
+                            portbox_clicked = false;
+                            button_clicked = false;
+                        }
+
+                        // if ipbox is clicked
+                        if((x > (SCREEN_WIDTH - textbox->w) / 2 + 200)
+                            && (x < (SCREEN_WIDTH - textbox->w) / 2 + 200 + textbox->w)
+                            && (y > ((SCREEN_HEIGHT / 2) - textbox->h) / 2 + 180)
+                            && (y < ((SCREEN_HEIGHT / 2) - textbox->h) / 2 + 180 + textbox->h)){
+                            
+                            namebox_clicked = false;
+                            ipbox_clicked = true;
+                            portbox_clicked = false;
+                            button_clicked = false;
+                        }
+
+                        // if portbox is clicked
+                        if((x > (SCREEN_WIDTH - textbox->w) / 2 + 200)
+                            && (x < (SCREEN_WIDTH - textbox->w) / 2 + 200 + textbox->w)
+                            && (y > ((SCREEN_HEIGHT / 2) - textbox->h) / 2 + 260)
+                            && (y < ((SCREEN_HEIGHT / 2) - textbox->h) / 2 + 260 + textbox->h)){
+                            
+                            namebox_clicked = false;
+                            ipbox_clicked = false;
+                            portbox_clicked = true;
+                            button_clicked = false;
+                        }
+
+                        // if connect button is clicked
+                        if((x > (SCREEN_WIDTH - button->w) / 2 + 100)
+                            && (x < (SCREEN_WIDTH - button->w) / 2 + 100 + button->w)
+                            && (y > ((SCREEN_HEIGHT / 2) - button->h) / 2 + 400)
+                            && (y < ((SCREEN_HEIGHT / 2) - button->h) / 2 + 400 + button->h)){
+                            
+                            namebox_clicked = false;
+                            ipbox_clicked = false;
+                            portbox_clicked = false;
+                            button_clicked = true;
+                        }
+                    }
+                }
                 // get user input
-                input.handle_input();
+                if(namebox_clicked){
+                    input1.create_textbox();
+                }
+
+                else if(ipbox_clicked){
+                    input2.create_ipbox();
+                }
+
+                else if(portbox_clicked){
+                    input3.create_portbox();
+                }
+
+                else if(button_clicked){
+                    
+                    //go to chat view
+
+                    textColor = { 0xFF, 0x00, 0x00 };
+                    message = TTF_RenderText_Solid(font, "You are connected", textColor);
+                    textColor = { 0xFF, 0xFF, 0xFF };
+                }
 
                 // if enter key is pressed
                 if((event.type == SDL_KEYDOWN) && (event.key.keysym.sym == SDLK_RETURN)){
@@ -443,18 +442,43 @@ int main(int argc, char* args[]){
         apply_surface((SCREEN_WIDTH - textbox->w) / 2 + 200, ((SCREEN_HEIGHT / 2) - textbox->h) / 2 + 260, textbox, screen);  
 
         // display the button
-        apply_surface((SCREEN_WIDTH - button->w) / 2 + 100, ((SCREEN_HEIGHT / 2) - button->h) / 2 + 400, button, screen);  
+        apply_surface((SCREEN_WIDTH - button->w) / 2 + 100, ((SCREEN_HEIGHT / 2) - button->h) / 2 + 400, button, screen);
 
-        // display the ip address on the screen
-        input.display(textbox);
+        //Show the name
+        if(namebox_filled){
+            input1.display(200, 101);
+        }
+
+        //Show the ip
+        if(ipbox_filled){
+            input2.display(200, 181);
+        }
+
+        //Show the port number
+        if(portbox_filled){
+            input3.display(200, 261);
+        }
 
         // update the screen
-        if(SDL_Flip( screen ) == -1){
+        if(SDL_Flip(screen) == -1){
             return 1;
         }
     }
 
-    clean_up();
+    // free background surface
+    SDL_FreeSurface(background);
+
+    // free message surface
+    SDL_FreeSurface(message);
+
+    // close the font
+    TTF_CloseFont(font);
+
+    // close ttf
+    TTF_Quit();
+
+    // close SDL
+    SDL_Quit();
 
     return 0;
 }
