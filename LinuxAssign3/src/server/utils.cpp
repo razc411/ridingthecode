@@ -1,5 +1,13 @@
 #include "server_defs.h"
 #include "utils.h"
+
+int packet_sizes[] = {
+	sizeof(S_KICK_PKT),
+	sizeof(S_MSG_PKT),
+	sizeof(C_MSG_PKT),
+	sizeof(C_QUIT_PKT),
+	sizeof(C_JOIN_PKT)
+};
 /*
 	Wrapper for starting threads.
 */
@@ -52,6 +60,7 @@ int create_accept_socket(){
         perror("setsockopt");
         return -2;
     }
+
     bzero((char *)&server, sizeof(struct sockaddr_in));
     server.sin_family = AF_INET;
     server.sin_port = htons(TCP_PORT);
@@ -62,6 +71,8 @@ int create_accept_socket(){
         perror("bind error");
         return -3;
     }
+
+    listen(listen_sd, 5);
 
     return listen_sd;
 }
@@ -86,25 +97,23 @@ int accept_new_client(int listen_sd)
 	return client_sd;
 }
 
-int tcp_recieve(int sockfd, int bytes_to_read, char * packet)
+int tcp_recieve(int sockfd, char * packet)
 {
 	int type_size = TYPE_SIZE;
+	int bytes_to_read;
+	int * type = NULL;
 	int numread = 0;
-	int * type_buffer;
 	
-	while ((numread = read(sockfd, type_buffer, type_size)) > 0)
+	while ((numread = read(sockfd, &type, type_size)) > 0)
 	{
-		type_buffer += numread;
+		type += numread;
 		type_size -= numread;
 	}
 
-	if(*type_buffer > 0)
-	{
-		fprintf(stderr, "Failed to read packet type.\n");
-		return -1;
-	}
+	packet = (char*) malloc(sizeof(packet_sizes[*type]));
+	bytes_to_read = packet_sizes[*type];
 
-	while ((numread = read(sockfd, packet, bytes_to_read)) > 0)
+	while ((numread = read(sockfd, packet, packet_sizes[*type])) > 0)
 	{
 		packet += numread;
 		bytes_to_read -= numread;
@@ -116,5 +125,13 @@ int tcp_recieve(int sockfd, int bytes_to_read, char * packet)
 		return -2;
 	}
 
-	return *type_buffer;
+	return *type;
+}
+
+int write_packet(int sockfd, int type, void * packet)
+{
+	write(sockfd, &type, TYPE_SIZE);
+	write(sockfd, packet, packet_sizes[type]);
+
+	return type;
 }

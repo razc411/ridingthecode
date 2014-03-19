@@ -42,11 +42,8 @@ int main()
 	pipe(input_pipe[MAIN_CHANNEL]);
 	pipe(recv_pipe);
     pipe(send_pipe);
-
-    // dispatch_thread(SendSystem, (void*)cmdata, &thread_send); // send thread
-    // dispatch_thread(RecvSystem, (void*)input_pipe, &thread_recv); // recv thread
-    // dispatch_thread(InputManager, (void*)input_pipe, &thread_input[i]); // main channel thread
-
+    
+    dispatch_thread(InputManager, (void*)input_pipe, &thread_input[i]); // main channel thread
 
     max_fd = input_pipe[MAIN_CHANNEL][READ] > recv_pipe[READ] ? input_pipe[MAIN_CHANNEL][READ] > recv_pipe[READ];
     max_fd = max_fd > send_pipe[READ] ? max_fd : send_pipe[READ];
@@ -65,11 +62,11 @@ int main()
     	ret = select(max_fd + 1, &active, NULL, NULL, NULL);
 
         //connect to the remote server
-        if(connect_to_server(sd, port, server, *hp) != 0_{
+        if(connect_to_server(sd, port, server, *hp) != 0_
+        {
             printf("Failed to connect, exiting program.\n");
             exit(1);
         }
-
         for(int i = 0; i < num_channels; i++)
         {
             if(ret && FD_ISSET(input_pipe[i][READ], &active))
@@ -78,6 +75,7 @@ int main()
 
                 else if(type == JOIN_CHANNEL)
                 {
+                   
                    //join_channel();
                 }
 

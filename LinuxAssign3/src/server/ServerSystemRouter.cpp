@@ -1,30 +1,50 @@
 #include "server_defs.h"
 #include "utils.h"
-
-int last_channel 		= 0;
-int open_channels 		= 0;
-int num_clients 		= 0;
-char **channel_name_list = (char**) malloc((sizeof(char) * MAX_CHANNEL_NAME) * MAX_CHANNELS);	
-int * router_socket_list = (int*) malloc(sizeof(int) * MAX_CLIENTS);
-static int channel_pipes[MAX_CHANNELS][2];
-static pthread_t   thread_channel[MAX_CHANNELS];
-
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: init_client
+--      PROJECT: 
+--      FUNCTION: main()
 --
---      DATE: Febuary 6 2014
+--      DATE: March 15 2014
 --      REVISIONS: none
 --
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: void init_client(HWND hwnd) , takes the parent HWND as an argument.
+--      INTERFACE: int main()
 --
 --      RETURNS: void
 --
 --      NOTES:
 --      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
 --      the connection is TCP.
+----------------------------------------------------------------------------------------------------------------------*/
+extern int packet_sizes[];
+int last_channel 		= 0;
+int open_channels 		= 0;
+int num_clients 		= 0;
+char **channel_name_list = (char**) malloc(sizeof(char*) * MAX_CHANNELS);	
+static int channel_pipes[MAX_CHANNELS][2];
+static pthread_t   thread_channel[MAX_CHANNELS];
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: main()
+--
+--      DATE: March 15 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: int main()
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Intializes the server. Does the following actions as part of its intialization.
+--      - Creates an input thread and an input pipe
+--      - Creates a listening socket
+--      - Waits on a select statement, listening to the input thread and the channel threads.
+--      Works as the central hub for all channels and the input thread. Redirects commands
+--      from the input thread to the proper channel threads using IPC.
 ----------------------------------------------------------------------------------------------------------------------*/
 int main()
 {
@@ -39,7 +59,6 @@ int main()
     uint32_t    type = -1;
 
     THREAD_DATA * idata = (THREAD_DATA*)malloc(sizeof(THREAD_DATA));
-    CHANNEL_DATA * chdata = (CHANNEL_DATA*)malloc(sizeof(CHANNEL_DATA*));
 
 	pipe(input_pipe);
 
@@ -58,13 +77,21 @@ int main()
 
     while(1)
     {
+        int sel_ret;
         active = listen_fds;
-    	select(max_fd + 1, &active, NULL, NULL, NULL);
+    	sel_ret = select(max_fd + 1, &active, NULL, NULL, NULL);
+        
+        if(sel_ret == -1)
+        {
+            perror("select");
+            continue;
+        }
 
         if(FD_ISSET(listen_sd, &active))
         {
             client_sd = accept_new_client(listen_sd);
-            add_client(client_sd);
+            if(client_sd != -1)
+                add_client(client_sd);
         }
 
     	if(FD_ISSET(input_pipe[READ], &active))
@@ -74,7 +101,7 @@ int main()
 
             else if(type == CHANNEL_CREATE)
     		{
-    			add_channel(chdata, &max_fd, &listen_fds, input_pipe[READ]);
+    			add_channel(&max_fd, &listen_fds, input_pipe[READ]);
     		}
     		
             else if(type == CLIENT_KICK)
@@ -89,6 +116,7 @@ int main()
 
     		else if(type == SERVER_EXIT)
             {
+                close_server(input_pipe);
                 break;
             }
     	}
@@ -97,10 +125,14 @@ int main()
     	{
     		if(FD_ISSET(channel_pipes[i][READ], &active))
     		{
-    			//respond to channel quit
-    			//clean channel data up
+    			//if client sends error, handle
     		}
     	}
+
+        if(open_channels != current_channels)
+        {
+            reform_lists();
+        }
     }
 
     free(idata);
@@ -110,27 +142,29 @@ int main()
     return 0;
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: init_client
+--      FUNCTION: add_client
 --
---      DATE: Febuary 6 2014
+--      DATE: March 15 2014
 --      REVISIONS: none
 --
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: void init_client(HWND hwnd) , takes the parent HWND as an argument.
+--      INTERFACE: void add_client(int client_sd)
+--                  int client sd - socket of the requesting client
 --
 --      RETURNS: void
 --
 --      NOTES:
---      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
---      the connection is TCP.
+--      Called whenever a client connects to a server and requests to join a channel.
+--      Will retrieve the C_JOIN_PKT from the client, and redirect the client to the proper
+--      channel.
 ----------------------------------------------------------------------------------------------------------------------*/
 void add_client(int client_sd)
 {
     C_JOIN_PKT * info_packet = (C_JOIN_PKT*)malloc(sizeof(C_JOIN_PKT));
 
-    if(tcp_recieve(client_sd, sizeof(C_JOIN_PKT), (char*)info_packet) != CLIENT_ADD)
+    if(tcp_recieve(client_sd, (char*)info_packet) != CLIENT_ADD)
     {
         perror("Failed to add client at tcp_recieve");
         return;
@@ -152,29 +186,34 @@ void add_client(int client_sd)
     printf("Client passed to channel for adding.\n");
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: init_client
+--      FUNCTION: add_channel
 --
---      DATE: Febuary 6 2014
+--      DATE: March 15 2014
 --      REVISIONS: none
 --
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: void init_client(HWND hwnd) , takes the parent HWND as an argument.
+--      INTERFACE: void add_channel(CHANNEL_DATA * chdata, int * max_fd, fd_set * listen_fds, int input_pipe)
+--                  int * max_fd - pointer to the max file descriptor. Used for adding channel to select.
+--                  fd_set * listen_fds - pointer to the set file descriptors.
+--                  int input_pipe - file descriptor to the input manager pipe
 --
 --      RETURNS: void
 --
 --      NOTES:
---      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
---      the connection is TCP.
+--      Establishes a new channel thread and adds it to the router select system.
 ----------------------------------------------------------------------------------------------------------------------*/
-void add_channel(CHANNEL_DATA * chdata, int * max_fd, fd_set * listen_fds, int input_pipe)
+void add_channel(int * max_fd, fd_set * listen_fds, int input_pipe)
 {
     char temp[MAX_CHANNEL_NAME];
+    CHANNEL_DATA * chdata = (CHANNEL_DATA*)malloc(sizeof(CHANNEL_DATA*));
 
     read_pipe(input_pipe, &temp, MAX_CHANNEL_NAME);
+    channel_name_list[open_channels] = (char*)malloc(sizeof(char) * MAX_CHANNEL_NAME);
     memcpy(channel_name_list[open_channels], temp, MAX_CHANNEL_NAME);
     chdata->channel_num = open_channels;
+    chdata->channel_name = temp;
 
 	pipe(channel_pipes[open_channels]);
 	chdata->write_pipe = channel_pipes[open_channels][WRITE];
@@ -188,80 +227,76 @@ void add_channel(CHANNEL_DATA * chdata, int * max_fd, fd_set * listen_fds, int i
 
 	last_channel = open_channels;
 
-	dispatch_thread(ChannelManager, (void*)chdata, &thread_channel[open_channels++]);
-
-    printf("Channel Added. Thread now open.\n");
+	dispatch_thread(ChannelManager, (void*)chdata, &thread_channel[open_channels]);
+    pthread_join(thread_channel[open_channels++], NULL);
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: init_client
+--      FUNCTION: kick_client
 --
---      DATE: Febuary 6 2014
+--      DATE: March 15 2014
 --      REVISIONS: none
 --
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: void init_client(HWND hwnd) , takes the parent HWND as an argument.
---
+--      INTERFACE: void kick_client(int input_pipe)
+--                  int input_pipe - file descriptor to the input manager pipe
 --      RETURNS: void
 --
 --      NOTES:
---      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
---      the connection is TCP.
+--      Passes the kick message to the apropriate channel.
 ----------------------------------------------------------------------------------------------------------------------*/
 void kick_client(int input_pipe)
 {
-    char clientname[MAX_USER_NAME];
-    char channel_name[MAX_CHANNEL_NAME];
-    char msg[MAX_STRING];
-    uint32_t type = CLIENT_KICK;
+    S_KICK_PKT s_kick;
 
-    read_pipe(input_pipe, &clientname, MAX_USER_NAME);
-    read_pipe(input_pipe, &channel_name, MAX_CHANNEL_NAME);
-    read_pipe(input_pipe, &msg, MAX_STRING);
-    
+    read_pipe(input_pipe, &s_kick, packet_sizes[CLIENT_KICK]);
+        
     for(int i = 0; i < open_channels; i++)
     {
-        if(strcmp(channel_name_list[i], channel_name) == 0)
+        if(strcmp(channel_name_list[i], s_kick.channel_name) == 0)
         {
-            write_pipe(channel_pipes[i][WRITE], &type, TYPE_SIZE);    
-            write_pipe(channel_pipes[i][WRITE], clientname, MAX_USER_NAME);
-            write_pipe(channel_pipes[i][WRITE], msg, MAX_STRING);
+            write_packet(channel_pipes[i][WRITE], CLIENT_KICK, &s_kick);
+            printf("Client kick msg passed to channel %s.\n", channel_name_list[i]);
             break;
         }
     }
         
     --num_clients;
-
-    printf("Client kick msg passed to channel.\n");
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: init_client
+--      FUNCTION: channel_close
 --
---      DATE: Febuary 6 2014
+--      DATE: March 15 2014
 --      REVISIONS: none
 --
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: void init_client(HWND hwnd) , takes the parent HWND as an argument.
+--      INTERFACE: void channel_close(int input_pipe)
 --
 --      RETURNS: void
 --
 --      NOTES:
---      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
---      the connection is TCP.
+--      Passes the close channel message to the appropriate channel.
 ----------------------------------------------------------------------------------------------------------------------*/
 void channel_close(int input_pipe)
 {
-    int channel_num;
     uint32_t type = CHANNEL_CLOSE;
+    char * channel_name = NULL;
 
-    read_pipe(input_pipe, &channel_num, sizeof(int));
+    read_pipe(input_pipe, &channel_name, MAX_CHANNEL_NAME);
+    for(int i = 0; i < open_channels; i++)
+    {
+        if(strcmp(channel_name_list[i], channel_name) == 0)
+        {
+            write_pipe(channel_pipes[i][WRITE], &type, TYPE_SIZE);
+            channel_name_list[i] = NULL;
+            break;
+        }
+    }  
 
-    write_pipe(channel_pipes[channel_num][WRITE], &type, TYPE_SIZE);
-
-    printf("Channel %s closed.\n", channel_name_list[channel_num]);
+    printf("Channel %s closed.\n", channel_name);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: init_client
@@ -272,30 +307,21 @@ void channel_close(int input_pipe)
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: void init_client(HWND hwnd) , takes the parent HWND as an argument.
---
+--      INTERFACE: void close_server(int input_pipe[2])
+--                  int input_pipe[2] - pipe to the input manager
 --      RETURNS: void
 --
 --      NOTES:
---      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
---      the connection is TCP.
+--      Closes all open pipes and broadcasts an exit message to the channels.
+--      Server will exit after all channels have finished their closing operations.
 ----------------------------------------------------------------------------------------------------------------------*/
-void close_server(int cm_pipe[2], int input_pipe[2])
+void close_server(int input_pipes[2])
 {
     uint32_t type = CHANNEL_CLOSE;
     for(int i = 0; i < open_channels; i++)
     {
         write_pipe(channel_pipes[i][WRITE], &type, TYPE_SIZE);
-    }
-
-    type = SERVER_EXIT;
-
-    write_pipe(input_pipe[WRITE], &type, TYPE_SIZE);
-
-    for(int i = 0; i < open_channels; i++)
-    {
-        close(channel_pipes[i][READ]);
-        close(channel_pipes[i][WRITE]);
+        printf("Channel %s closed.\n", channel_name_list[i]);
     }
 
     printf("Server exiting.\n");
@@ -324,8 +350,7 @@ void* InputManager(void * indata)
     uint32_t type;
     char *   temp = NULL;
     char     cmd[MAX_STRING];
-    char *   channelname = NULL;
-    char *   name = NULL;
+    char     channelname[MAX_CHANNEL_NAME];
     size_t   nbytes = MAX_STRING;
 
     while(getline(&temp, &nbytes, stdin))
@@ -335,17 +360,15 @@ void* InputManager(void * indata)
         if(strcmp(cmd, "/create") == 0)
         {
             type = CHANNEL_CREATE;
-            write_pipe(input_data->write_pipe, &type, TYPE_SIZE);
             sscanf(temp, "%s %s", cmd, channelname);
+            write_pipe(input_data->write_pipe, &type, TYPE_SIZE);
             write_pipe(input_data->write_pipe, channelname, MAX_CHANNEL_NAME);
         }
         else if(strcmp(cmd, "/kick") == 0)
         {
-            type = CLIENT_KICK;
-            write_pipe(input_data->write_pipe, &type, TYPE_SIZE);
-            sscanf(temp, "%s %s %s", cmd, channelname, name);
-            write_pipe(input_data->write_pipe, channelname, MAX_CHANNEL_NAME);
-            write_pipe(input_data->write_pipe, name, MAX_USER_NAME);
+            S_KICK_PKT s_kick;
+            sscanf(temp, "%s %s %s %s", cmd, s_kick.channel_name, s_kick.client_name, s_kick.msg);
+            write_packet(input_data->write_pipe, CLIENT_KICK, &s_kick);
         }
         else if(strcmp(cmd, "/exit") == 0)
         {
@@ -356,11 +379,28 @@ void* InputManager(void * indata)
         else if(strcmp(cmd, "/close") == 0)
         {
             type = CHANNEL_CLOSE;
-            write_pipe(input_data->write_pipe, &type, TYPE_SIZE);
             sscanf(temp, "%s %s", cmd, channelname);
+            write_pipe(input_data->write_pipe, &type, TYPE_SIZE);
             write_pipe(input_data->write_pipe, channelname, MAX_CHANNEL_NAME);
         }
     }
 
     return NULL;
+}
+
+void reform_router_lists()
+{
+    char * temp_channel_names[MAX_CHANNELS];
+
+    int j = 0;
+    for(int i = 0; i < MAX_CLIENTS; i++)
+    {
+        if(channel_name_list[i] != NULL)
+        {
+            temp_channel_names[j++] = channel_name_list[i];
+        }
+    }
+
+    memcpy(channel_name_list, temp_channel_names, (sizeof(char) * MAX_CHANNEL_NAME) * MAX_CHANNELS);
+    open_channels = current_clients;
 }

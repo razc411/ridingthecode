@@ -5,4 +5,5 @@ int dispatch_thread(void *(*function)(void *), void *params, pthread_t *handle);
 
 int create_accept_socket();
 int accept_new_client(int listen_sd);
-int tcp_recieve(int sockfd, int bytes_to_read, char * packet);
+int tcp_recieve(int sockfd, char * packet);
+int write_packet(int sockfd, int type, void * packet);
