@@ -1,4 +1,5 @@
 #include "client_defs.h"
+
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: init_client
 --
@@ -70,10 +71,10 @@ int main()
                 {
                     C_MSG_PKT c_msg;
                     read_pipe(input_pipes[i][READ], &c_msg, sizeof(C_MSG_PKT));
-                    if(write_packet(sd, CLIENT_MSG_PKT, (char*)c_msg) != CLIENT_MSG)
+                    if(write_packet(socket_list[i], CLIENT_MSG_PKT, (char*)&c_msg) != CLIENT_MSG)
                     {
                         perror("Failed to send message");
-                        return;
+                        return -1;
                     }
                 }
 
@@ -91,7 +92,7 @@ int main()
                 char * packet;
                 type = tcp_recieve(socket_list[i], packet);
 
-                else if(type == SERVER_KICK_PKT)
+                if(type == SERVER_KICK_PKT)
                 {
                     //channel_close(input_pipe[READ]);
                     close(socket_list[i]);
@@ -153,7 +154,7 @@ int connect_to_server(){
     server.sin_family = AF_INET;
     server.sin_port = htons(TCP_PORT);
 
-    if ((hp = gethostbyip("127.0.0.1")) == NULL)
+    if ((hp = gethostbyname("127.0.0.1")) == NULL)
     {
         fprintf(stderr, "Unknown server ip address\n");
         exit(1);
@@ -187,7 +188,7 @@ int connect_to_server(){
 --      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
 --      the connection is TCP.
 ----------------------------------------------------------------------------------------------------------------------*/
-void join_channel(int * listen_fds, int * max_fd)
+void join_channel(fd_set * listen_fds, int * max_fd)
 {
     int sd;
     int input_pipe[2];
@@ -200,7 +201,7 @@ void join_channel(int * listen_fds, int * max_fd)
         return;
     }
     
-    if(write_packet(sd, CLIENT_JOIN_PKT, (char*)info_packet) != CLIENT_JOIN)
+    if(write_packet(sd, CLIENT_JOIN_PKT, (char*)info_packet))
     {
         perror("Failed to join channel");
         return;
@@ -212,7 +213,7 @@ void join_channel(int * listen_fds, int * max_fd)
         return;
     }
     
-    if(c_info_packet.code == CONNECTION_REJECTED)
+    if(c_info_packet->code == CONNECTION_REJECTED)
     {
         printf("Channel join failed: Server connection rejected.");
         return;
@@ -225,13 +226,13 @@ void join_channel(int * listen_fds, int * max_fd)
     CHANNEL_DATA cdata;
     cdata.write_pipe = input_pipe[WRITE];
     cdata.read_pipe = input_pipe[READ];
-    memcpy(cdata.channelname, c_info_packet->channel_name, sizeof(c_info_packet->chanel_name));
+    memcpy(cdata.channelname, c_info_packet->channel_name, sizeof(c_info_packet->channel_name));
     memcpy(cdata.client_list, c_info_packet->channel_clients, sizeof(c_info_packet->channel_clients));
 
     *max_fd = *max_fd > input_pipes[current_channel][READ] ? *max_fd : input_pipes[current_channel][READ];
     FD_SET(sd, listen_fds);
 
     socket_list[current_channel] = sd;
-    dispatch_thread(InputManager, (void*)cdata, &thread_input[current_channel++]);
+    dispatch_thread(InputManager, (void*)&cdata, &thread_input[current_channel++]);
     num_channels++;
 }

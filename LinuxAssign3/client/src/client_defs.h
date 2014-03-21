@@ -4,17 +4,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-//#include <string.h>
-//#include <semaphore.h>
+#include <strings.h>
+#include <string.h>
+#include <netdb.h>
 #include <pthread.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 //#include <SDL2/SDL_net.h>
 //#include <SDL2/SDL.h>
 //#include "SDL2/SDL.h"
 //#include "SDL2/SDL_image.h"
 //#include "SDL2/SDL_ttf.h"
-#include <string>
-#include "../../server/src/packets.h"
-#include "../../server/src/utils.h"
+#include "packets.h"
+#include "utils.h"
 
 #define SCREEN_WIDTH 	1280
 #define SCREEN_HEIGHT 	768
@@ -35,6 +39,6 @@ typedef struct{
 
 void* InputManager(void * indata);
 int connect_to_server();
-void join_channel(int * listen_fds, int * max_fd);
+void join_channel(fd_set * listen_fds, int * max_fd);
 
 #endif
