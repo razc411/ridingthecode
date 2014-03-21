@@ -4,7 +4,7 @@ void* InputManager(void * indata)
 {
     THREAD_DATA * input_data = (THREAD_DATA*) indata;
 
-    uint32_t type;
+    int type;
     char *   temp = NULL;
     char     cmd[MAX_STRING];
     char     channelname[MAX_CHANNEL_NAME];

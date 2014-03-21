@@ -29,12 +29,12 @@ int main()
     fd_set      listen_fds;
     fd_set      active;
 
-    uint32_t    type;
+    int    type;
 
 	pipe(input_pipes[MAIN_CHANNEL]);
     THREAD_DATA * idata = (THREAD_DATA*)malloc(sizeof(THREAD_DATA));
-    idata->write_pipe = input_pipe[MAIN_CHANNEL][WRITE];
-    idata->read_pipe = input_pipe[MAIN_CHANNEL][READ];
+    idata->write_pipe = input_pipes[MAIN_CHANNEL][WRITE];
+    idata->read_pipe = input_pipes[MAIN_CHANNEL][READ];
 
     dispatch_thread(InputManager, (void*)idata, &thread_input[num_channels++]); // main channel thread
     current_channel++;

@@ -35,5 +35,8 @@ typedef struct{
 
 int connect_to_server();
 void join_channel();
+void quit_channel(int cm_pipe);
+void add_client(int cm_pipe);
+void* InputManager(void * indata);
 
 #endif

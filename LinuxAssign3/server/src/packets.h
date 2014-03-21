@@ -10,7 +10,7 @@
 #define WRITE 				1
 #define MAX_CHANNEL_NAME 	20
 #define MAX_USER_NAME		20
-#define TYPE_SIZE			sizeof(uint32_t)
+#define TYPE_SIZE			sizeof(int)
 
 //INTERNAL SERVER PKT DEFS
 #define CLIENT_KICK  	0
@@ -60,7 +60,7 @@ typedef struct pkt1
 
 typedef struct pkt2
 {
-	uint32_t code;
+	int code;
 	char * channel_name;
 	char ** channel_clients;
 } S_CHANNEL_INFO_PKT;
