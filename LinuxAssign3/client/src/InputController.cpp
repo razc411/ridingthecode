@@ -2,46 +2,43 @@
 
 void* InputManager(void * indata)
 {
-    CMANAGERDATA * input_data = (CMANAGERDATA*) indata;
+    THREAD_DATA * input_data = (THREAD_DATA*) indata;
 
     uint32_t type;
     char *   temp = NULL;
     char     cmd[MAX_STRING];
-    char *   channelname;
-    char *   name;
+    char     channelname[MAX_CHANNEL_NAME];
     size_t   nbytes = MAX_STRING;
 
     while(getline(&temp, &nbytes, stdin))
     {
         sscanf(temp, "%s", cmd);
         
-        if(strcmp(cmd, "/create") == 0)
+        if(strcmp(cmd, "/join") == 0)
         {
-            type = CHANNEL_CREATE;
+            type = JOIN_CHANNEL;
+            sscanf(temp, "%s %s", cmd, channelname);
             write_pipe(input_data->write_pipe, &type, TYPE_SIZE);
-            sscanf(temp, "%s %s %s", cmd, channelname);
             write_pipe(input_data->write_pipe, channelname, MAX_CHANNEL_NAME);
         }
-        else if(strcmp(cmd, "/kick") == 0)
+        else if(strcmp(cmd, "/leave") == 0)
         {
-            type = CLIENT_KICK;
+            type = QUIT_CHANNEL;
             write_pipe(input_data->write_pipe, &type, TYPE_SIZE);
-            sscanf(temp, "%s %s %s", cmd, channelname, name);
-            write_pipe(input_data->write_pipe, channelname, MAX_CHANNEL_NAME);
-            write_pipe(input_data->write_pipe, name, MAX_USER_NAME);
         }
         else if(strcmp(cmd, "/exit") == 0)
         {
-            type = SERVER_EXIT;
+            type = EXIT;
             write_pipe(input_data->write_pipe, &type, TYPE_SIZE);
             break;
         }
-        else if(strcmp(cmd, "/close") == 0)
+        else
         {
-            type = CHANNEL_CLOSE;
-            write_pipe(input_data->write_pipe, &type, TYPE_SIZE);
-            sscanf(temp, "%s %s", cmd, channelname);
-            write_pipe(input_data->write_pipe, channelname, MAX_CHANNEL_NAME);
+           C_MSG_PKT c_msg;
+           c_msg.msg = cmd;
+           write_packet(input_data->write_pipe, CLIENT_MSG_PKT, &c_msg);
         }
     }
+
+    return NULL;
 }
