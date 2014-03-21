@@ -33,10 +33,8 @@ typedef struct{
 	char * client_list;
 } CHANNEL_DATA;
 
-int connect_to_server();
-void join_channel();
-void quit_channel(int cm_pipe);
-void add_client(int cm_pipe);
 void* InputManager(void * indata);
+int connect_to_server();
+void join_channel(int * listen_fds, int * max_fd);
 
 #endif
