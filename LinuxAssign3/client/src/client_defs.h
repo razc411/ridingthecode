@@ -34,6 +34,6 @@ typedef struct{
 } CHANNEL_DATA;
 
 int connect_to_server();
-void join_channel();
+void join_channel(int * listen_fds, int * max_fd);
 
 #endif
