@@ -5,18 +5,16 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <strings.h>
-#include <string.h>
+#include <string>
 #include <netdb.h>
 #include <pthread.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-//#include <SDL2/SDL_net.h>
-//#include <SDL2/SDL.h>
-//#include "SDL2/SDL.h"
-//#include "SDL2/SDL_image.h"
-//#include "SDL2/SDL_ttf.h"
+#include <SDL2/SDL.h>
+#include "SDL2/SDL_image.h"
+#include "SDL2/SDL_ttf.h"
 #include "packets.h"
 #include "utils.h"
 
