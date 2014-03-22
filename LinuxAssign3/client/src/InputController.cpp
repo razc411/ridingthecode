@@ -16,10 +16,9 @@ void* InputManager(void * indata)
         
         if(strcmp(cmd, "/join") == 0)
         {
-            type = JOIN_CHANNEL;
-            sscanf(temp, "%s %s", cmd, channelname);
-            write_pipe(input_data->write_pipe, &type, TYPE_SIZE);
-            write_pipe(input_data->write_pipe, channelname, MAX_CHANNEL_NAME);
+            C_JOIN_PKT * cjoin = (C_JOIN_PKT*) malloc(sizeof(C_JOIN_PKT));
+            sscanf(temp, "%s %s", cmd, cjoin->channel_name);
+            write_packet(input_data->write_pipe, CLIENT_JOIN_PKT, cjoin);
         }
         else if(strcmp(cmd, "/leave") == 0)
         {
@@ -34,9 +33,9 @@ void* InputManager(void * indata)
         }
         else
         {
-           C_MSG_PKT c_msg;
-           c_msg.msg = cmd;
-           write_packet(input_data->write_pipe, CLIENT_MSG_PKT, &c_msg);
+           C_MSG_PKT * c_msg = (C_MSG_PKT*) malloc(sizeof(C_MSG_PKT));
+           memcpy(c_msg->msg, cmd, MAX_STRING);
+           write_packet(input_data->write_pipe, CLIENT_MSG_PKT, c_msg);
         }
     }
 
