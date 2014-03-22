@@ -35,7 +35,11 @@ static pthread_t   thread_channel[MAX_CHANNELS];
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: int main()
+--      INTERFACE: int
+    C_JOIN_PKT * info_packet = (C_JOIN_PKT*)malloc(sizeof(C_JOIN_PKT));
+
+    if(tcp_recieve(client_sd, (char*)info_packet) != CLIENT_ADD)
+    { main()
 --
 --      RETURNS: void
 --
@@ -46,7 +50,15 @@ static pthread_t   thread_channel[MAX_CHANNELS];
 --      - Waits on a select statement, listening to the input thread and the channel threads.
 --      Works as the central hub for all channels and the input thread. Redirects commands
 --      from the input thread to the proper channel threads using IPC.
-----------------------------------------------------------------------------------------------------------------------*/
+----------50eter
+class client_utils{
+
+    private:
+    //The storage string
+    std::string str;
+
+    //The text surface
+    SDL_Surface *text;------------------------------------------------------------------------------------------------------------*/
 int main()
 {
     pthread_t 	thread_input;
@@ -97,7 +109,7 @@ int main()
 
     	if(FD_ISSET(input_pipe[READ], &active))
     	{  
-
+            
             if(read_pipe(input_pipe[READ], &type, TYPE_SIZE) == -1){}
 
             else if(type == CHANNEL_CREATE)
@@ -165,7 +177,7 @@ void add_client(int client_sd)
 {
     C_JOIN_PKT * info_packet = (C_JOIN_PKT*)malloc(sizeof(C_JOIN_PKT));
 
-    if(tcp_recieve(client_sd, (char*)info_packet) != CLIENT_ADD)
+    if(tcp_recieve(client_sd, (char*)info_packet) != CLIENT_JOIN_PKT)
     {
         perror("Failed to add client at tcp_recieve");
         return;

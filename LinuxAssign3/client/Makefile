@@ -1,6 +1,11 @@
+<<<<<<< HEAD
 CC=g++ -std=c++11
 CFLAGS = -Wall
 LIBS = -lSDL -lSDL2_image -lSDL_ttf
+=======
+CC=g++ -std=c++11 -Wall
+CFLAGS = -lSDL2 -lSDL2_image -lSDL_ttf
+>>>>>>> f77b5047d7f5e066b5830b874f0984944ab35b9f
 
 BINDIR=bin
 OBJDIR=obj

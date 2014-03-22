@@ -18,19 +18,28 @@
 --      the connection is TCP.
 ----------------------------------------------------------------------------------------------------------------------*/
 
-int num_channels = 0;
-int current_channel = 0;
+static int num_channels = 0;
+static int current_channel = 0;
 static pthread_t thread_input[MAX_CHANNELS];
 static int input_pipes[MAX_CHANNELS][2];
 static int socket_list[MAX_CHANNELS];
+static char clientname[MAX_USER_NAME];
+char ** channel_names[MAX_CHANNELS][MAX_CHANNEL_NAME] = (char**) malloc(sizeof(char*) * MAX_CHANNELS);
+char *** channel_users[MAX_CHANNELS][MAX_CLIENTS][MAX_USER_NAME] = (char***) malloc(sizeof(char**) * MAX_CHANNELS);
 
-int main()
+int main(int argc, char ** argv)
 {
     int 		max_fd;
     fd_set      listen_fds;
     fd_set      active;
 
-    int    type;
+    if(argc != 2 || strlen(argv[1]) > 20)
+    {
+        printf("Please input a user name. Can be no longer than 20 characters.");
+        exit(2);
+    }
+
+    memcpy(argv[1], clientname, MAX_USER_NAME);
 
 	pipe(input_pipes[MAIN_CHANNEL]);
     THREAD_DATA * idata = (THREAD_DATA*)malloc(sizeof(THREAD_DATA));
@@ -47,70 +56,12 @@ int main()
 
     while(1)
     {
-        type = -1;
         active = listen_fds;
     	select(max_fd + 1, &active, NULL, NULL, NULL);
 
-        for(int i = 0; i < num_channels; i++)
-        {
-            if(FD_ISSET(input_pipes[i][READ], &active))
-        	{  
-                if(read_pipe(input_pipes[i][READ], &type, TYPE_SIZE) == -1){}
-
-                else if(type == JOIN_CHANNEL)
-                {
-                    join_channel(&listen_fds, &max_fd);
-                }
-
-                else if(type == QUIT_CHANNEL)
-                {
-                    //quit_channel();
-                }
-
-                else if(type == CLIENT_MSG)
-                {
-                    C_MSG_PKT c_msg;
-                    read_pipe(input_pipes[i][READ], &c_msg, sizeof(C_MSG_PKT));
-                    if(write_packet(socket_list[i], CLIENT_MSG_PKT, (char*)&c_msg) != CLIENT_MSG)
-                    {
-                        perror("Failed to send message");
-                        return -1;
-                    }
-                }
-
-                else if(type == EXIT)
-                {
-                    break;
-                }
-            }
-        }
-
-        for(int i = 0; i < num_channels; i++)
-        {
-            if(FD_ISSET(socket_list[i], &active))
-            {  
-                char * packet;
-                type = tcp_recieve(socket_list[i], packet);
-
-                if(type == SERVER_KICK_PKT)
-                {
-                    //channel_close(input_pipe[READ]);
-                    close(socket_list[i]);
-                }
-
-                else if(type == SERVER_MSG_PKT)
-                {
-                    write_packet(input_pipes[i][WRITE], type, packet);
-                    printf("Message passed to input channel %d.\n", i);
-                }
-
-                else if(type == CHANNEL_INFO_PKT)
-                {
-                    write_packet(input_pipes[i][WRITE], type, packet);
-                    printf("Channel update passed to input channel %d.\n", i);
-                }
-            }
-        }
+        check_input_pipes(&active);
+        check_output_sockets(&active);
+        render_windows();
     }
 
     for(int i = 0; i < num_channels; i++)
@@ -188,20 +139,23 @@ int connect_to_server(){
 --      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
 --      the connection is TCP.
 ----------------------------------------------------------------------------------------------------------------------*/
-void join_channel(fd_set * listen_fds, int * max_fd)
+void join_channel(fd_set * listen_fds, int * max_fd, int input_pipe, int c_num)
 {
     int sd;
     int input_pipe[2];
-    C_JOIN_PKT * info_packet;
-    S_CHANNEL_INFO_PKT * c_info_packet;
+    C_JOIN_PKT info_packet;
+    S_CHANNEL_INFO_PKT * c_info_packet = (S_CHANNEL_INFO_PKT*) malloc(sizeof(S_CHANNEL_INFO_PKT));
     
-    if((sd = connect_to_server()) != 0)
+    if(!(sd = connect_to_server()))
     {
         printf("Failed to connect, exiting program.\n");
         return;
     }
     
-    if(write_packet(sd, CLIENT_JOIN_PKT, (char*)info_packet))
+    read_pipe(input_pipe, &info_packet, sizeof(C_JOIN_PKT));
+    info_packet.client_name = clientname;
+
+    if(!write_packet(sd, CLIENT_JOIN_PKT, (char*)info_packet))
     {
         perror("Failed to join channel");
         return;
@@ -226,8 +180,8 @@ void join_channel(fd_set * listen_fds, int * max_fd)
     CHANNEL_DATA cdata;
     cdata.write_pipe = input_pipe[WRITE];
     cdata.read_pipe = input_pipe[READ];
-    memcpy(cdata.channelname, c_info_packet->channel_name, sizeof(c_info_packet->channel_name));
-    memcpy(cdata.client_list, c_info_packet->channel_clients, sizeof(c_info_packet->channel_clients));
+
+    setup_channel_variables(c_info_packet);
 
     *max_fd = *max_fd > input_pipes[current_channel][READ] ? *max_fd : input_pipes[current_channel][READ];
     FD_SET(sd, listen_fds);
@@ -235,4 +189,138 @@ void join_channel(fd_set * listen_fds, int * max_fd)
     socket_list[current_channel] = sd;
     dispatch_thread(InputManager, (void*)&cdata, &thread_input[current_channel++]);
     num_channels++;
+}
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: init_client
+--
+--      DATE: Febuary 6 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void init_client(HWND hwnd) , takes the parent HWND as an argument.
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
+--      the connection is TCP.
+----------------------------------------------------------------------------------------------------------------------*/
+void setup_channel_variables(S_CHANNEL_INFO_PKT * c_info)
+{
+   channel_names[current_channel] = (char*)malloc(sizeof(char) * MAX_CHANNEL_NAME);
+   memcpy(channel_names[current_channel], c_info->channel_name, MAX_CHANNEL_NAME);
+   
+   channel_users[current_channel] = (char**)malloc(sizeof(char*) * MAX_CLIENTS);
+
+   for(int i = 0; i < c_info->num_clients; i++)
+   {
+        channel_users[current_channel][i] = (char*)malloc(sizeof(char*) * MAX_USER_NAME);
+        memcpy(channel_users[current_channel][i], c_info->channel_clients[i], MAX_USER_NAME);
+   }
+}
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: init_client
+--
+--      DATE: Febuary 6 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void init_client(HWND hwnd) , takes the parent HWND as an argument.
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
+--      the connection is TCP.
+----------------------------------------------------------------------------------------------------------------------*/
+void check_input_pipes(fd_set * active)
+{
+    int type = -1;
+
+    for(int i = 0; i < num_channels; i++)
+    {
+        if(FD_ISSET(input_pipes[i][READ], active))
+        {  
+            if(read_pipe(input_pipes[i][READ], &type, TYPE_SIZE) == -1){}
+
+            else if(type == JOIN_CHANNEL)
+            {
+                join_channel(&listen_fds, &max_fd, input_pipes[i][READ], i);
+            }
+
+            else if(type == QUIT_CHANNEL)
+            {
+                //quit_channel();
+            }
+
+            else if(type == CLIENT_MSG)
+            {
+                C_MSG_PKT c_msg;
+                read_pipe(input_pipes[i][READ], &c_msg, sizeof(C_MSG_PKT));
+                if(write_packet(socket_list[i], CLIENT_MSG_PKT, (char*)&c_msg) != CLIENT_MSG)
+                {
+                    perror("Failed to send message");
+                    return -1;
+                }
+            }
+
+            else if(type == EXIT)
+            {
+                break;
+            }
+        }
+    }
+}
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: init_client
+--
+--      DATE: Febuary 6 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void init_client(HWND hwnd) , takes the parent HWND as an argument.
+--
+--      RETURNS: void
+--
+--      NOTES:
+--      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
+--      the connection is TCP.
+----------------------------------------------------------------------------------------------------------------------*/
+void check_output_sockets(fd_set * active)
+{
+    for(int i = 0; i < num_channels; i++)
+    {
+        if(FD_ISSET(socket_list[i], &active))
+        {  
+            char * packet;
+            int type = tcp_recieve(socket_list[i], packet);
+
+            if(type == SERVER_KICK_PKT)
+            {
+                //channel_close(input_pipe[READ]);
+                close(socket_list[i]);
+            }
+
+            else if(type == SERVER_MSG_PKT)
+            {
+                printf("Message recieved for channel %d.\n", i);
+            }
+
+            else if(type == CHANNEL_INFO_PKT)
+            {
+                printf("Channel %d updated with new client listings.\n", i);
+            }
+        }
+    }
+}
+
+void render_windows()
+{
+    
 }

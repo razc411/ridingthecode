@@ -21,10 +21,10 @@
 #define CHANNEL_CLOSE 	5
 
 //INTERNAL CLIENT PKT DEFS 
-#define JOIN_CHANNEL	0
-#define QUIT_CHANNEL    1
+#define JOIN_CHANNEL	6
+#define QUIT_CHANNEL    5
 #define EXIT 			2
-#define CLIENT_MSG    	3
+#define CLIENT_MSG    	4
 
 //CONNECTION CODES
 #define CONNECTION_REJECTED -1
@@ -78,7 +78,6 @@ typedef struct pkt4
 typedef struct pkt5{
 	char * client_name;
 	char * channel_name;
-	int tcp_socket;
 } C_JOIN_PKT;
 
 #endif
