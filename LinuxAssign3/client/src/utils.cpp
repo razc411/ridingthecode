@@ -4,6 +4,8 @@
 int packet_sizes[] = {
 	sizeof(S_KICK_PKT),
 	sizeof(S_MSG_PKT),
+	sizeof(S_CHANNEL_INFO_PKT),
+	0, // unset
 	sizeof(C_MSG_PKT),
 	sizeof(C_QUIT_PKT),
 	sizeof(C_JOIN_PKT)
@@ -101,19 +103,18 @@ int tcp_recieve(int sockfd, char * packet)
 {
 	int type_size = TYPE_SIZE;
 	int bytes_to_read;
-	int * type = NULL;
+	int * type = (int*)malloc(sizeof(int));
 	int numread = 0;
 	
-	while ((numread = read(sockfd, &type, type_size)) > 0)
+	while ((numread = read(sockfd, type, type_size)) > 0)
 	{
-		type += numread;
 		type_size -= numread;
 	}
 
 	packet = (char*) malloc(sizeof(packet_sizes[*type]));
 	bytes_to_read = packet_sizes[*type];
 
-	while ((numread = read(sockfd, packet, packet_sizes[*type])) > 0)
+	while ((numread = read(sockfd, packet, bytes_to_read)) > 0)
 	{
 		packet += numread;
 		bytes_to_read -= numread;
@@ -122,7 +123,7 @@ int tcp_recieve(int sockfd, char * packet)
 	if(bytes_to_read > 0)
 	{
 		fprintf(stderr, "Failed to read packet.\n");
-		return -2;
+		return -2; 
 	}
 
 	return *type;

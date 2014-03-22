@@ -23,6 +23,7 @@ int current_channel = 0;
 static pthread_t thread_input[MAX_CHANNELS];
 static int input_pipes[MAX_CHANNELS][2];
 static int socket_list[MAX_CHANNELS];
+static char clientname[MAX_USER_NAME] = "doof";
 
 int main()
 {
@@ -59,7 +60,7 @@ int main()
 
                 else if(type == JOIN_CHANNEL)
                 {
-                    join_channel(&listen_fds, &max_fd);
+                    join_channel(&listen_fds, &max_fd, input_pipes[i][READ]);
                 }
 
                 else if(type == QUIT_CHANNEL)
@@ -192,16 +193,19 @@ void join_channel(fd_set * listen_fds, int * max_fd)
 {
     int sd;
     int input_pipe[2];
-    C_JOIN_PKT * info_packet;
+    C_JOIN_PKT * info_packet = (C_JOIN_PKT*) malloc(sizeof(C_JOIN_PKT));
     S_CHANNEL_INFO_PKT * c_info_packet;
     
-    if((sd = connect_to_server()) != 0)
+    if(!(sd = connect_to_server()))
     {
         printf("Failed to connect, exiting program.\n");
         return;
     }
     
-    if(write_packet(sd, CLIENT_JOIN_PKT, (char*)info_packet))
+    info_packet->client_name = "dogguy";
+    info_packet->
+
+    if(!write_packet(sd, CLIENT_JOIN_PKT, (char*)info_packet))
     {
         perror("Failed to join channel");
         return;

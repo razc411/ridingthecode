@@ -1,6 +1,6 @@
 CC=g++
 FLAGS=-Wall
-LIBS=-lSDL2 -pthread
+LIBS=-pthread
 
 BINDIR=bin
 OBJDIR=obj
