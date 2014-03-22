@@ -5,10 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <strings.h>
-<<<<<<< HEAD
 #include <string.h>
-=======
->>>>>>> f77b5047d7f5e066b5830b874f0984944ab35b9f
 #include <string>
 #include <netdb.h>
 #include <pthread.h>
@@ -16,17 +13,13 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-<<<<<<< HEAD
 //#include <SDL2/SDL_net.h>
-#include <SDL/SDL.h>
+#include "SDL/SDL.h"
 //#include "SDL2/SDL.h"
-#include "SDL2/SDL_image.h"
 #include "SDL/SDL_ttf.h"
-=======
-#include <SDL2/SDL.h>
-#include "SDL2/SDL_image.h"
-#include "SDL2/SDL_ttf.h"
->>>>>>> f77b5047d7f5e066b5830b874f0984944ab35b9f
+//#include <SDL2/SDL.h>
+#include "SDL/SDL_image.h"
+//#include "SDL2/SDL_ttf.h"
 #include "packets.h"
 #include "utils.h"
 
