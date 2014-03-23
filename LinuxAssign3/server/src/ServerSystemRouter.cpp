@@ -69,7 +69,7 @@ int main()
     fd_set      listen_fds;
     fd_set      active;
 
-    uint32_t    type = -1;
+    int    type = -1;
 
     THREAD_DATA * idata = (THREAD_DATA*)malloc(sizeof(THREAD_DATA));
 
@@ -104,7 +104,7 @@ int main()
         {
             client_sd = accept_new_client(listen_sd);
             if(client_sd != -1)
-                add_client(client_sd);
+                add_client(client_sd, NULL, 0);
         }
 
     	if(FD_ISSET(input_pipe[READ], &active))
@@ -138,7 +138,14 @@ int main()
     	{
     		if(FD_ISSET(channel_pipes[i][READ], &active))
     		{
-    			//if client sends error, handle
+    			void * packet = read_packet(channel_pipes[i][READ], &type);
+
+                if(type == JOIN_CHANNEL)
+                {
+                    client_sd = accept_new_client(listen_sd);
+                    if(client_sd != -1)
+                        add_client(client_sd, packet, 1);
+                }   
     		}
     	}
 
@@ -173,20 +180,28 @@ int main()
 --      Will retrieve the C_JOIN_PKT from the client, and redirect the client to the proper
 --      channel.
 ----------------------------------------------------------------------------------------------------------------------*/
-void add_client(int client_sd)
+void add_client(int client_sd, void * join_req, int joined)
 {
     C_JOIN_PKT * info_packet;
-    int type = -1;
-    
-    info_packet = (C_JOIN_PKT*)read_packet(client_sd, &type);
-    if(type != CLIENT_JOIN_PKT)
+
+    if(joined == 0)
     {
-        perror("Failed to add client at read_packet");
-        return;
+        int type = -1;
+        
+        info_packet = (C_JOIN_PKT*)read_packet(client_sd, &type);
+        if(type != CLIENT_JOIN_PKT)
+        {
+            perror("Failed to add client at read_packet");
+            return;
+        }
+
+        info_packet->tcp_socket = client_sd;
     }
-
-    info_packet->tcp_socket = client_sd;
-
+    else
+    {
+        info_packet = (C_JOIN_PKT*)join_req;
+    }
+    
     type = CLIENT_ADD;
 
     for(int i = 0; i < open_channels; i++)

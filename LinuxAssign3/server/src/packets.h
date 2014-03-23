@@ -21,15 +21,16 @@
 #define CHANNEL_CLOSE 	5
 
 //INTERNAL CLIENT PKT DEFS 
-#define JOIN_CHANNEL	0
-#define QUIT_CHANNEL    1
+#define JOIN_CHANNEL	6
+#define QUIT_CHANNEL    5
 #define EXIT 			2
-#define CLIENT_MSG    	3
+#define CLIENT_MSG    	4
 
 //CONNECTION CODES
 #define CONNECTION_REJECTED -1
-#define CONNECTION_ACCEPTED  1
+#define CONNECTION_ACCEPTED  99
 #define CLIENT_LIST_UPDATE	 0
+#define CNT_JOIN_CHANNEL     8
 
 //SERVER SIDE OUTGOING PKTS
 #define SERVER_KICK_PKT		0
@@ -43,13 +44,20 @@
 #define CLIENT_JOIN_PKT		6
 #define CLIENT_ERROR		7
 
-/// OUTGOING PACKET DEFS
-typedef struct pkt1
-{
+// OUTGOING PACKET DEFS
+typedef struct pkt0
+{	
 	char client_name[MAX_USER_NAME];
 	char channel_name[MAX_CHANNEL_NAME];
 	char msg[MAX_STRING];
-} S_MSG_PKT, S_KICK_PKT;
+} S_KICK_PKT;
+
+typedef struct pkt1
+{
+	char client_name[MAX_USER_NAME];
+	char msg[MAX_STRING];
+	char channel_name[MAX_CHANNEL_NAME];
+} S_MSG_PKT;
 
 typedef struct pkt2
 {
@@ -74,7 +82,6 @@ typedef struct pkt5{
 	char channel_name[MAX_CHANNEL_NAME];
 	int tcp_socket;
 } C_JOIN_PKT;
-
 
 #endif
 

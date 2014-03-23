@@ -225,6 +225,20 @@ void setup_channel_variables(S_CHANNEL_INFO_PKT * c_info)
         memcpy(channel_users[current_channel][i], c_info->channel_clients[i], MAX_USER_NAME);
    }
 }
+
+int connected_join_request(int client, int input_pipe)
+{
+    int type = CNT_JOIN_CHANNEL;
+    write(socket_list[client], &type, TYPE_SIZE);
+
+    read_packet(socket_list[client], &type);
+    if(type == CONNECTION_ACCEPTED)
+    {
+        return 1;
+    }
+
+    return -1;
+}
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: init_client
 --
@@ -254,6 +268,13 @@ void check_input_pipes(fd_set * active, fd_set * listen_fds, int max_fd)
 
             else if(type == JOIN_CHANNEL)
             {
+                if(num_channels > 0)
+                {
+                    if(connected_join_request(i, input_pipes[i][READ]) == -1)
+                    {
+                        continue;
+                    }
+                }
                 join_channel(listen_fds, &max_fd, input_pipes[i][READ], i);
             }
 

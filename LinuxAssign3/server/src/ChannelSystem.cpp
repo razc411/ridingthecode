@@ -47,7 +47,6 @@ void* ChannelManager(void * chdata)
     	{
             if(read_pipe(cdata->read_pipe, &type, TYPE_SIZE) == -1){}
 
-
             else if(type == CLIENT_ADD)
             {
                 process_add_client(cdata->read_pipe, &listen_fds);
@@ -84,10 +83,15 @@ void* ChannelManager(void * chdata)
         
         for(int i = 0; i < num_clients; i++)
         {
-            void * packet;
             if(FD_ISSET(socket_list[i], &active))
             {
-                packet = read_packet(socket_list[i], &type);
+                void * packet = read_packet(socket_list[i], &type);
+
+                if(type == JOIN_CHANNEL)
+                {
+                    ((C_JOIN_PKT*)packet)->tcp_socket = socket_list[i];
+                    write_packet(cdata->write_pipe, CLIENT_JOIN_PKT, packet);
+                }
 
                 if(type == CLIENT_QUIT)
                 {

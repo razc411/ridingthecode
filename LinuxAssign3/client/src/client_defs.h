@@ -47,4 +47,5 @@ int connect_to_server();
 void join_channel(fd_set * listen_fds, int * max_fd, int input_pipe, int c_id);
 void check_input_pipes(fd_set * active, fd_set * listen_fds, int max_fd);
 void serialize_cjoin(void* packet, int sockfd);
+int connected_join_request(int client, int input_pipe);
 #endif

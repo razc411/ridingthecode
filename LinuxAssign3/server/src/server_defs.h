@@ -33,7 +33,7 @@ void channel_close(int input_pipe);
 void close_server(int input_pipes[2]);
 void* InputManager(void * pipes);
 void add_channel(int * max_fd, fd_set * listen_fds, int input_pipe);
-void add_client(int cm_pipe);
+void add_client(int cm_pipe, void * join_req);
 void write_type(int pipe, int type);
 void reform_router_lists();
 

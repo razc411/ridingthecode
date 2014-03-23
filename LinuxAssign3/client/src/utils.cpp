@@ -169,6 +169,7 @@ int write_packet(int sockfd, int type, void * packet)
 		case CLIENT_JOIN_PKT:
 			serialize_cjoin(packet, sockfd);
 		break;
+		
 	}
 
 	return type;
