@@ -2,13 +2,13 @@
 #include "utils.h"
 
 int packet_sizes[] = {
-	sizeof(S_KICK_PKT),
-	sizeof(S_MSG_PKT),
-	sizeof(S_CHANNEL_INFO_PKT),
+	((sizeof(char) * MAX_USER_NAME) + (sizeof(char) * MAX_CHANNEL_NAME) + (sizeof(char) * MAX_STRING)),
+	((sizeof(char) * MAX_USER_NAME) + (sizeof(char) * MAX_CHANNEL_NAME) + (sizeof(char) * MAX_STRING)),
+	((sizeof(int) * 2) + (sizeof(char) * MAX_CHANNEL_NAME) + ((sizeof(char) * MAX_USER_NAME) * MAX_CLIENTS)),
 	0, // unset
-	sizeof(C_MSG_PKT),
-	sizeof(C_QUIT_PKT),
-	sizeof(C_JOIN_PKT)
+	(sizeof(char) * MAX_STRING),
+	sizeof(int),
+	((sizeof(char) * MAX_USER_NAME) + (sizeof(char) * MAX_CHANNEL_NAME) + sizeof(int))
 };
 /*
 	Wrapper for starting threads.
@@ -99,40 +99,176 @@ int accept_new_client(int listen_sd)
 	return client_sd;
 }
 
-int tcp_recieve(int sockfd, char * packet)
+void* tcp_recieve(int sockfd, int * type)
 {
-	int type_size = TYPE_SIZE;
-	int bytes_to_read;
-	int * type = (int*)malloc(sizeof(int));
+	int bytes_to_read = TYPE_SIZE;
 	int numread = 0;
 	
-	while ((numread = read(sockfd, type, type_size)) > 0)
+	while ((numread = read(sockfd, type, bytes_to_read)) > 0)
 	{
-		type_size -= numread;
-	}
-
-	packet = (char*) malloc(sizeof(packet_sizes[*type]));
-	bytes_to_read = packet_sizes[*type];
-
-	while ((numread = read(sockfd, packet, bytes_to_read)) > 0)
-	{
-		packet += numread;
 		bytes_to_read -= numread;
 	}
 
-	if(bytes_to_read > 0)
+	switch(*type)
 	{
-		fprintf(stderr, "Failed to read packet.\n");
-		return -2; 
+		case SERVER_MSG_PKT:
+		case SERVER_KICK_PKT:
+			return recieve_smsg_skick(sockfd);
+		break;
+
+		case CHANNEL_INFO_PKT:
+			return recieve_cinfo(sockfd);
+		break;
+
+		case CHANNEL_ERROR:
+			//someday
+		break;
+
+		case CLIENT_MSG_PKT:
+			return recieve_cmsg(sockfd);
+		break;
+
+		case CLIENT_QUIT_PKT:
+			return recieve_cquit(sockfd);
+		break;
+
+		case CLIENT_JOIN_PKT:
+			return recieve_cjoin(sockfd);
+		break;
 	}
 
-	return *type;
+	return NULL;
 }
 
 int write_packet(int sockfd, int type, void * packet)
 {
 	write(sockfd, &type, TYPE_SIZE);
-	write(sockfd, packet, packet_sizes[type]);
+	switch(type)
+	{
+		case SERVER_MSG_PKT:
+		case SERVER_KICK_PKT:
+			serialize_smsg_skick(packet, sockfd);
+		break;
 
+		case CHANNEL_INFO_PKT:
+			serialize_cinfo(packet, sockfd);
+		break;
+
+		case CHANNEL_ERROR:
+			//someday
+		break;
+
+		case CLIENT_MSG_PKT:
+			write(sockfd, &((C_QUIT_PKT*)packet)->code, packet_sizes[type]);
+		break;
+
+		case CLIENT_QUIT_PKT:
+			write(sockfd, &((C_QUIT_PKT*)packet)->code, packet_sizes[type]);
+		break;
+
+		case CLIENT_JOIN_PKT:
+			serialize_cjoin(packet, sockfd);
+		break;
+	}
+
+	free(packet);
 	return type;
+}
+
+void serialize_cjoin(void* packet, int sockfd)
+{
+	C_JOIN_PKT * cjoin = (C_JOIN_PKT*) packet;
+
+	write(sockfd, (void*)cjoin->client_name, MAX_USER_NAME);
+	write(sockfd, (void*)cjoin->channel_name, MAX_CHANNEL_NAME);
+	write(sockfd, &cjoin->tcp_socket, sizeof(int));
+}
+
+void serialize_smsg_skick(void* packet, int sockfd)
+{
+	S_MSG_PKT * smsgkick = (S_MSG_PKT*) packet;
+
+	write(sockfd, (void*)smsgkick->client_name, MAX_USER_NAME);
+	write(sockfd, (void*)smsgkick->channel_name, MAX_CHANNEL_NAME);
+	write(sockfd, (void*)smsgkick->msg, MAX_STRING);
+}
+
+void serialize_cinfo(void* packet, int sockfd)
+{
+	S_CHANNEL_INFO_PKT * cinfo = (S_CHANNEL_INFO_PKT*) packet;
+
+	write(sockfd, &cinfo->code, sizeof(int));
+	write(sockfd, &cinfo->num_clients, sizeof(int));
+	write(sockfd, (void*)cinfo->channel_name, MAX_CHANNEL_NAME);
+
+	for(int i = 0; i < MAX_CLIENTS; i++)
+		write(sockfd, (void*)cinfo->channel_clients[i], MAX_USER_NAME);
+}
+
+void * recieve_smsg_skick(int sockfd)
+{
+	S_MSG_PKT * smsgkick = (S_MSG_PKT*) malloc(sizeof(packet_sizes[SERVER_MSG_PKT]));
+
+	rcv_variable(sockfd, smsgkick->client_name, MAX_USER_NAME);
+	rcv_variable(sockfd, smsgkick->channel_name, MAX_CHANNEL_NAME);
+	rcv_variable(sockfd, smsgkick->msg, MAX_STRING);
+
+	return smsgkick;
+}
+
+void * recieve_cinfo(int sockfd)
+{
+	S_CHANNEL_INFO_PKT * cinfo = (S_CHANNEL_INFO_PKT*) malloc(sizeof(packet_sizes[CHANNEL_INFO_PKT]));
+
+	rcv_variable(sockfd, &cinfo->code, sizeof(int));
+	rcv_variable(sockfd, &cinfo->num_clients, sizeof(int));
+	rcv_variable(sockfd, cinfo->channel_name, MAX_CHANNEL_NAME);
+
+	for(int i = 0; i < MAX_CLIENTS; i++)
+		rcv_variable(sockfd, (void*)cinfo->channel_clients[i], MAX_USER_NAME);
+
+	return cinfo;
+}
+
+void * recieve_cmsg(int sockfd)
+{
+	C_MSG_PKT * cmsg = (C_MSG_PKT*) malloc(sizeof(packet_sizes[CLIENT_MSG_PKT]));
+
+	rcv_variable(sockfd, cmsg->msg, MAX_STRING);
+
+	return cmsg;
+}
+
+void *recieve_cquit(int sockfd)
+{
+	C_QUIT_PKT * cquit = (C_QUIT_PKT*) malloc(sizeof(packet_sizes[CLIENT_QUIT_PKT]));
+
+	rcv_variable(sockfd, &cquit->code, sizeof(int));
+
+	return cquit;
+}
+
+void * recieve_cjoin(int sockfd)
+{
+	C_JOIN_PKT * packet = (C_JOIN_PKT*) malloc(sizeof(packet_sizes[CLIENT_JOIN_PKT]));
+
+	rcv_variable(sockfd, packet->client_name, MAX_USER_NAME);
+	rcv_variable(sockfd, packet->channel_name, MAX_CHANNEL_NAME);
+	rcv_variable(sockfd, &packet->tcp_socket, sizeof(int));
+
+	return packet;
+}
+
+void rcv_variable(int sockfd, void * incoming, int size)
+{
+	int bytes_to_read = size;
+	char * buf;
+	int numread;
+
+	buf = (char*) incoming;
+	while ((numread = read(sockfd, buf, bytes_to_read)) > 0)
+	{
+		buf += numread;
+		bytes_to_read -= numread;
+	}
 }

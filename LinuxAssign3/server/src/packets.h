@@ -43,31 +43,25 @@
 #define CLIENT_JOIN_PKT		6
 #define CLIENT_ERROR		7
 
-// OUTGOING PACKET DEFS
-typedef struct pkt0
-{	
-	char * client_name;
-	char * channel_name;
-	char * msg;
-} S_KICK_PKT;
-
+/// OUTGOING PACKET DEFS
 typedef struct pkt1
 {
-	char * client_name;
-	char * msg;
-	char * channel_name;
-} S_MSG_PKT;
+	char client_name[MAX_USER_NAME];
+	char channel_name[MAX_CHANNEL_NAME];
+	char msg[MAX_STRING];
+} S_MSG_PKT, S_KICK_PKT;
 
 typedef struct pkt2
 {
 	int code;
-	char * channel_name;
-	char ** channel_clients;
+	int num_clients;
+	char channel_name[MAX_CHANNEL_NAME];
+	char channel_clients[MAX_CLIENTS][MAX_USER_NAME];
 } S_CHANNEL_INFO_PKT;
 
 typedef struct pkt3
 {
-	char * msg;
+	char msg[MAX_STRING];
 } C_MSG_PKT;
 
 typedef struct pkt4
@@ -76,9 +70,11 @@ typedef struct pkt4
 } C_QUIT_PKT;
 
 typedef struct pkt5{
-	char * client_name;
-	char * channel_name;
+	char client_name[MAX_USER_NAME];
+	char channel_name[MAX_CHANNEL_NAME];
+	int tcp_socket;
 } C_JOIN_PKT;
+
 
 #endif
 
