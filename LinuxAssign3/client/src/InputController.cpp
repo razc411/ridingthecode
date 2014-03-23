@@ -8,7 +8,7 @@ void* InputManager(void * indata)
     char *   temp = NULL;
     char     cmd[MAX_STRING];
     size_t   nbytes = MAX_STRING;
-
+    
     while(getline(&temp, &nbytes, stdin))
     {
         sscanf(temp, "%s", cmd);
