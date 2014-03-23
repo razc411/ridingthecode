@@ -7,7 +7,6 @@ void* InputManager(void * indata)
     int type;
     char *   temp = NULL;
     char     cmd[MAX_STRING];
-    char     channelname[MAX_CHANNEL_NAME];
     size_t   nbytes = MAX_STRING;
 
     while(getline(&temp, &nbytes, stdin))
@@ -16,9 +15,9 @@ void* InputManager(void * indata)
         
         if(strcmp(cmd, "/join") == 0)
         {
-            C_JOIN_PKT * cjoin = (C_JOIN_PKT*) malloc(sizeof(C_JOIN_PKT));
-            sscanf(temp, "%s %s", cmd, cjoin->channel_name);
-            write_packet(input_data->write_pipe, CLIENT_JOIN_PKT, cjoin);
+            C_JOIN_PKT cjoin;
+            sscanf(temp, "%s %s", cmd, cjoin.channel_name);
+            write_packet(input_data->write_pipe, CLIENT_JOIN_PKT, &cjoin);
         }
         else if(strcmp(cmd, "/leave") == 0)
         {
@@ -33,9 +32,9 @@ void* InputManager(void * indata)
         }
         else
         {
-           C_MSG_PKT * c_msg = (C_MSG_PKT*) malloc(sizeof(C_MSG_PKT));
-           memcpy(c_msg->msg, cmd, MAX_STRING);
-           write_packet(input_data->write_pipe, CLIENT_MSG_PKT, c_msg);
+           // C_MSG_PKT * c_msg = (C_MSG_PKT*) malloc(sizeof(C_MSG_PKT));
+           // memcpy(c_msg->msg, cmd, MAX_STRING);
+           // write_packet(input_data->write_pipe, CLIENT_MSG_PKT, c_msg);
         }
     }
 

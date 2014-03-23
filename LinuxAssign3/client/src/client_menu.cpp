@@ -15,13 +15,13 @@ int y = 0;  // mouse position y
 bool namebox_clicked = false;
 bool ipbox_clicked = false;
 bool portbox_clicked = false;
-bool button_clicked = false;
+bool button_clicked = false; 
 
 bool namebox_filled = false;
 bool ipbox_filled = false;
 bool portbox_filled = false;
 
-//The key press interpreter
+//The key press interpr50eter
 class client_utils{
 
     private:

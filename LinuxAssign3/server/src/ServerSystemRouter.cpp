@@ -15,7 +15,7 @@
 --      RETURNS: void
 --
 --      NOTES:
---      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
+--      Intializes the client, the type of8 intialization depends on the chosen protocol in the settings. Binds whenever
 --      the connection is TCP.
 ----------------------------------------------------------------------------------------------------------------------*/
 extern int packet_sizes[];
@@ -175,15 +175,19 @@ int main()
 ----------------------------------------------------------------------------------------------------------------------*/
 void add_client(int client_sd)
 {
-    C_JOIN_PKT * info_packet = (C_JOIN_PKT*)malloc(sizeof(C_JOIN_PKT));
-
-    if(tcp_recieve(client_sd, (char*)info_packet) != CLIENT_JOIN_PKT)
+    C_JOIN_PKT * info_packet;
+    int type = -1;
+    
+    info_packet = (C_JOIN_PKT*)tcp_recieve(client_sd, &type);
+    if(type != CLIENT_JOIN_PKT)
     {
         perror("Failed to add client at tcp_recieve");
         return;
     }
 
-    uint32_t type = CLIENT_ADD;
+    info_packet->tcp_socket = client_sd;
+
+    type = CLIENT_ADD;
 
     for(int i = 0; i < open_channels; i++)
     {
@@ -220,7 +224,7 @@ void add_client(int client_sd)
 void add_channel(int * max_fd, fd_set * listen_fds, int input_pipe)
 {
     char temp[MAX_CHANNEL_NAME];
-    CHANNEL_DATA * chdata = (CHANNEL_DATA*)malloc(sizeof(CHANNEL_DATA*));
+    CHANNEL_DATA * chdata = (CHANNEL_DATA*)malloc(sizeof(CHANNEL_DATA));
 
     read_pipe(input_pipe, &temp, MAX_CHANNEL_NAME);
     channel_name_list[open_channels] = (char*)malloc(sizeof(char) * MAX_CHANNEL_NAME);

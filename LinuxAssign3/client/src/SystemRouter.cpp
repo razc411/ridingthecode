@@ -24,8 +24,8 @@ static pthread_t thread_input[MAX_CHANNELS];
 static int input_pipes[MAX_CHANNELS][2];
 static int socket_list[MAX_CHANNELS];
 static char clientname[MAX_USER_NAME];
-char ** channel_names[MAX_CHANNELS][MAX_CHANNEL_NAME] = (char**) malloc(sizeof(char*) * MAX_CHANNELS);
-char *** channel_users[MAX_CHANNELS][MAX_CLIENTS][MAX_USER_NAME] = (char***) malloc(sizeof(char**) * MAX_CHANNELS);
+char ** channel_names = (char**) malloc(sizeof(char*) * MAX_CHANNELS);
+char *** channel_users = (char***) malloc(sizeof(char**) * MAX_CHANNELS);
 
 int main(int argc, char ** argv)
 {
@@ -39,7 +39,8 @@ int main(int argc, char ** argv)
         exit(2);
     }
 
-    memcpy(argv[1], clientname, MAX_USER_NAME);
+    memcpy(clientname, argv[1], MAX_USER_NAME);
+
 
 	pipe(input_pipes[MAIN_CHANNEL]);
     THREAD_DATA * idata = (THREAD_DATA*)malloc(sizeof(THREAD_DATA));
@@ -59,9 +60,9 @@ int main(int argc, char ** argv)
         active = listen_fds;
     	select(max_fd + 1, &active, NULL, NULL, NULL);
 
-        check_input_pipes(&active);
+        check_input_pipes(&active, &listen_fds, max_fd);
         check_output_sockets(&active);
-        render_windows();
+        
     }
 
     for(int i = 0; i < num_channels; i++)
@@ -69,7 +70,7 @@ int main(int argc, char ** argv)
         close(input_pipes[i][READ]);
         close(input_pipes[i][WRITE]);
     }
-
+    
     return 0;
 }
 /*------------------------------------------------------------------------------------------------------------------
@@ -142,8 +143,9 @@ int connect_to_server(){
 void join_channel(fd_set * listen_fds, int * max_fd, int input_pipe, int c_num)
 {
     int sd;
-    int input_pipe[2];
-    C_JOIN_PKT info_packet;
+    int pipes[2];
+    int type;
+    C_JOIN_PKT * info_packet = (C_JOIN_PKT*) malloc(sizeof(C_JOIN_PKT));
     S_CHANNEL_INFO_PKT * c_info_packet = (S_CHANNEL_INFO_PKT*) malloc(sizeof(S_CHANNEL_INFO_PKT));
     
     if(!(sd = connect_to_server()))
@@ -152,16 +154,16 @@ void join_channel(fd_set * listen_fds, int * max_fd, int input_pipe, int c_num)
         return;
     }
     
-    read_pipe(input_pipe, &info_packet, sizeof(C_JOIN_PKT));
-    info_packet.client_name = clientname;
+    read_pipe(input_pipe, info_packet, sizeof(C_JOIN_PKT));
+    memcpy(info_packet->client_name, clientname, MAX_USER_NAME);
 
-    if(!write_packet(sd, CLIENT_JOIN_PKT, (char*)info_packet))
+    if(!write_packet(sd, CLIENT_JOIN_PKT, info_packet))
     {
         perror("Failed to join channel");
         return;
     }
 
-    if(tcp_recieve(sd, (char*)c_info_packet) < 0)
+    if((info_packet = (C_JOIN_PKT*)tcp_recieve(sd, &type)) == NULL)
     {
         printf("Failed to retrieve channel info packet.\n");
         return;
@@ -173,13 +175,13 @@ void join_channel(fd_set * listen_fds, int * max_fd, int input_pipe, int c_num)
         return;
     }
 
-    pipe(input_pipe);
-    input_pipes[current_channel][READ] = input_pipe[READ];
-    input_pipes[current_channel][WRITE] = input_pipe[WRITE];
+    pipe(pipes);
+    input_pipes[current_channel][READ] = pipes[READ];
+    input_pipes[current_channel][WRITE] = pipes[WRITE];
 
     CHANNEL_DATA cdata;
-    cdata.write_pipe = input_pipe[WRITE];
-    cdata.read_pipe = input_pipe[READ];
+    cdata.write_pipe = pipes[WRITE];
+    cdata.read_pipe = pipes[READ];
 
     setup_channel_variables(c_info_packet);
 
@@ -189,6 +191,9 @@ void join_channel(fd_set * listen_fds, int * max_fd, int input_pipe, int c_num)
     socket_list[current_channel] = sd;
     dispatch_thread(InputManager, (void*)&cdata, &thread_input[current_channel++]);
     num_channels++;
+
+    free(c_info_packet);
+    free(info_packet);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: init_client
@@ -237,7 +242,7 @@ void setup_channel_variables(S_CHANNEL_INFO_PKT * c_info)
 --      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
 --      the connection is TCP.
 ----------------------------------------------------------------------------------------------------------------------*/
-void check_input_pipes(fd_set * active)
+void check_input_pipes(fd_set * active, fd_set * listen_fds, int max_fd)
 {
     int type = -1;
 
@@ -249,7 +254,7 @@ void check_input_pipes(fd_set * active)
 
             else if(type == JOIN_CHANNEL)
             {
-                join_channel(&listen_fds, &max_fd, input_pipes[i][READ], i);
+                join_channel(listen_fds, &max_fd, input_pipes[i][READ], i);
             }
 
             else if(type == QUIT_CHANNEL)
@@ -264,7 +269,7 @@ void check_input_pipes(fd_set * active)
                 if(write_packet(socket_list[i], CLIENT_MSG_PKT, (char*)&c_msg) != CLIENT_MSG)
                 {
                     perror("Failed to send message");
-                    return -1;
+                    return;
                 }
             }
 
@@ -296,10 +301,10 @@ void check_output_sockets(fd_set * active)
 {
     for(int i = 0; i < num_channels; i++)
     {
-        if(FD_ISSET(socket_list[i], &active))
+        if(FD_ISSET(socket_list[i], active))
         {  
-            char * packet;
-            int type = tcp_recieve(socket_list[i], packet);
+            int type;
+            char * packet = (char*) tcp_recieve(socket_list[i], &type);
 
             if(type == SERVER_KICK_PKT)
             {
@@ -316,6 +321,7 @@ void check_output_sockets(fd_set * active)
             {
                 printf("Channel %d updated with new client listings.\n", i);
             }
+            free(packet);
         }
     }
 }
