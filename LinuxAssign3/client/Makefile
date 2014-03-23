@@ -1,11 +1,29 @@
-CC=g++ -std=c++11 -Wall
-CFLAGS = -lSDL2 -lSDL2_image -lSDL_ttf
+CC=g++ -std=c++11
+FLAGS = -Wall
+LIBS = -lSDL -lSDL_image -lSDL_ttf
 
-client: obj/client_menu.o
-	$(CC) -o client obj/client_menu.o $(CFLAGS)
+BINDIR=bin
+OBJDIR=obj
+SRCDIR=src
+
+BIN_DEFAULT=$(BINDIR)/client_chat
+OBJ_DEFAULT=$(OBJDIR)/client_menu.o
+
+client_chat: $(OBJ_DEFAULT)
+	test -d $(BINDIR) || mkdir -p $(BINDIR)
+	$(CC) $(FLAGS) -o $(BINDIR)/client_chat $(OBJ_DEFAULT) $(LIBS)
+
+run: client_chat
+	$(BINDIR)/client_chat
 
 clean:
-	rm -f obj/*.o core.* bin/a
+	rm -f $(OBJ_DEFAULT) $(BIN_DEFAULT)
 
-obj/client_menu.o: src/client_menu.cpp
-	$(CC) $(CFLAGS) -c src/client_menu.cpp
+debug: $(OBJ_DEFAULT)
+	test -d $(BINDIR) || mkdir -p $(BINDIR)
+	$(CC) $(FLAGS) -g -o $(BINDIR)/client_chat $(OBJ_DEFAULT) $(LIBS)
+	gdb $(BINDIR)/client_chat
+
+$(OBJDIR)/client_menu.o: $(SRCDIR)/client_menu.cpp
+	test -d $(OBJDIR)/ || mkdir -p $(OBJDIR)/
+	$(CC) $(FLAGS) -c -o $(OBJDIR)/client_menu.o $(SRCDIR)/client_menu.cpp
