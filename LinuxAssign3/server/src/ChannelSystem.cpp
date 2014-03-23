@@ -87,11 +87,6 @@ void* ChannelManager(void * chdata)
             {
                 void * packet = read_packet(socket_list[i], &type);
 
-                if(type == JOIN_CHANNEL)
-                {
-                    write_packet(cdata->write_pipe, CLIENT_JOIN_PKT, packet);
-                }
-
                 if(type == CLIENT_QUIT)
                 {
                     process_client_quit(socket_list[i], (C_QUIT_PKT*)packet, i);

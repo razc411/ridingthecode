@@ -133,22 +133,6 @@ int main()
                 break;
             }
     	}
-
-    	for(int i = 0; i < open_channels; i++)
-    	{
-    		if(FD_ISSET(channel_pipes[i][READ], &active))
-    		{
-    			void * packet = read_packet(channel_pipes[i][READ], &type);
-
-                if(type == JOIN_CHANNEL)
-                {
-                    client_sd = accept_new_client(listen_sd);
-                    if(client_sd != -1)
-                        add_client(client_sd, packet, 1);
-                }   
-    		}
-    	}
-
         //if(open_channels != current_channels)
        // {
        //     reform_lists();
