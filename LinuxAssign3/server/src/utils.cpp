@@ -209,8 +209,8 @@ void * recieve_smsg_skick(int sockfd)
 	S_MSG_PKT * smsgkick = (S_MSG_PKT*) malloc(packet_sizes[SERVER_MSG_PKT]);
 
 	rcv_variable(sockfd, smsgkick->client_name, MAX_USER_NAME);
-	rcv_variable(sockfd, smsgkick->channel_name, MAX_CHANNEL_NAME);
 	rcv_variable(sockfd, smsgkick->msg, MAX_STRING);
+	rcv_variable(sockfd, smsgkick->channel_name, MAX_CHANNEL_NAME);
 
 	return smsgkick;
 }

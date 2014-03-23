@@ -20,6 +20,7 @@
 
 static int num_channels = 0;
 static int current_channel = 0;
+static int num_sockets = 0;
 static pthread_t thread_input[MAX_CHANNELS];
 static int input_pipes[MAX_CHANNELS][2];
 static int socket_list[MAX_CHANNELS];
@@ -59,7 +60,7 @@ int main(int argc, char ** argv)
         active = listen_fds;
     	select(max_fd + 1, &active, NULL, NULL, NULL);
 
-        check_input_pipes(&active, &listen_fds, max_fd);
+        check_input_pipes(&active, &listen_fds, &max_fd);
         check_output_sockets(&active);
         
     }
@@ -174,20 +175,18 @@ void join_channel(fd_set * listen_fds, int * max_fd, int input_pipe, int c_num)
         return;
     }
 
-    pipe(pipes);
-    input_pipes[current_channel][READ] = pipes[READ];
-    input_pipes[current_channel][WRITE] = pipes[WRITE];
-
     CHANNEL_DATA cdata;
-    cdata.write_pipe = pipes[WRITE];
-    cdata.read_pipe = pipes[READ];
+
+    pipe(pipes);
+    input_pipes[current_channel][READ] = cdata.write_pipe = pipes[READ];
+    input_pipes[current_channel][WRITE] = cdata.read_pipe = pipes[WRITE];
 
     setup_channel_variables(c_info_packet);
 
     *max_fd = *max_fd > input_pipes[current_channel][READ] ? *max_fd : input_pipes[current_channel][READ];
     *max_fd = *max_fd > sd ? *max_fd : sd;
-    socket_list[current_channel - 1] = sd;
-    FD_SET(sd, listen_fds);
+    socket_list[num_sockets++] = sd;
+    FD_SET(socket_list[num_sockets - 1], listen_fds);
 
     dispatch_thread(InputManager, (void*)&cdata, &thread_input[current_channel++]);
     num_channels++;
@@ -257,7 +256,7 @@ int connected_join_request(int client, int input_pipe)
 --      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
 --      the connection is TCP.
 ----------------------------------------------------------------------------------------------------------------------*/
-void check_input_pipes(fd_set * active, fd_set * listen_fds, int max_fd)
+void check_input_pipes(fd_set * active, fd_set * listen_fds, int * max_fd)
 {
     int type = -1;
 
@@ -276,7 +275,7 @@ void check_input_pipes(fd_set * active, fd_set * listen_fds, int max_fd)
                         continue;
                     }
                 }
-                join_channel(listen_fds, &max_fd, input_pipes[i][READ], i);
+                join_channel(listen_fds, max_fd, input_pipes[i][READ], i);
             }
 
             else if(type == QUIT_CHANNEL)
@@ -321,7 +320,7 @@ void check_input_pipes(fd_set * active, fd_set * listen_fds, int max_fd)
 ----------------------------------------------------------------------------------------------------------------------*/
 void check_output_sockets(fd_set * active)
 {
-    for(int i = 0; i < num_channels; i++)
+    for(int i = 0; i < num_sockets; i++)
     {
         if(FD_ISSET(socket_list[i], active))
         {  
@@ -356,6 +355,5 @@ void render_windows()
 void display_incoming_message(S_MSG_PKT * packet)
 {
     printf("%s : %s\n", packet->client_name, packet->msg);
-    fflush(stdout);
     //retrieve timestamp and add that
 }
