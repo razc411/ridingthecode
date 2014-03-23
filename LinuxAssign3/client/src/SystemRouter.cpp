@@ -228,16 +228,12 @@ void setup_channel_variables(S_CHANNEL_INFO_PKT * c_info)
 
 int connected_join_request(int client, int input_pipe)
 {
-    int type = CNT_JOIN_CHANNEL;
+    int type = JOIN_CHANNEL;
+    C_JOIN_PKT * info_packet = (C_JOIN_PKT*)recieve_cjoin(input_pipe);
+    memcpy(info_packet->client_name, clientname, MAX_USER_NAME);
+
     write(socket_list[client], &type, TYPE_SIZE);
-
-    read_packet(socket_list[client], &type);
-    if(type == CONNECTION_ACCEPTED)
-    {
-        return 1;
-    }
-
-    return -1;
+    return 1;
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: init_client

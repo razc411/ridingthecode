@@ -89,7 +89,6 @@ void* ChannelManager(void * chdata)
 
                 if(type == JOIN_CHANNEL)
                 {
-                    ((C_JOIN_PKT*)packet)->tcp_socket = socket_list[i];
                     write_packet(cdata->write_pipe, CLIENT_JOIN_PKT, packet);
                 }
 
@@ -169,10 +168,9 @@ void process_incoming_message(int sock, C_MSG_PKT * client_msg, int c_num)
     
     for(int i = 0; i < current_clients; i++)
     {
-        if(socket_list[i] != sock)
-        {
+       
             write_packet(socket_list[i], SERVER_MSG_PKT, &broadcast_msg);
-        }
+        
     }
 
     printf("%s: %s: %s\n", channel_name, client_names[c_num], client_msg->msg);
