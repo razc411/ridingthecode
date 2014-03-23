@@ -4,7 +4,7 @@
 int packet_sizes[] = {
 	((sizeof(char) * MAX_USER_NAME) + (sizeof(char) * MAX_CHANNEL_NAME) + (sizeof(char) * MAX_STRING)),
 	((sizeof(char) * MAX_USER_NAME) + (sizeof(char) * MAX_CHANNEL_NAME) + (sizeof(char) * MAX_STRING)),
-	((sizeof(int) * 2) + (sizeof(char) * MAX_CHANNEL_NAME) + ((sizeof(char) * MAX_USER_NAME) * MAX_CLIENTS)),
+	((sizeof(int) * 2) + (sizeof(char) * MAX_CHANNEL_NAME) + (((sizeof(char) * MAX_USER_NAME) * MAX_CLIENTS))),
 	0, // unset
 	(sizeof(char) * MAX_STRING),
 	sizeof(int),
@@ -99,7 +99,7 @@ int accept_new_client(int listen_sd)
 	return client_sd;
 }
 
-void* tcp_recieve(int sockfd, int * type)
+void* read_packet(int sockfd, int * type)
 {
 	int bytes_to_read = TYPE_SIZE;
 	int numread = 0;
@@ -206,7 +206,7 @@ void serialize_cinfo(void* packet, int sockfd)
 
 void * recieve_smsg_skick(int sockfd)
 {
-	S_MSG_PKT * smsgkick = (S_MSG_PKT*) malloc(sizeof(packet_sizes[SERVER_MSG_PKT]));
+	S_MSG_PKT * smsgkick = (S_MSG_PKT*) malloc(packet_sizes[SERVER_MSG_PKT]);
 
 	rcv_variable(sockfd, smsgkick->client_name, MAX_USER_NAME);
 	rcv_variable(sockfd, smsgkick->channel_name, MAX_CHANNEL_NAME);
@@ -217,7 +217,7 @@ void * recieve_smsg_skick(int sockfd)
 
 void * recieve_cinfo(int sockfd)
 {
-	S_CHANNEL_INFO_PKT * cinfo = (S_CHANNEL_INFO_PKT*) malloc(sizeof(packet_sizes[CHANNEL_INFO_PKT]));
+	S_CHANNEL_INFO_PKT * cinfo = (S_CHANNEL_INFO_PKT*) malloc(packet_sizes[CHANNEL_INFO_PKT]);
 
 	rcv_variable(sockfd, &cinfo->code, sizeof(int));
 	rcv_variable(sockfd, &cinfo->num_clients, sizeof(int));
@@ -231,7 +231,7 @@ void * recieve_cinfo(int sockfd)
 
 void * recieve_cmsg(int sockfd)
 {
-	C_MSG_PKT * cmsg = (C_MSG_PKT*) malloc(sizeof(packet_sizes[CLIENT_MSG_PKT]));
+	C_MSG_PKT * cmsg = (C_MSG_PKT*) malloc(packet_sizes[CLIENT_MSG_PKT]);
 
 	rcv_variable(sockfd, cmsg->msg, MAX_STRING);
 
@@ -240,7 +240,7 @@ void * recieve_cmsg(int sockfd)
 
 void *recieve_cquit(int sockfd)
 {
-	C_QUIT_PKT * cquit = (C_QUIT_PKT*) malloc(sizeof(packet_sizes[CLIENT_QUIT_PKT]));
+	C_QUIT_PKT * cquit = (C_QUIT_PKT*) malloc(packet_sizes[CLIENT_QUIT_PKT]);
 
 	rcv_variable(sockfd, &cquit->code, sizeof(int));
 
@@ -249,7 +249,7 @@ void *recieve_cquit(int sockfd)
 
 void * recieve_cjoin(int sockfd)
 {
-	C_JOIN_PKT * packet = (C_JOIN_PKT*) malloc(sizeof(packet_sizes[CLIENT_JOIN_PKT]));
+	C_JOIN_PKT * packet = (C_JOIN_PKT*) malloc(packet_sizes[CLIENT_JOIN_PKT]);
 
 	rcv_variable(sockfd, packet->client_name, MAX_USER_NAME);
 	rcv_variable(sockfd, packet->channel_name, MAX_CHANNEL_NAME);

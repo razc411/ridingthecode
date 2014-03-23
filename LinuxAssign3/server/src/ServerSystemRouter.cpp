@@ -38,7 +38,7 @@ static pthread_t   thread_channel[MAX_CHANNELS];
 --      INTERFACE: int
     C_JOIN_PKT * info_packet = (C_JOIN_PKT*)malloc(sizeof(C_JOIN_PKT));
 
-    if(tcp_recieve(client_sd, (char*)info_packet) != CLIENT_ADD)
+    if(read_packet(client_sd, (char*)info_packet) != CLIENT_ADD)
     { main()
 --
 --      RETURNS: void
@@ -178,10 +178,10 @@ void add_client(int client_sd)
     C_JOIN_PKT * info_packet;
     int type = -1;
     
-    info_packet = (C_JOIN_PKT*)tcp_recieve(client_sd, &type);
+    info_packet = (C_JOIN_PKT*)read_packet(client_sd, &type);
     if(type != CLIENT_JOIN_PKT)
     {
-        perror("Failed to add client at tcp_recieve");
+        perror("Failed to add client at read_packet");
         return;
     }
 

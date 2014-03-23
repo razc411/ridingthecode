@@ -87,7 +87,7 @@ void* ChannelManager(void * chdata)
             void * packet;
             if(FD_ISSET(socket_list[i], &active))
             {
-                packet = tcp_recieve(socket_list[i], &type);
+                packet = read_packet(socket_list[i], &type);
 
                 if(type == CLIENT_QUIT)
                 {
@@ -240,6 +240,7 @@ void process_add_client(int cm_pipe, fd_set * listen_fds)
     memcpy(client_names[current_clients], info_packet.client_name, MAX_USER_NAME);
     FD_SET(socket_list[current_clients], listen_fds);
 
+    num_clients++;
     s_info_pkt.code = CONNECTION_ACCEPTED;
     s_info_pkt.num_clients = num_clients;
     memcpy(s_info_pkt.channel_name, channel_name, MAX_CHANNEL_NAME);
@@ -247,7 +248,6 @@ void process_add_client(int cm_pipe, fd_set * listen_fds)
     write_packet(info_packet.tcp_socket, CHANNEL_INFO_PKT,(void*)&s_info_pkt);
 
     current_clients++;
-    num_clients++;
     printf("Client %s added to channel %s.\n", info_packet.client_name, info_packet.channel_name);
 }
 /*------------------------------------------------------------------------------------------------------------------

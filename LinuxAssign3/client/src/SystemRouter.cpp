@@ -70,7 +70,7 @@ int main(int argc, char ** argv)
         close(input_pipes[i][READ]);
         close(input_pipes[i][WRITE]);
     }
-    
+
     return 0;
 }
 /*------------------------------------------------------------------------------------------------------------------
@@ -145,16 +145,16 @@ void join_channel(fd_set * listen_fds, int * max_fd, int input_pipe, int c_num)
     int sd;
     int pipes[2];
     int type;
-    C_JOIN_PKT * info_packet = (C_JOIN_PKT*) malloc(sizeof(C_JOIN_PKT));
-    S_CHANNEL_INFO_PKT * c_info_packet = (S_CHANNEL_INFO_PKT*) malloc(sizeof(S_CHANNEL_INFO_PKT));
+    C_JOIN_PKT * info_packet;
+    S_CHANNEL_INFO_PKT * c_info_packet;
     
     if(!(sd = connect_to_server()))
     {
         printf("Failed to connect, exiting program.\n");
         return;
     }
-    
-    read_pipe(input_pipe, info_packet, sizeof(C_JOIN_PKT));
+
+    info_packet = (C_JOIN_PKT*)recieve_cjoin(input_pipe);
     memcpy(info_packet->client_name, clientname, MAX_USER_NAME);
 
     if(!write_packet(sd, CLIENT_JOIN_PKT, info_packet))
@@ -163,7 +163,7 @@ void join_channel(fd_set * listen_fds, int * max_fd, int input_pipe, int c_num)
         return;
     }
 
-    if((info_packet = (C_JOIN_PKT*)tcp_recieve(sd, &type)) == NULL)
+    if((c_info_packet = (S_CHANNEL_INFO_PKT*)read_packet(sd, &type)) == NULL)
     {
         printf("Failed to retrieve channel info packet.\n");
         return;
@@ -304,7 +304,7 @@ void check_output_sockets(fd_set * active)
         if(FD_ISSET(socket_list[i], active))
         {  
             int type;
-            char * packet = (char*) tcp_recieve(socket_list[i], &type);
+            char * packet = (char*) read_packet(socket_list[i], &type);
 
             if(type == SERVER_KICK_PKT)
             {

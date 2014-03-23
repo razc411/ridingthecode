@@ -11,7 +11,7 @@ void serialize_cjoin(void* packet, int sockfd);
 void serialize_smsg_skick(void* packet, int sockfd);
 void serialize_cinfo(void* packet, int sockfd);
 
-void* tcp_recieve(int sockfd, int * type);
+void* read_packet(int sockfd, int * type);
 void * recieve_smsg_skick(int sockfd);
 void * recieve_cinfo(int sockfd);
 void * recieve_cjoin(int sockfd);
