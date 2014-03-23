@@ -49,7 +49,7 @@ void* ChannelManager(void * chdata)
 
             else if(type == CLIENT_ADD)
             {
-                process_add_client(cdata->read_pipe, &listen_fds);
+                process_add_client(cdata->read_pipe, &max_fd, &listen_fds);
             }
 
             else if(type == CHANNEL_CLOSE)
@@ -169,10 +169,11 @@ void process_incoming_message(int sock, C_MSG_PKT * client_msg, int c_num)
     
     for(int i = 0; i < current_clients; i++)
     {
-        write_packet(sock, SERVER_MSG_PKT, (void*)&broadcast_msg);
+        write_packet(socket_list[i], SERVER_MSG_PKT, &broadcast_msg);
     }
 
-    printf("%s: %s: %s", channel_name, client_names[c_num], client_msg->msg);
+    printf("%s: %s: %s\n", channel_name, client_names[c_num], client_msg->msg);
+    fflush(stdout);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: init_client
@@ -222,7 +223,7 @@ void process_client_quit(int sock, C_QUIT_PKT * client_quit, int c_num)
 --      NOTES:
 --      
 ----------------------------------------------------------------------------------------------------------------------*/
-void process_add_client(int cm_pipe, fd_set * listen_fds)
+void process_add_client(int cm_pipe, int * max_fd, fd_set * listen_fds)
 {
     C_JOIN_PKT info_packet;
     S_CHANNEL_INFO_PKT s_info_pkt;
@@ -242,8 +243,10 @@ void process_add_client(int cm_pipe, fd_set * listen_fds)
 
     socket_list[current_clients] = info_packet.tcp_socket;
     memcpy(client_names[current_clients], info_packet.client_name, MAX_USER_NAME);
+    
+    *max_fd = *max_fd > socket_list[current_clients] ? *max_fd : socket_list[current_clients];
     FD_SET(socket_list[current_clients], listen_fds);
-
+    
     num_clients++;
     s_info_pkt.code = CONNECTION_ACCEPTED;
     s_info_pkt.num_clients = num_clients;

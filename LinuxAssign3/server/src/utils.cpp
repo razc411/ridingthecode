@@ -188,8 +188,8 @@ void serialize_smsg_skick(void* packet, int sockfd)
 	S_MSG_PKT * smsgkick = (S_MSG_PKT*) packet;
 
 	write(sockfd, (void*)smsgkick->client_name, MAX_USER_NAME);
-	write(sockfd, (void*)smsgkick->channel_name, MAX_CHANNEL_NAME);
 	write(sockfd, (void*)smsgkick->msg, MAX_STRING);
+	write(sockfd, (void*)smsgkick->channel_name, MAX_CHANNEL_NAME);
 }
 
 void serialize_cinfo(void* packet, int sockfd)

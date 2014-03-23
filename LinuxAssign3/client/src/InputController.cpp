@@ -32,9 +32,9 @@ void* InputManager(void * indata)
         }
         else
         {
-           // C_MSG_PKT * c_msg = (C_MSG_PKT*) malloc(sizeof(C_MSG_PKT));
-           // memcpy(c_msg->msg, cmd, MAX_STRING);
-           // write_packet(input_data->write_pipe, CLIENT_MSG_PKT, c_msg);
+           C_MSG_PKT * c_msg = (C_MSG_PKT*) malloc(sizeof(C_MSG_PKT));
+           memcpy(c_msg->msg, cmd, MAX_STRING);
+           write_packet(input_data->write_pipe, CLIENT_MSG_PKT, c_msg);
         }
     }
 

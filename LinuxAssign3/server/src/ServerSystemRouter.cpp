@@ -183,10 +183,10 @@ int main()
 void add_client(int client_sd, void * join_req, int joined)
 {
     C_JOIN_PKT * info_packet;
-
+    int type = -1;
+    
     if(joined == 0)
     {
-        int type = -1;
         
         info_packet = (C_JOIN_PKT*)read_packet(client_sd, &type);
         if(type != CLIENT_JOIN_PKT)
@@ -201,7 +201,7 @@ void add_client(int client_sd, void * join_req, int joined)
     {
         info_packet = (C_JOIN_PKT*)join_req;
     }
-    
+
     type = CLIENT_ADD;
 
     for(int i = 0; i < open_channels; i++)

@@ -48,8 +48,8 @@
 typedef struct pkt0
 {	
 	char client_name[MAX_USER_NAME];
-	char channel_name[MAX_CHANNEL_NAME];
 	char msg[MAX_STRING];
+	char channel_name[MAX_CHANNEL_NAME];
 } S_KICK_PKT;
 
 typedef struct pkt1

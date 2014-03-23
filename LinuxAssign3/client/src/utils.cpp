@@ -159,7 +159,7 @@ int write_packet(int sockfd, int type, void * packet)
 		break;
 
 		case CLIENT_MSG_PKT:
-			write(sockfd, &((C_QUIT_PKT*)packet)->code, packet_sizes[type]);
+			write(sockfd, ((C_MSG_PKT*)packet)->msg, packet_sizes[type]);
 		break;
 
 		case CLIENT_QUIT_PKT:
@@ -169,7 +169,7 @@ int write_packet(int sockfd, int type, void * packet)
 		case CLIENT_JOIN_PKT:
 			serialize_cjoin(packet, sockfd);
 		break;
-		
+
 	}
 
 	return type;
@@ -189,8 +189,8 @@ void serialize_smsg_skick(void* packet, int sockfd)
 	S_MSG_PKT * smsgkick = (S_MSG_PKT*) packet;
 
 	write(sockfd, (void*)smsgkick->client_name, MAX_USER_NAME);
-	write(sockfd, (void*)smsgkick->channel_name, MAX_CHANNEL_NAME);
 	write(sockfd, (void*)smsgkick->msg, MAX_STRING);
+	write(sockfd, (void*)smsgkick->channel_name, MAX_CHANNEL_NAME);
 }
 
 void serialize_cinfo(void* packet, int sockfd)
