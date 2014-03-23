@@ -86,7 +86,7 @@ int accept_new_client(int listen_sd)
 	unsigned int client_len;
 	int client_sd = 0;
 	struct sockaddr_in client_addr;
-
+	
 	client_len = sizeof(client_addr);
 	if ((client_sd = accept(listen_sd, (struct sockaddr *) &client_addr, &client_len)) == -1)
 	{

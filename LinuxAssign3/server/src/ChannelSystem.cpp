@@ -2,11 +2,6 @@
 #include "utils.h"
 
 extern int packet_sizes[];
-static char client_names[MAX_CLIENTS][MAX_USER_NAME];
-static int socket_list[MAX_CLIENTS];
-static int num_clients = 0;
-static int current_clients = 0;
-static char channel_name[MAX_CHANNEL_NAME];
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: init_client
 --
@@ -25,6 +20,12 @@ static char channel_name[MAX_CHANNEL_NAME];
 ----------------------------------------------------------------------------------------------------------------------*/
 void* ChannelManager(void * chdata)
 {
+    char client_names[MAX_CLIENTS][MAX_USER_NAME];
+    int socket_list[MAX_CLIENTS];
+    int num_clients = 0; 
+    int current_clients = 0;
+    char channel_name[MAX_CHANNEL_NAME];
+
     CHANNEL_DATA * cdata = (CHANNEL_DATA*) chdata;
 	int 		max_fd;
     fd_set      listen_fds;
@@ -89,12 +90,12 @@ void* ChannelManager(void * chdata)
 
                 if(type == CLIENT_QUIT)
                 {
-                    process_client_quit(socket_list[i], (C_QUIT_PKT*)packet, i);
+                    process_client_quit(socket_list[i], (C_QUIT_PKT*)packet, client_names[i]);
                 }
 
                 else if(type == CLIENT_MSG_PKT)
                 {
-                    process_incoming_message(socket_list[i], (C_MSG_PKT*)packet, i);
+                    process_incoming_message(socket_list[i], (C_MSG_PKT*)packet, client_names[i]);
                 }
             }
         }
@@ -153,7 +154,7 @@ void channel_client_kick(int sock, int client, char * msg)
 --      NOTES:
 --      
 ----------------------------------------------------------------------------------------------------------------------*/
-void process_incoming_message(int sock, C_MSG_PKT * client_msg, int c_num)
+void process_incoming_message(int sock, C_MSG_PKT * client_msg, char * client)
 {
     S_MSG_PKT broadcast_msg;
 

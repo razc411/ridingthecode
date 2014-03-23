@@ -20,9 +20,9 @@
 
 static int in_channel = false;
 static int input_pipe[2];
-static int socket;
+static int client_socket;
 static char clientname[MAX_USER_NAME];
-static char channelname[MAX_CHANNEL_NAME];
+static char channel_name[MAX_CHANNEL_NAME];
 char ** channel_users = (char**) malloc(sizeof(char*) * MAX_CLIENTS);
 
 int main(int argc, char ** argv)
@@ -42,8 +42,8 @@ int main(int argc, char ** argv)
 
 	pipe(input_pipe);
     THREAD_DATA * idata = (THREAD_DATA*)malloc(sizeof(THREAD_DATA));
-    idata->write_pipe = input_pipes[WRITE];
-    idata->read_pipe = input_pipes[READ];
+    idata->write_pipe = input_pipe[WRITE];
+    idata->read_pipe = input_pipe[READ];
 
     dispatch_thread(InputManager, (void*)idata, &thread_input); // main channel thread
 
@@ -57,7 +57,7 @@ int main(int argc, char ** argv)
         active = listen_fds;
     	select(max_fd + 1, &active, NULL, NULL, NULL);
 
-        check_input_pipe(&active, &listen_fds, &max_fd);
+        check_input_pipes(&active, &listen_fds, &max_fd);
         check_output_sockets(&active);
         
     }
@@ -134,7 +134,6 @@ int connect_to_server(){
 void join_channel(fd_set * listen_fds, int * max_fd, int input_pipe)
 {
     int sd;
-    int pipes[2];
     int type;
     C_JOIN_PKT * info_packet;
     S_CHANNEL_INFO_PKT * c_info_packet;
@@ -166,13 +165,11 @@ void join_channel(fd_set * listen_fds, int * max_fd, int input_pipe)
         return;
     }
 
-    CHANNEL_DATA cdata;
-
     setup_channel_variables(c_info_packet);
 
     *max_fd = *max_fd > sd ? *max_fd : sd;
-    socket = sd;
-    FD_SET(socket, listen_fds);
+    client_socket = sd;
+    FD_SET(client_socket, listen_fds);
 
     in_channel = true;
 
@@ -201,7 +198,7 @@ void setup_channel_variables(S_CHANNEL_INFO_PKT * c_info)
 {
    memcpy(channel_name, c_info->channel_name, MAX_CHANNEL_NAME);
 
-   for(int i = 0; i < c_info->num_clients; i++)
+   for(int i = 0; i < c_info->num_clients; i++){
         channel_users[i] = (char*)malloc(sizeof(char) * MAX_USER_NAME);
         memcpy(channel_users[i], c_info->channel_clients[i], MAX_USER_NAME);
    }
@@ -236,7 +233,7 @@ void check_input_pipes(fd_set * active, fd_set * listen_fds, int * max_fd)
             if(in_channel == true)
             {
                printf("Must leave the current channel before joining another.\n");
-               continue;
+               return;
             }
             join_channel(listen_fds, max_fd, input_pipe[READ]);
         }
@@ -250,7 +247,7 @@ void check_input_pipes(fd_set * active, fd_set * listen_fds, int * max_fd)
         {
             C_MSG_PKT * c_msg;
             c_msg = (C_MSG_PKT*)recieve_cmsg(input_pipe[READ]);
-            if(write_packet(socket, CLIENT_MSG_PKT, c_msg) != CLIENT_MSG)
+            if(write_packet(client_socket, CLIENT_MSG_PKT, c_msg) != CLIENT_MSG)
             {
                 //perror("Failed to send message");
                 return;
@@ -259,7 +256,7 @@ void check_input_pipes(fd_set * active, fd_set * listen_fds, int * max_fd)
 
         else if(type == EXIT)
         {
-            break;
+            return;
         }
     }  
 }
@@ -283,15 +280,15 @@ void check_input_pipes(fd_set * active, fd_set * listen_fds, int * max_fd)
 void check_output_sockets(fd_set * active)
 {
    
-    if(FD_ISSET(socket, active))
+    if(FD_ISSET(client_socket, active))
     {  
         int type;
-        void * packet = (char*) read_packet(socket, &type);
+        void * packet = (char*) read_packet(client_socket, &type);
 
         if(type == SERVER_KICK_PKT)
         {
             //channel_close(input_pipe[READ]);
-            close(socket);
+            close(client_socket);
         }
 
         else if(type == SERVER_MSG_PKT)
@@ -301,7 +298,7 @@ void check_output_sockets(fd_set * active)
 
         else if(type == CHANNEL_INFO_PKT)
         {
-            printf("Channel %d updated with new client listings.\n", i);
+            printf("Channel %s updated with new client listings.\n", channel_name);
         }
         free(packet);
     }

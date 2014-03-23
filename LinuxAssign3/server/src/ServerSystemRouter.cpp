@@ -18,14 +18,13 @@
 --      Intializes the client, the type of8 intialization depends on the chosen protocol in the settings. Binds whenever
 --      the connection is TCP.
 ----------------------------------------------------------------------------------------------------------------------*/
-extern int packet_sizes[];
-int last_channel 		= 0;
-int current_channels    = 0;
-int open_channels 		= 0;
-int num_clients 		= 0;
-char **channel_name_list = (char**) malloc(sizeof(char*) * MAX_CHANNELS);	
-static int channel_pipes[MAX_CHANNELS][2];
-static pthread_t   thread_channel[MAX_CHANNELS];
+extern int          packet_sizes[];
+static int          open_channels = 0;
+static bool         list_change = false;
+static int          num_clients = 0;
+static char         channel_name_list[MAX_CHANNELS][MAX_CHANNEL_NAME];
+static int          channel_pipes[MAX_CHANNELS][2];
+static pthread_t    thread_channel[MAX_CHANNELS];
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: main()
 --
@@ -133,10 +132,10 @@ int main()
                 break;
             }
     	}
-        //if(open_channels != current_channels)
-       // {
-       //     reform_lists();
-        //}
+        if(list_change)
+        {
+           reform_lists();
+        }
     }
 
     free(idata);
@@ -168,24 +167,15 @@ void add_client(int client_sd, void * join_req, int joined)
 {
     C_JOIN_PKT * info_packet;
     int type = -1;
-
-    if(joined == 0)
-    {
         
-        info_packet = (C_JOIN_PKT*)read_packet(client_sd, &type);
-        if(type != CLIENT_JOIN_PKT)
-        {
-            perror("Failed to add client at read_packet");
-            return;
-        }
-
-        info_packet->tcp_socket = client_sd;
-    }
-    else
+    info_packet = (C_JOIN_PKT*)read_packet(client_sd, &type);
+    if(type != CLIENT_JOIN_PKT)
     {
-        info_packet = (C_JOIN_PKT*)join_req;
-        info_packet->tcp_socket = client_sd;
+        perror("Failed to add client at read_packet");
+        return;
     }
+
+    info_packet->tcp_socket = client_sd;
 
     type = CLIENT_ADD;
 
@@ -226,8 +216,7 @@ void add_channel(int * max_fd, fd_set * listen_fds, int input_pipe)
     char temp[MAX_CHANNEL_NAME];
     CHANNEL_DATA * chdata = (CHANNEL_DATA*)malloc(sizeof(CHANNEL_DATA));
 
-    read_pipe(input_pipe, &temp, MAX_CHANNEL_NAME);
-    channel_name_list[open_channels] = (char*)malloc(sizeof(char) * MAX_CHANNEL_NAME);
+    read_pipe(input_pipe, temp, MAX_CHANNEL_NAME);
     memcpy(channel_name_list[open_channels], temp, MAX_CHANNEL_NAME);
     chdata->channel_num = open_channels;
     chdata->channel_name = temp;
@@ -236,13 +225,8 @@ void add_channel(int * max_fd, fd_set * listen_fds, int input_pipe)
 	chdata->write_pipe = channel_pipes[open_channels][WRITE];
 	chdata->read_pipe = channel_pipes[open_channels][READ];
 
-	if(open_channels > last_channel)
-    {
-    	last_channel = open_channels;
-        *max_fd = *max_fd > channel_pipes[last_channel][READ] ? *max_fd : channel_pipes[last_channel][READ];
-        FD_SET(channel_pipes[last_channel][READ], listen_fds);
-	}
-
+    *max_fd = *max_fd > channel_pipes[open_channels][READ] ? *max_fd : channel_pipes[open_channels][READ];
+    FD_SET(channel_pipes[open_channels][READ], listen_fds);
 
 	dispatch_thread(ChannelManager, (void*)chdata, &thread_channel[open_channels]);
     pthread_join(thread_channel[open_channels++], NULL);
@@ -308,7 +292,7 @@ void channel_close(int input_pipe)
         if(strcmp(channel_name_list[i], channel_name) == 0)
         {
             write_pipe(channel_pipes[i][WRITE], &type, TYPE_SIZE);
-            channel_name_list[i] = NULL;
+            memset(channel_name_list[i], 0, MAX_CHANNEL_NAME);
             break;
         }
     }  
@@ -419,5 +403,4 @@ void reform_router_lists()
     }
 
     memcpy(channel_name_list, temp_channel_names, (sizeof(char) * MAX_CHANNEL_NAME) * MAX_CHANNELS);
-    current_channels = open_channels;
 }
