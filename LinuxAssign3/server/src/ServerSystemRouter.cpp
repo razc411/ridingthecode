@@ -142,6 +142,8 @@ int main()
 
                 if(type == JOIN_CHANNEL)
                 {
+                    int res = CONNECTION_ACCEPTED;
+                    write(((C_JOIN_PKT*)packet)->tcp_socket, &res, TYPE_SIZE);
                     client_sd = accept_new_client(listen_sd);
                     if(client_sd != -1)
                         add_client(client_sd, packet, 1);
@@ -184,7 +186,7 @@ void add_client(int client_sd, void * join_req, int joined)
 {
     C_JOIN_PKT * info_packet;
     int type = -1;
-    
+
     if(joined == 0)
     {
         
@@ -200,6 +202,7 @@ void add_client(int client_sd, void * join_req, int joined)
     else
     {
         info_packet = (C_JOIN_PKT*)join_req;
+        info_packet->tcp_socket = client_sd;
     }
 
     type = CLIENT_ADD;
@@ -253,11 +256,11 @@ void add_channel(int * max_fd, fd_set * listen_fds, int input_pipe)
 
 	if(open_channels > last_channel)
     {
-    	*max_fd = *max_fd > channel_pipes[last_channel][READ] ? *max_fd : channel_pipes[last_channel][READ];
-    	FD_SET(channel_pipes[last_channel][READ], listen_fds);
+    	last_channel = open_channels;
+        *max_fd = *max_fd > channel_pipes[last_channel][READ] ? *max_fd : channel_pipes[last_channel][READ];
+        FD_SET(channel_pipes[last_channel][READ], listen_fds);
 	}
 
-	last_channel = open_channels;
 
 	dispatch_thread(ChannelManager, (void*)chdata, &thread_channel[open_channels]);
     pthread_join(thread_channel[open_channels++], NULL);

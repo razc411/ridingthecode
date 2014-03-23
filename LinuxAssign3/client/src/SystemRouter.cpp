@@ -228,12 +228,18 @@ void setup_channel_variables(S_CHANNEL_INFO_PKT * c_info)
 
 int connected_join_request(int client, int input_pipe)
 {
-    int type = JOIN_CHANNEL;
+    int res;
     C_JOIN_PKT * info_packet = (C_JOIN_PKT*)recieve_cjoin(input_pipe);
     memcpy(info_packet->client_name, clientname, MAX_USER_NAME);
+    info_packet->tcp_socket = socket_list[client - 1];
 
-    write(socket_list[client], &type, TYPE_SIZE);
-    return 1;
+    write_packet(socket_list[client - 1], CLIENT_JOIN_PKT, info_packet);
+    read(socket_list[client - 1], &res, TYPE_SIZE);
+    if(res == CONNECTION_ACCEPTED)
+    {
+        return 1;
+    }
+    return -1;
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: init_client
