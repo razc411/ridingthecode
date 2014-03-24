@@ -14,8 +14,14 @@ will be able to chat with that user and will not hear chat from other channels.
 -----------------COMPILING AND RUNNING--------------------------------------
 REQUIRED: C++, to compile from scratch G++
 		  A linux distribution
+		  
 TO COMPILE:
-	
+	Client: Navigate to the client folder in the terminal and type "make".
+	The program will now be compiled in the client/bin folder. 
+
+	Server: Navigate to the server folder in the terminal and type "make".
+	The program will now be compiled in the server/bin folder.
+
 TO RUN:
 	Server
 	- In the UNIX terminal, navigate to the bin folder in the server folder

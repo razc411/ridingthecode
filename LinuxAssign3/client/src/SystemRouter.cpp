@@ -67,13 +67,11 @@ int main(int argc, char ** argv)
     fd_set      active;
     pthread_t   thread_input;
 
-    if(argc != 3 || strlen(argv[1]) > MAX_USER_NAME || strlen(argv[2] > MAXIP))
+    if(argc != 3 || strlen(argv[1]) > MAX_USER_NAME || strlen(argv[2]) > MAXIP)
     {
         printf("Please input a user name and ip. User can be no longer than 20 characters.");
         exit(2);
     }
-
-    myfile.open ("chatlog.txt");  
 
     memcpy(clientname, argv[1], MAX_USER_NAME);
     memcpy(ip, argv[2], 20);

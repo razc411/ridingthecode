@@ -35,8 +35,6 @@
 ----------------------------------------------------------------------------------------------------------------------*/
 extern int          packet_sizes[];
 static int          open_channels = 0;
-static bool         list_change = false;
-static int          num_clients = 0;
 static char         channel_name_list[MAX_CHANNELS][MAX_CHANNEL_NAME];
 static int          channel_pipes[MAX_CHANNELS][2];
 static pthread_t    thread_channel[MAX_CHANNELS];
@@ -191,7 +189,6 @@ void add_client(int client_sd, void * join_req, int joined)
         return;
     }
 
-    num_clients++;
     printf("Client passed to channel for adding.\n");
 }
 

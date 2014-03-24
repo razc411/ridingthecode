@@ -1,6 +1,6 @@
 CC=g++ -std=c++11
 FLAGS = -Wall
-LIBS = -lSDL -lSDL_image -lSDL_ttf -lpthread
+LIBS = -pthread
 
 BINDIR=bin
 OBJDIR=obj
