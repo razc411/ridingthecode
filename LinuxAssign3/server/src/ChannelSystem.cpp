@@ -102,12 +102,13 @@ void* ChannelManager(void * chdata)
                         &channel_num, &current_clients);
                 }
             }
-        }
-        
-        //reform_lists(channel_num, current_clients);
-    
+        }    
     }
 
+    for(int i = 0; i < current_clients; i++)
+    {
+
+    }
     pthread_exit(NULL);
 }
 /*------------------------------------------------------------------------------------------------------------------
