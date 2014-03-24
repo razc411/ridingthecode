@@ -1,21 +1,32 @@
 #include "client_defs.h"
 
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: init_client
+--      SOURCE FILE:    SystemRouter.cpp -An application that will allow users to join chat channel
+--                                      with asynchronous socket communcation using Select
 --
---      DATE: Febuary 6 2014
---      REVISIONS: none
+--      PROGRAM:        client_chat
 --
---      DESIGNER: Ramzi Chennafi
---      PROGRAMMER: Ramzi Chennafi
+--      FUNCTIONS:
+--                      int main(int argc, char ** argv)
+--                      int connect_to_server()
+--                      void join_channel(fd_set * listen_fds, int * max_fd, int input_pipe)
+--                      void setup_channel_variables(S_CHANNEL_INFO_PKT * c_info)
+--                      void check_input_pipes(fd_set * active, fd_set * listen_fds, int * max_fd)
+--                      void check_output_sockets(fd_set * active, fd_set * listen_fds)
+--                      void quit_channel(fd_set * listen_fds, int code)
+--                      void display_incoming_message(S_MSG_PKT * packet)
 --
---      INTERFACE: void init_client(HWND hwnd) , takes the parent HWND as an argument.
+--      DATE:           March 7, 2014
 --
---      RETURNS: void
+--      REVISIONS:      (Date and Description)
+--
+--      DESIGNER:       Tim Kim
+--
+--      PROGRAMMER:     Tim Kim
 --
 --      NOTES:
---      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
---      the connection is TCP.
+--      The user can join chat channel by typing /join [channelname] and can start chatting with other
+--      client who are in the same channel. They can also leave channel and join another one.
 ----------------------------------------------------------------------------------------------------------------------*/
 
 static int in_channel = false;
@@ -27,6 +38,22 @@ static bool logging = false;
 static std::ofstream myfile;
 char ** channel_users = (char**) malloc(sizeof(char*) * MAX_CLIENTS);
 
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION:       main
+--
+--      DATE:           March 8 2014
+--      REVISIONS:      none
+--
+--      DESIGNER:       Tim Kim
+--      PROGRAMMER:     Tim Kim
+--
+--      INTERFACE:      int main(int argc, char ** argv)
+--
+--      RETURNS:        int
+--
+--      NOTES:
+--      Takes an ip address and user name as arguments. Opens read and write pipe in separate threads.
+----------------------------------------------------------------------------------------------------------------------*/
 int main(int argc, char ** argv)
 {
     int 		max_fd;
@@ -68,22 +95,22 @@ int main(int argc, char ** argv)
 
     return 0;
 }
+
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: init_client
+--      FUNCTION:       connect_to_server
 --
---      DATE: Febuary 6 2014
---      REVISIONS: none
+--      DATE:           March 7 2014
+--      REVISIONS:      none
 --
---      DESIGNER: Ramzi Chennafi
---      PROGRAMMER: Ramzi Chennafi
+--      DESIGNER:       Tim Kim
+--      PROGRAMMER:     Tim Kim
 --
---      INTERFACE: void init_client(HWND hwnd) , takes the parent HWND as an argument.
+--      INTERFACE:      int connect_to_server()
 --
---      RETURNS: void
+--      RETURNS:        int
 --
 --      NOTES:
---      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
---      the connection is TCP.
+--      Creates a socket, connects to the remote server by using an ip address and port number
 ----------------------------------------------------------------------------------------------------------------------*/
 int connect_to_server(){
     int sd = -1;
@@ -118,22 +145,22 @@ int connect_to_server(){
 
     return sd;
 }
+
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: init_client
+--      FUNCTION:       join_channel
 --
---      DATE: Febuary 6 2014
---      REVISIONS: none
+--      DATE:           March 9 2014
+--      REVISIONS:      none
 --
---      DESIGNER: Ramzi Chennafi
---      PROGRAMMER: Ramzi Chennafi
+--      DESIGNER:       Tim Kim
+--      PROGRAMMER:     Tim Kim
 --
---      INTERFACE: void init_client(HWND hwnd) , takes the parent HWND as an argument.
+--      INTERFACE:      void join_channel(fd_set * listen_fds, int * max_fd, int input_pipe)
 --
---      RETURNS: void
+--      RETURNS:        void
 --
 --      NOTES:
---      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
---      the connection is TCP.
+--      Sends join channel control packet to the server, and does error handling when joining channel
 ----------------------------------------------------------------------------------------------------------------------*/
 void join_channel(fd_set * listen_fds, int * max_fd, int input_pipe)
 {
@@ -181,22 +208,22 @@ void join_channel(fd_set * listen_fds, int * max_fd, int input_pipe)
     free(c_info_packet);
     free(info_packet);
 }
+
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: init_client
---  
---      DATE: Febuary 6 2014
---      REVISIONS: none
+--      FUNCTION:       setup_channel_variables
 --
---      DESIGNER: Ramzi Chennafi
---      PROGRAMMER: Ramzi Chennafi
+--      DATE:           March 9 2014
+--      REVISIONS:      none
 --
---      INTERFACE: void init_client(HWND hwnd) , takes the parent HWND as an argument.
+--      DESIGNER:       Tim Kim
+--      PROGRAMMER:     Tim Kim
 --
---      RETURNS: void
+--      INTERFACE:      void setup_channel_variables(S_CHANNEL_INFO_PKT * c_info)
+--
+--      RETURNS:        void
 --
 --      NOTES:
---      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
---      the connection is TCP.
+--      Initializes each chat channel information
 ----------------------------------------------------------------------------------------------------------------------*/
 void setup_channel_variables(S_CHANNEL_INFO_PKT * c_info)
 {
@@ -207,22 +234,22 @@ void setup_channel_variables(S_CHANNEL_INFO_PKT * c_info)
         memcpy(channel_users[i], c_info->channel_clients[i], MAX_USER_NAME);
    }
 }
+
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: init_client
+--      FUNCTION:       check_input_pipes
 --
---      DATE: Febuary 6 2014
---      REVISIONS: none
+--      DATE:           March 11 2014
+--      REVISIONS:      none
 --
---      DESIGNER: Ramzi Chennafi
---      PROGRAMMER: Ramzi Chennafi
+--      DESIGNER:       Tim Kim
+--      PROGRAMMER:     Tim Kim
 --
---      INTERFACE: void init_client(HWND hwnd) , takes the parent HWND as an argument.
+--      INTERFACE:      void check_input_pipes(fd_set * active, fd_set * listen_fds, int * max_fd)
 --
---      RETURNS: void
+--      RETURNS:        void
 --
 --      NOTES:
---      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
---      the connection is TCP.
+--      Reads control packet from the input pipe and handle each messages accordingly.
 ----------------------------------------------------------------------------------------------------------------------*/
 void check_input_pipes(fd_set * active, fd_set * listen_fds, int * max_fd)
 {
@@ -283,22 +310,21 @@ void check_input_pipes(fd_set * active, fd_set * listen_fds, int * max_fd)
         }
     }  
 }
+
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: init_client
+--      FUNCTION:       check_input_pipes
 --
---      DATE: Febuary 6 2014
---      REVISIONS: none
+--      DATE:           March 11 2014
+--      REVISIONS:      none
 --
---      DESIGNER: Ramzi Chennafi
---      PROGRAMMER: Ramzi Chennafi
+--      DESIGNER:       Tim Kim
+--      PROGRAMMER:     Tim Kim
 --
---      INTERFACE: void init_client(HWND hwnd) , takes the parent HWND as an argument.
+--      INTERFACE:      void check_input_pipes(fd_set * active, fd_set * listen_fds, int * max_fd)
 --
---      RETURNS: void
+--      RETURNS:        void
 --
 --      NOTES:
---      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
---      the connection is TCP.
 ----------------------------------------------------------------------------------------------------------------------*/
 void check_output_sockets(fd_set * active, fd_set * listen_fds)
 {
@@ -321,6 +347,22 @@ void check_output_sockets(fd_set * active, fd_set * listen_fds)
     }
 }
 
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION:       quit_channel
+--
+--      DATE:           March 11 2014
+--      REVISIONS:      none
+--
+--      DESIGNER:       Tim Kim
+--      PROGRAMMER:     Tim Kim
+--
+--      INTERFACE:      void quit_channel(fd_set * listen_fds, int code)
+--
+--      RETURNS:        void
+--
+--      NOTES:
+--      It will print quit channel message and write quit control packet to the server
+----------------------------------------------------------------------------------------------------------------------*/
 void quit_channel(fd_set * listen_fds, int code)
 {
     printf("You have left the channel %s.\n", channel_name);
@@ -334,6 +376,22 @@ void quit_channel(fd_set * listen_fds, int code)
     FD_CLR(client_socket, listen_fds);
 }
 
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION:       display_incoming_message
+--
+--      DATE:           March 11 2014
+--      REVISIONS:      none
+--
+--      DESIGNER:       Tim Kim
+--      PROGRAMMER:     Tim Kim
+--
+--      INTERFACE:      void display_incoming_message(S_MSG_PKT * packet)
+--
+--      RETURNS:        void
+--
+--      NOTES:
+--      displays the chat incoming message
+----------------------------------------------------------------------------------------------------------------------*/
 void display_incoming_message(S_MSG_PKT * packet)
 {
     char temp[MAX_STRING + MAX_USER_NAME + 3];

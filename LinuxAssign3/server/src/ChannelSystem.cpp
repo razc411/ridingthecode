@@ -1,26 +1,52 @@
 #include "server_defs.h"
 #include "utils.h"
 
+/*------------------------------------------------------------------------------------------------------------------
+--      SOURCE FILE:    ChannelSystem.cpp -An application that will allow users to join chat channel
+--                                      with asynchronous socket communcation using Select
+--
+--      PROGRAM:        client_chat
+--
+--      FUNCTIONS:
+--                      void* ChannelManager(void * chdata)
+--                      void process_incoming_message(int sock, C_MSG_PKT * client_msg, int c_num, int * channel_num, int * current_clients)
+--                      void process_client_quit(int sock, C_QUIT_PKT * client_quit, int c_num, int * channel_num, int * current_clients)
+--                      void process_add_client(int cm_pipe, int * max_fd, fd_set * listen_fds, int * channel_num, int * current_clients)
+
+--      DATE:           March 14, 2014
+--
+--      REVISIONS:      (Date and Description)
+--
+--      DESIGNER:       Ramzi Chennafi
+--
+--      PROGRAMMER:     Ramzi Chennafi
+--
+--      NOTES:
+--      The user can join chat channel by typing /join [channelname] and can start chatting with other
+--      client who are in the same channel. They can also leave channel and join another one.
+----------------------------------------------------------------------------------------------------------------------*/
+
+
 extern int packet_sizes[];
 static char client_names[MAX_CHANNELS][MAX_CLIENTS][MAX_USER_NAME];
 static int socket_list[MAX_CHANNELS][MAX_CLIENTS];
 static char channel_name[MAX_CHANNELS][MAX_CHANNEL_NAME];
 
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: init_client
+--      FUNCTION:       ChannelManager
 --
---      DATE: March 15 2014
---      REVISIONS: none
+--      DATE:           March 14 2014
+--      REVISIONS:      none
 --
---      DESIGNER: Ramzi Chennafi
---      PROGRAMMER: Ramzi Chennafi
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
 --
---      INTERFACE: 
+--      INTERFACE:      void* ChannelManager(void * chdata)
 --
---      RETURNS: void
+--      RETURNS:        void*
 --
 --      NOTES:
---      
+--      Takes care of control packet and message to the correct channel
 ----------------------------------------------------------------------------------------------------------------------*/
 void* ChannelManager(void * chdata)
 {
@@ -97,21 +123,22 @@ void* ChannelManager(void * chdata)
 
     pthread_exit(NULL);
 }
+
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: init_client
+--      FUNCTION:       process_incoming_message
 --
---      DATE: March 15 2014
---      REVISIONS: none
+--      DATE:           March 14 2014
+--      REVISIONS:      none
 --
---      DESIGNER: Ramzi Chennafi
---      PROGRAMMER: Ramzi Chennafi
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
 --
---      INTERFACE: 
+--      INTERFACE:      void process_incoming_message(int sock, C_MSG_PKT * client_msg, int c_num, int * channel_num, int * current_clients)
 --
---      RETURNS: void
+--      RETURNS:        void*
 --
 --      NOTES:
---      
+--      processes incoming message into the correct channel
 ----------------------------------------------------------------------------------------------------------------------*/
 void process_incoming_message(int sock, C_MSG_PKT * client_msg, int c_num, int * channel_num, int * current_clients)
 {
@@ -131,21 +158,22 @@ void process_incoming_message(int sock, C_MSG_PKT * client_msg, int c_num, int *
 
     printf("%s: %s: %s", channel_name[*channel_num], client_names[*channel_num][c_num], client_msg->msg);
 }
+
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: init_client
+--      FUNCTION:       process_client_quit
 --
---      DATE: March 15 2014
---      REVISIONS: none
+--      DATE:           March 14 2014
+--      REVISIONS:      none
 --
---      DESIGNER: Ramzi Chennafi
---      PROGRAMMER: Ramzi Chennafi
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
 --
---      INTERFACE: 
+--      INTERFACE:      void process_client_quit(int sock, C_QUIT_PKT * client_quit, int c_num, int * channel_num, int * current_clients)
 --
---      RETURNS: void
+--      RETURNS:        void
 --
 --      NOTES:
---      
+--      If user wants to quit, send quit message to the channel manager
 ----------------------------------------------------------------------------------------------------------------------*/
 void process_client_quit(int sock, C_QUIT_PKT * client_quit, int c_num, int * channel_num, int * current_clients)
 {
@@ -158,21 +186,22 @@ void process_client_quit(int sock, C_QUIT_PKT * client_quit, int c_num, int * ch
     close(socket_list[*channel_num][c_num]);
     socket_list[*channel_num][c_num] = -1;
 }
+
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: init_client
+--      FUNCTION:       process_add_client
 --
---      DATE: March 15 2014
---      REVISIONS: none
+--      DATE:           March 14 2014
+--      REVISIONS:      none
 --
---      DESIGNER: Ramzi Chennafi
---      PROGRAMMER: Ramzi Chennafi
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
 --
---      INTERFACE: 
+--      INTERFACE:      void process_add_client(int cm_pipe, int * max_fd, fd_set * listen_fds, int * channel_num, int * current_clients)
 --
---      RETURNS: void
+--      RETURNS:        void
 --
 --      NOTES:
---      
+--      Adds the client to the channel
 ----------------------------------------------------------------------------------------------------------------------*/
 void process_add_client(int cm_pipe, int * max_fd, fd_set * listen_fds, int * channel_num, int * current_clients)
 {

@@ -1,6 +1,28 @@
 #include "server_defs.h"
 #include "utils.h"
 
+/*------------------------------------------------------------------------------------------------------------------
+--      SOURCE FILE:    InputController.cpp -An application that will allow users to join chat channel
+--                                      with asynchronous socket communcation using Select
+--
+--      PROGRAM:        client_chat
+--
+--      FUNCTIONS:
+--                      void* InputManager(void * indata)
+--
+--      DATE:           March 8, 2014
+--
+--      REVISIONS:      (Date and Description)
+--
+--      DESIGNER:       Ramzi Chennafi
+--
+--      PROGRAMMER:     Ramzi Chennafi
+--
+--      NOTES:
+--      The user can join chat channel by typing /join [channelname] and can start chatting with other
+--      client who are in the same channel. They can also leave channel and join another one.
+----------------------------------------------------------------------------------------------------------------------*/
+
 int packet_sizes[] = {
 	((sizeof(char) * MAX_USER_NAME) + (sizeof(char) * MAX_CHANNEL_NAME) + (sizeof(char) * MAX_STRING)),
 	((sizeof(char) * MAX_USER_NAME) + (sizeof(char) * MAX_CHANNEL_NAME) + (sizeof(char) * MAX_STRING)),
@@ -10,9 +32,23 @@ int packet_sizes[] = {
 	sizeof(int),
 	((sizeof(char) * MAX_USER_NAME) + (sizeof(char) * MAX_CHANNEL_NAME) + sizeof(int))
 };
-/*
-	Wrapper for starting threads.
-*/
+
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION:       dispatch_thread
+--
+--      DATE:           March 8 2014
+--      REVISIONS:      none
+--
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
+--
+--      INTERFACE:      int dispatch_thread(void *(*function)(void *), void *params, pthread_t *handle)
+--
+--      RETURNS:        int
+--
+--      NOTES:
+--      wrapper for starting thread
+----------------------------------------------------------------------------------------------------------------------*/
 int dispatch_thread(void *(*function)(void *), void *params, pthread_t *handle)
 {
 	if(pthread_create(handle, NULL, function, params) == -1)
@@ -25,6 +61,22 @@ int dispatch_thread(void *(*function)(void *), void *params, pthread_t *handle)
 	return 0;
 }
 
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION:       read_pipe
+--
+--      DATE:           March 8 2014
+--      REVISIONS:      none
+--
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
+--
+--      INTERFACE:      int read_pipe(int fd, void *buf, size_t count)
+--
+--      RETURNS:        int
+--
+--      NOTES:
+--      wrapper for read pipe
+----------------------------------------------------------------------------------------------------------------------*/
 int read_pipe(int fd, void *buf, size_t count)
 {
     int ret = read(fd, buf, count);
@@ -35,6 +87,23 @@ int read_pipe(int fd, void *buf, size_t count)
     return ret;
 }
 
+
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION:       write_pipe
+--
+--      DATE:           March 8 2014
+--      REVISIONS:      none
+--
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
+--
+--      INTERFACE:      int write_pipe(int fd, const void *buf, size_t count)
+--
+--      RETURNS:        int
+--
+--      NOTES:
+--      wrapper for write pipe
+----------------------------------------------------------------------------------------------------------------------*/
 int write_pipe(int fd, const void *buf, size_t count)
 {
     int ret = write(fd, buf, count);
@@ -44,9 +113,23 @@ int write_pipe(int fd, const void *buf, size_t count)
 
     return ret;
 }
-/*
-	Creates an accept socket.
-*/
+
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION:       create_accept_socket
+--
+--      DATE:           March 8 2014
+--      REVISIONS:      none
+--
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
+--
+--      INTERFACE:      int create_accept_socket()
+--
+--      RETURNS:        int
+--
+--      NOTES:
+--      creates an accepting socket
+----------------------------------------------------------------------------------------------------------------------*/
 int create_accept_socket(){
 
     int listen_sd, arg = 1;
@@ -78,15 +161,29 @@ int create_accept_socket(){
 
     return listen_sd;
 }
-/*
-	Accepts a new client
-*/
+
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION:       accept_new_client
+--
+--      DATE:           March 8 2014
+--      REVISIONS:      none
+--
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
+--
+--      INTERFACE:      int accept_new_client(int listen_sd)
+--
+--      RETURNS:        int
+--
+--      NOTES:
+--      accepts a new client
+----------------------------------------------------------------------------------------------------------------------*/
 int accept_new_client(int listen_sd)
 {
 	unsigned int client_len;
 	int client_sd = 0;
 	struct sockaddr_in client_addr;
-	
+
 	client_len = sizeof(client_addr);
 	if ((client_sd = accept(listen_sd, (struct sockaddr *) &client_addr, &client_len)) == -1)
 	{
@@ -99,6 +196,22 @@ int accept_new_client(int listen_sd)
 	return client_sd;
 }
 
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION:       read_packet
+--
+--      DATE:           March 8 2014
+--      REVISIONS:      none
+--
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
+--
+--      INTERFACE:      void* read_packet(int sockfd, int * type)
+--
+--      RETURNS:        void*
+--
+--      NOTES:
+--      reads incoming packet
+----------------------------------------------------------------------------------------------------------------------*/
 void* read_packet(int sockfd, int * type)
 {
 	int bytes_to_read = TYPE_SIZE;
@@ -112,7 +225,6 @@ void* read_packet(int sockfd, int * type)
 	switch(*type)
 	{
 		case SERVER_MSG_PKT:
-		case SERVER_KICK_PKT:
 			return recieve_smsg_skick(sockfd);
 		break;
 
@@ -140,6 +252,22 @@ void* read_packet(int sockfd, int * type)
 	return NULL;
 }
 
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION:       write_packet
+--
+--      DATE:           March 8 2014
+--      REVISIONS:      none
+--
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
+--
+--      INTERFACE:      int write_packet(int sockfd, int type, void * packet)
+--
+--      RETURNS:        int
+--
+--      NOTES:
+--      writes outgoing packet
+----------------------------------------------------------------------------------------------------------------------*/
 int write_packet(int sockfd, int type, void * packet)
 {
 	write(sockfd, &type, TYPE_SIZE);
@@ -159,7 +287,7 @@ int write_packet(int sockfd, int type, void * packet)
 		break;
 
 		case CLIENT_MSG_PKT:
-			write(sockfd, &((C_QUIT_PKT*)packet)->code, packet_sizes[type]);
+			write(sockfd, ((C_MSG_PKT*)packet)->msg, packet_sizes[type]);
 		break;
 
 		case CLIENT_QUIT_PKT:
@@ -169,11 +297,28 @@ int write_packet(int sockfd, int type, void * packet)
 		case CLIENT_JOIN_PKT:
 			serialize_cjoin(packet, sockfd);
 		break;
+
 	}
 
 	return type;
 }
 
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION:       serialize_cjoin
+--
+--      DATE:           March 8 2014
+--      REVISIONS:      none
+--
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
+--
+--      INTERFACE:      void serialize_cjoin(void* packet, int sockfd)
+--
+--      RETURNS:        void
+--
+--      NOTES:
+--      serializes
+----------------------------------------------------------------------------------------------------------------------*/
 void serialize_cjoin(void* packet, int sockfd)
 {
 	C_JOIN_PKT * cjoin = (C_JOIN_PKT*) packet;
@@ -183,6 +328,22 @@ void serialize_cjoin(void* packet, int sockfd)
 	write(sockfd, &cjoin->tcp_socket, sizeof(int));
 }
 
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION:       serialize_smsg_skick
+--
+--      DATE:           March 8 2014
+--      REVISIONS:      none
+--
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
+--
+--      INTERFACE:      void serialize_smsg_skick(void* packet, int sockfd)
+--
+--      RETURNS:        void
+--
+--      NOTES:
+--      serializes
+----------------------------------------------------------------------------------------------------------------------*/
 void serialize_smsg_skick(void* packet, int sockfd)
 {
 	S_MSG_PKT * smsgkick = (S_MSG_PKT*) packet;
@@ -192,6 +353,22 @@ void serialize_smsg_skick(void* packet, int sockfd)
 	write(sockfd, (void*)smsgkick->channel_name, MAX_CHANNEL_NAME);
 }
 
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION:       serialize_cinfo
+--
+--      DATE:           March 8 2014
+--      REVISIONS:      none
+--
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
+--
+--      INTERFACE:      void serialize_cinfo(void* packet, int sockfd)
+--
+--      RETURNS:        void
+--
+--      NOTES:
+--      serializes
+----------------------------------------------------------------------------------------------------------------------*/
 void serialize_cinfo(void* packet, int sockfd)
 {
 	S_CHANNEL_INFO_PKT * cinfo = (S_CHANNEL_INFO_PKT*) packet;
@@ -204,6 +381,22 @@ void serialize_cinfo(void* packet, int sockfd)
 		write(sockfd, (void*)cinfo->channel_clients[i], MAX_USER_NAME);
 }
 
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION:       receive_smsg_skick
+--
+--      DATE:           March 8 2014
+--      REVISIONS:      none
+--
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
+--
+--      INTERFACE:      void * recieve_smsg_skick(int sockfd)
+--
+--      RETURNS:        void*
+--
+--      NOTES:
+--      
+----------------------------------------------------------------------------------------------------------------------*/
 void * recieve_smsg_skick(int sockfd)
 {
 	S_MSG_PKT * smsgkick = (S_MSG_PKT*) malloc(packet_sizes[SERVER_MSG_PKT]);
@@ -211,10 +404,25 @@ void * recieve_smsg_skick(int sockfd)
 	rcv_variable(sockfd, smsgkick->client_name, MAX_USER_NAME);
 	rcv_variable(sockfd, smsgkick->msg, MAX_STRING);
 	rcv_variable(sockfd, smsgkick->channel_name, MAX_CHANNEL_NAME);
-
 	return smsgkick;
 }
 
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION:       receive_cinfo
+--
+--      DATE:           March 8 2014
+--      REVISIONS:      none
+--
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
+--
+--      INTERFACE:      void * recieve_cinfo(int sockfd)
+--
+--      RETURNS:        void*
+--
+--      NOTES:
+--      
+----------------------------------------------------------------------------------------------------------------------*/
 void * recieve_cinfo(int sockfd)
 {
 	S_CHANNEL_INFO_PKT * cinfo = (S_CHANNEL_INFO_PKT*) malloc(packet_sizes[CHANNEL_INFO_PKT]);
@@ -229,6 +437,22 @@ void * recieve_cinfo(int sockfd)
 	return cinfo;
 }
 
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION:       receive_cmsg
+--
+--      DATE:           March 8 2014
+--      REVISIONS:      none
+--
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
+--
+--      INTERFACE:      void * recieve_cmsg(int sockfd)
+--
+--      RETURNS:        void*
+--
+--      NOTES:
+--      
+----------------------------------------------------------------------------------------------------------------------*/
 void * recieve_cmsg(int sockfd)
 {
 	C_MSG_PKT * cmsg = (C_MSG_PKT*) malloc(packet_sizes[CLIENT_MSG_PKT]);
@@ -238,6 +462,22 @@ void * recieve_cmsg(int sockfd)
 	return cmsg;
 }
 
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION:       receive_cmsg
+--
+--      DATE:           March 8 2014
+--      REVISIONS:      none
+--
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
+--
+--      INTERFACE:      void *recieve_cquit(int sockfd)
+--
+--      RETURNS:        void*
+--
+--      NOTES:
+--      
+----------------------------------------------------------------------------------------------------------------------*/
 void *recieve_cquit(int sockfd)
 {
 	C_QUIT_PKT * cquit = (C_QUIT_PKT*) malloc(packet_sizes[CLIENT_QUIT_PKT]);
@@ -247,6 +487,22 @@ void *recieve_cquit(int sockfd)
 	return cquit;
 }
 
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION:       receive_cmsg
+--
+--      DATE:           March 8 2014
+--      REVISIONS:      none
+--
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
+--
+--      INTERFACE:      void * recieve_cjoin(int sockfd)
+--
+--      RETURNS:        void*
+--
+--      NOTES:
+--      
+----------------------------------------------------------------------------------------------------------------------*/
 void * recieve_cjoin(int sockfd)
 {
 	C_JOIN_PKT * packet = (C_JOIN_PKT*) malloc(packet_sizes[CLIENT_JOIN_PKT]);
@@ -258,6 +514,22 @@ void * recieve_cjoin(int sockfd)
 	return packet;
 }
 
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION:       receive_cmsg
+--
+--      DATE:           March 8 2014
+--      REVISIONS:      none
+--
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
+--
+--      INTERFACE:      void rcv_variable(int sockfd, void * incoming, int size)
+--
+--      RETURNS:        void
+--
+--      NOTES:
+--      
+----------------------------------------------------------------------------------------------------------------------*/
 void rcv_variable(int sockfd, void * incoming, int size)
 {
 	int bytes_to_read = size;

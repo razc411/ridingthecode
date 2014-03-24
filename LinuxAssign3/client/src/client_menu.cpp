@@ -25,7 +25,7 @@ bool namebox_filled = false;
 bool ipbox_filled = false;
 bool portbox_filled = false;
 
-//The key press interpr50eter
+//The key press interpreter
 class client_utils{
 
     private:
@@ -39,7 +39,7 @@ class client_utils{
     // constructor
     client_utils();
 
-    // deconstructor
+    // destructor
     ~client_utils();
 
     // handles input
