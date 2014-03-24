@@ -2,7 +2,7 @@
 #include "utils.h"
 
 /*------------------------------------------------------------------------------------------------------------------
---      SOURCE FILE:    InputController.cpp -An application that will allow users to join chat channel
+--      SOURCE FILE:    utils.cpp -An application that will allow users to join chat channel
 --                                      with asynchronous socket communcation using Select
 --
 --      PROGRAM:        client_chat
@@ -19,8 +19,7 @@
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      NOTES:
---      The user can join chat channel by typing /join [channelname] and can start chatting with other
---      client who are in the same channel. They can also leave channel and join another one.
+--      Contains common helper functions
 ----------------------------------------------------------------------------------------------------------------------*/
 
 int packet_sizes[] = {
@@ -43,6 +42,8 @@ int packet_sizes[] = {
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      int dispatch_thread(void *(*function)(void *), void *params, pthread_t *handle)
+--						void *(*function)(void *) - function to be put on thread
+--						void *params, pthread_t *handle - handle to the thread
 --
 --      RETURNS:        int
 --
@@ -71,6 +72,9 @@ int dispatch_thread(void *(*function)(void *), void *params, pthread_t *handle)
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      int read_pipe(int fd, void *buf, size_t count)
+--						int fd - file descriptor for read pipe
+--						void *buf - buffer to store messages
+--						size_t count - size of buffer
 --
 --      RETURNS:        int
 --
@@ -98,6 +102,9 @@ int read_pipe(int fd, void *buf, size_t count)
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      int write_pipe(int fd, const void *buf, size_t count)
+--						int fd - file descriptor for read pipe
+--						const void *buf - buffer to store messages
+--						size_t count - size of buffer
 --
 --      RETURNS:        int
 --
@@ -172,6 +179,7 @@ int create_accept_socket(){
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      int accept_new_client(int listen_sd)
+--						int listen_sd - socket descriptor for listen socket
 --
 --      RETURNS:        int
 --
@@ -206,6 +214,8 @@ int accept_new_client(int listen_sd)
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      void* read_packet(int sockfd, int * type)
+--						int sockfd - socket descriptor for a socket
+--						int * type - type of message to determine if its control packet or message
 --
 --      RETURNS:        void*
 --
@@ -262,6 +272,9 @@ void* read_packet(int sockfd, int * type)
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      int write_packet(int sockfd, int type, void * packet)
+--						int sockfd - socket descriptor for socket
+--						int type - type of message to determine if its control packet or message	
+--						void * packet - control packet				
 --
 --      RETURNS:        int
 --
@@ -313,6 +326,8 @@ int write_packet(int sockfd, int type, void * packet)
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      void serialize_cjoin(void* packet, int sockfd)
+--						void * packet - control packet	
+--						int sockfd - socket descriptor for socket
 --
 --      RETURNS:        void
 --
@@ -338,6 +353,8 @@ void serialize_cjoin(void* packet, int sockfd)
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      void serialize_smsg_skick(void* packet, int sockfd)
+--						void * packet - control packet	
+--						int sockfd - socket descriptor for socket
 --
 --      RETURNS:        void
 --
@@ -363,6 +380,8 @@ void serialize_smsg_skick(void* packet, int sockfd)
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      void serialize_cinfo(void* packet, int sockfd)
+--						void * packet - control packet	
+--						int sockfd - socket descriptor for socket
 --
 --      RETURNS:        void
 --
@@ -391,6 +410,7 @@ void serialize_cinfo(void* packet, int sockfd)
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      void * recieve_smsg_skick(int sockfd)
+--						int sockfd - socket descriptor for socket
 --
 --      RETURNS:        void*
 --
@@ -417,6 +437,7 @@ void * recieve_smsg_skick(int sockfd)
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      void * recieve_cinfo(int sockfd)
+--						int sockfd - socket descriptor for socket
 --
 --      RETURNS:        void*
 --
@@ -447,6 +468,7 @@ void * recieve_cinfo(int sockfd)
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      void * recieve_cmsg(int sockfd)
+--						int sockfd - socket descriptor for socket
 --
 --      RETURNS:        void*
 --
@@ -463,7 +485,7 @@ void * recieve_cmsg(int sockfd)
 }
 
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION:       receive_cmsg
+--      FUNCTION:       recieve_cquit
 --
 --      DATE:           March 8 2014
 --      REVISIONS:      none
@@ -472,6 +494,7 @@ void * recieve_cmsg(int sockfd)
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      void *recieve_cquit(int sockfd)
+--						int sockfd - socket descriptor for socket
 --
 --      RETURNS:        void*
 --
@@ -488,7 +511,7 @@ void *recieve_cquit(int sockfd)
 }
 
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION:       receive_cmsg
+--      FUNCTION:       recieve_cjoin
 --
 --      DATE:           March 8 2014
 --      REVISIONS:      none
@@ -497,6 +520,7 @@ void *recieve_cquit(int sockfd)
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      void * recieve_cjoin(int sockfd)
+--						int sockfd - socket descriptor for socket
 --
 --      RETURNS:        void*
 --
@@ -515,7 +539,7 @@ void * recieve_cjoin(int sockfd)
 }
 
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION:       receive_cmsg
+--      FUNCTION:       rcv_variable
 --
 --      DATE:           March 8 2014
 --      REVISIONS:      none
@@ -524,6 +548,9 @@ void * recieve_cjoin(int sockfd)
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      void rcv_variable(int sockfd, void * incoming, int size)
+--						int sockfd - socket descriptor for socket
+--						void * incoming - incoming message
+--						int size - message size
 --
 --      RETURNS:        void
 --

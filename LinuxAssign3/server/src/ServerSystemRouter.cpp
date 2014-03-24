@@ -1,22 +1,32 @@
 #include "server_defs.h"
 #include "utils.h"
+
 /*------------------------------------------------------------------------------------------------------------------
---      PROJECT: 
---      FUNCTION: main()
+--      SOURCE FILE:    ServerSystemRouter.cpp -An application that will allow users to join chat channel
+--                                      with asynchronous socket communcation using Select
 --
---      DATE: March 15 2014
---      REVISIONS: none
+--      PROGRAM:        client_chat
 --
---      DESIGNER: Ramzi Chennafi
---      PROGRAMMER: Ramzi Chennafi
+--      FUNCTIONS:
+--                      int main()
+--                      void add_client(int client_sd, void * join_req, int joined)void reject_client(int client_sd, C_JOIN_PKT * info_pkt)
+--                      void add_channel(int * max_fd, fd_set * listen_fds, int input_pipe)
+--                      void channel_close(int input_pipe)
+--                      void close_server(int input_pipes[2])
+--                      void display_users(int input_pipe)
+--                      void* InputManager(void * indata)
 --
---      INTERFACE: int main()
+--      DATE:           March 7, 2014
 --
---      RETURNS: void
+--      REVISIONS:      (Date and Description)
+--
+--      DESIGNER:       Ramzi Chennafi
+--
+--      PROGRAMMER:     Ramzi Chennafi
 --
 --      NOTES:
---      Intializes the client, the type of8 intialization depends on the chosen protocol in the settings. Binds whenever
---      the connection is TCP.
+--      The user can join chat channel by typing /join [channelname] and can start chatting with other
+--      client who are in the same channel. They can also leave channel and join another one.
 ----------------------------------------------------------------------------------------------------------------------*/
 extern int          packet_sizes[];
 static int          open_channels = 0;
@@ -25,39 +35,23 @@ static int          num_clients = 0;
 static char         channel_name_list[MAX_CHANNELS][MAX_CHANNEL_NAME];
 static int          channel_pipes[MAX_CHANNELS][2];
 static pthread_t    thread_channel[MAX_CHANNELS];
-/*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: main()
---
---      DATE: March 15 2014
---      REVISIONS: none
---
---      DESIGNER: Ramzi Chennafi
---      PROGRAMMER: Ramzi Chennafi
---
---      INTERFACE: int
-    C_JOIN_PKT * info_packet = (C_JOIN_PKT*)malloc(sizeof(C_JOIN_PKT));
 
-    if(read_packet(client_sd, (char*)info_packet) != CLIENT_ADD)
-    { main()
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION:       main
 --
---      RETURNS: void
+--      DATE:           March 8 2014
+--      REVISIONS:      none
+--
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
+--
+--      INTERFACE:      int main()
+--
+--      RETURNS:        int
 --
 --      NOTES:
---      Intializes the server. Does the following actions as part of its intialization.
---      - Creates an input thread and an input pipe
---      - Creates a listening socket
---      - Waits on a select statement, listening to the input thread and the channel threads.
---      Works as the central hub for all channels and the input thread. Redirects commands
---      from the input thread to the proper channel threads using IPC.
-----------50eter
-class client_utils{
-
-    private:
-    //The storage string
-    std::string str;
-
-    //The text surface
-    SDL_Surface *text;------------------------------------------------------------------------------------------------------------*/
+--      
+----------------------------------------------------------------------------------------------------------------------*/
 int main()
 {
     pthread_t 	thread_input;
@@ -211,23 +205,23 @@ void reject_client(int client_sd, C_JOIN_PKT * info_pkt)
             info_pkt->client_name, info_pkt->channel_name);
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: add_channel
+--      FUNCTION:       add_channel
 --
---      DATE: March 15 2014
---      REVISIONS: none
+--      DATE:           March 15 2014
+--      REVISIONS:      none
 --
---      DESIGNER: Ramzi Chennafi
---      PROGRAMMER: Ramzi Chennafi
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
 --
---      INTERFACE: void add_channel(CHANNEL_DATA * chdata, int * max_fd, fd_set * listen_fds, int input_pipe)
---                  int * max_fd - pointer to the max file descriptor. Used for adding channel to select.
---                  fd_set * listen_fds - pointer to the set file descriptors.
---                  int input_pipe - file descriptor to the input manager pipe
+--      INTERFACE:      void add_channel(CHANNEL_DATA * chdata, int * max_fd, fd_set * listen_fds, int input_pipe)
+--                      int * max_fd - pointer to the max file descriptor. Used for adding channel to select.
+--                      fd_set * listen_fds - pointer to the set file descriptors.
+--                      int input_pipe - file descriptor to the input manager pipe
 --
---      RETURNS: void
+--      RETURNS:        void
 --
 --      NOTES:
---      Establishes a new channel thread and adds it to the router select system.
+--      Establishes a new channel thread and adds it to the router select system.  
 ----------------------------------------------------------------------------------------------------------------------*/
 void add_channel(int * max_fd, fd_set * listen_fds, int input_pipe)
 {
@@ -249,21 +243,23 @@ void add_channel(int * max_fd, fd_set * listen_fds, int input_pipe)
 	dispatch_thread(ChannelManager, (void*)chdata, &thread_channel[open_channels]);
     pthread_join(thread_channel[open_channels++], NULL);
 }
+
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: channel_close
+--      FUNCTION:       channel_close
 --
---      DATE: March 15 2014
---      REVISIONS: none
+--      DATE:           March 15 2014
+--      REVISIONS:      none
 --
---      DESIGNER: Ramzi Chennafi
---      PROGRAMMER: Ramzi Chennafi
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
 --
---      INTERFACE: void channel_close(int input_pipe)
+--      INTERFACE:      void channel_close(int input_pipe)
+--                      int input_pipe - file descriptor to the input manager pipe
 --
---      RETURNS: void
+--      RETURNS:        void
 --
 --      NOTES:
---      Passes the close channel message to the appropriate channel.
+--      Passes the close channel message to the appropriate channel. 
 ----------------------------------------------------------------------------------------------------------------------*/
 void channel_close(int input_pipe)
 {
@@ -283,22 +279,23 @@ void channel_close(int input_pipe)
 
     printf("Channel %s closed.\n", channel_name);
 }
+
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: init_client
+--      FUNCTION:       close_server
 --
---      DATE: Febuary 6 2014
---      REVISIONS: none
+--      DATE:           March 15 2014
+--      REVISIONS:      none
 --
---      DESIGNER: Ramzi Chennafi
---      PROGRAMMER: Ramzi Chennafi
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
 --
---      INTERFACE: void close_server(int input_pipe[2])
---                  int input_pipe[2] - pipe to the input manager
---      RETURNS: void
+--      INTERFACE:      void close_server(int input_pipes[2])
+--                      int input_pipe[2] - pipe to handle input messages
+--
+--      RETURNS:        void
 --
 --      NOTES:
---      Closes all open pipes and broadcasts an exit message to the channels.
---      Server will exit after all channels have finished their closing operations.
+--      Closes all open channels and prints out exit message.
 ----------------------------------------------------------------------------------------------------------------------*/
 void close_server(int input_pipes[2])
 {
@@ -312,6 +309,24 @@ void close_server(int input_pipes[2])
     printf("Server exiting.\n");
 }
 
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION:       display_users
+--
+--      DATE:           March 15 2014
+--      REVISIONS:      none
+--
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
+--
+--      INTERFACE:      void close_server(int input_pipes[2])
+--                      int input_pipe[2] - pipe to handle input messages
+--
+--      RETURNS:        void
+--
+--      NOTES:
+--      Closes all open pipes and broadcasts an exit message to the channels.
+--      Server will exit after all channels have finished their closing operations.
+----------------------------------------------------------------------------------------------------------------------*/
 void display_users(int input_pipe)
 {
     char channel_name[MAX_CHANNEL_NAME];
@@ -328,21 +343,21 @@ void display_users(int input_pipe)
     }  
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: init_client
+--      FUNCTION:       InputManager
 --
---      DATE: Febuary 6 2014
---      REVISIONS: none
+--      DATE:           March 8 2014
+--      REVISIONS:      none
 --
---      DESIGNER: Ramzi Chennafi
---      PROGRAMMER: Ramzi Chennafi
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
 --
---      INTERFACE: void init_client(HWND hwnd) , takes the parent HWND as an argument.
+--      INTERFACE:      void* InputManager(void * indata)
+--                      void * indata - incoming data from client
 --
---      RETURNS: void
+--      RETURNS:        void*
 --
 --      NOTES:
---      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
---      the connection is TCP.
+--      Takes input from the chat and writes the packet or mesasage from the client
 ----------------------------------------------------------------------------------------------------------------------*/
 void* InputManager(void * indata)
 {

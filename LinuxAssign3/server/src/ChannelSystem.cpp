@@ -42,6 +42,7 @@ static char channel_name[MAX_CHANNELS][MAX_CHANNEL_NAME];
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      void* ChannelManager(void * chdata)
+--                      void * chdata - data containing channel information
 --
 --      RETURNS:        void*
 --
@@ -134,6 +135,11 @@ void* ChannelManager(void * chdata)
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      void process_incoming_message(int sock, C_MSG_PKT * client_msg, int c_num, int * channel_num, int * current_clients)
+--                      int sock - client socket
+--                      C_MSG_PKT * client_msg - message packet from the client
+--                      int c_num - client number
+--                      int * channel_num - channel number
+--                      int * current_clients - current number of clients
 --
 --      RETURNS:        void*
 --
@@ -169,6 +175,11 @@ void process_incoming_message(int sock, C_MSG_PKT * client_msg, int c_num, int *
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      void process_client_quit(int sock, C_QUIT_PKT * client_quit, int c_num, int * channel_num, int * current_clients)
+--                      int sock - client socket
+--                      C_MSG_PKT * client_quit - quit control packet from the client
+--                      int c_num - client number
+--                      int * channel_num - channel number
+--                      int * current_clients - current number of connected clients
 --
 --      RETURNS:        void
 --
@@ -197,6 +208,11 @@ void process_client_quit(int sock, C_QUIT_PKT * client_quit, int c_num, int * ch
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      void process_add_client(int cm_pipe, int * max_fd, fd_set * listen_fds, int * channel_num, int * current_clients)
+--                      int cm_pipe - pipe for channel manager
+--                      int * max_fd - pointer to the max file descriptor. Used for adding channel to select
+--                      fd_set * listen_fds - pointer to the set file descriptors
+--                      int * channel_num - channel number
+--                      int * current_clients - current number of connected clients
 --
 --      RETURNS:        void
 --
