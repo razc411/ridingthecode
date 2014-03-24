@@ -1,21 +1,33 @@
 #include "client_defs.h"
 
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: init_client
+--  SOURCE FILE:    SystemRouter.cpp -An application that will allow users to join chat channel
+--                                      with asynchronous socket communcation using Select
 --
---      DATE: Febuary 6 2014
---      REVISIONS: none
+--  PROGRAM:        client_chat
 --
---      DESIGNER: Ramzi Chennafi
---      PROGRAMMER: Ramzi Chennafi
+--  FUNCTIONS:
+--                  int main(int argc, char ** argv)
+--                  int connect_to_server()
+--                  void join_channel(fd_set * listen_fds, int * max_fd, int input_pipe)
+--                  void setup_channel_variables(S_CHANNEL_INFO_PKT * c_info)
+--                  void check_input_pipes(fd_set * active, fd_set * listen_fds, int * max_fd)
+--                  void check_output_sockets(fd_set * active, fd_set * listen_fds)
+--                  void server_kick(S_KICK_PKT * pkt, fd_set * listen_fds)
+--                  void quit_channel(fd_set * listen_fds, int code)
+--                  void display_incoming_message(S_MSG_PKT * packet)
 --
---      INTERFACE: void init_client(HWND hwnd) , takes the parent HWND as an argument.
+--  DATE:           March 14, 2014
 --
---      RETURNS: void
+--  REVISIONS:      (Date and Description)
 --
---      NOTES:
---      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
---      the connection is TCP.
+--  DESIGNER:       Tim Kim
+--
+--  PROGRAMMER:     Tim Kim
+--
+--  NOTES:
+--  The user can join chat channel by typing /join [channelname] and can start chatting with other
+--  client who are in the same channel. They can also leave channel and join another one.
 ----------------------------------------------------------------------------------------------------------------------*/
 
 static int in_channel = false;
