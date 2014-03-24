@@ -7,8 +7,25 @@
 --
 --      PROGRAM:        client_chat
 --
---      FUNCTIONS:
---                      void* InputManager(void * indata)
+--      FUNCTIONS:		int dispatch_thread(void *(*function)(void *), void *params, pthread_t *handle)
+--						int read_pipe(int fd, void *buf, size_t count)
+--						int write_pipe(int fd, const void *buf, size_t count)
+--						
+--						int create_accept_socket()
+--						int accept_new_client(int listen_sd)
+--						
+--						int write_packet(int sockfd, int type, void * packet)
+--						void serialize_cjoin(void* packet, int sockfd)
+--						void serialize_cinfo(void* packet, int sockfd)
+--						void serialize_smsg_skick(void* packet, int sockfd)
+--						
+--						void* read_packet(int sockfd, int * type)
+--						void * recieve_smsg_skick(int sockfd)
+--						void * recieve_cinfo(int sockfd)
+--						void * recieve_cmsg(int sockfd)
+--						void * recieve_cquit(int sockfd)
+--						void * recieve_cjoin(int sockfd)
+--						void rcv_variable(int sockfd, void * incoming, int size)
 --
 --      DATE:           March 8, 2014
 --
@@ -19,7 +36,7 @@
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      NOTES:
---      Contains common helper functions
+--      Contains common helper functions.
 ----------------------------------------------------------------------------------------------------------------------*/
 
 int packet_sizes[] = {
@@ -48,7 +65,7 @@ int packet_sizes[] = {
 --      RETURNS:        int
 --
 --      NOTES:
---      wrapper for starting thread
+--      Wrapper for starting a new thread.
 ----------------------------------------------------------------------------------------------------------------------*/
 int dispatch_thread(void *(*function)(void *), void *params, pthread_t *handle)
 {
@@ -79,7 +96,7 @@ int dispatch_thread(void *(*function)(void *), void *params, pthread_t *handle)
 --      RETURNS:        int
 --
 --      NOTES:
---      wrapper for read pipe
+--      Wrapper to read from a pipe.
 ----------------------------------------------------------------------------------------------------------------------*/
 int read_pipe(int fd, void *buf, size_t count)
 {
@@ -90,8 +107,6 @@ int read_pipe(int fd, void *buf, size_t count)
 
     return ret;
 }
-
-
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION:       write_pipe
 --
@@ -109,7 +124,7 @@ int read_pipe(int fd, void *buf, size_t count)
 --      RETURNS:        int
 --
 --      NOTES:
---      wrapper for write pipe
+--      Wrapper to write to a pipe.
 ----------------------------------------------------------------------------------------------------------------------*/
 int write_pipe(int fd, const void *buf, size_t count)
 {
@@ -179,12 +194,12 @@ int create_accept_socket(){
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      int accept_new_client(int listen_sd)
---						int listen_sd - socket descriptor for listen socket
+--						int listen_sd - socket descriptor of the listen socket
 --
 --      RETURNS:        int
 --
 --      NOTES:
---      accepts a new client
+--      Accepts a new client.
 ----------------------------------------------------------------------------------------------------------------------*/
 int accept_new_client(int listen_sd)
 {
@@ -220,7 +235,7 @@ int accept_new_client(int listen_sd)
 --      RETURNS:        void*
 --
 --      NOTES:
---      reads incoming packet
+--      Reads an incoming packet on the sockfd, sets the type and returns the packet.
 ----------------------------------------------------------------------------------------------------------------------*/
 void* read_packet(int sockfd, int * type)
 {
@@ -272,14 +287,15 @@ void* read_packet(int sockfd, int * type)
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      int write_packet(int sockfd, int type, void * packet)
---						int sockfd - socket descriptor for socket
---						int type - type of message to determine if its control packet or message	
---						void * packet - control packet				
+--						int sockfd - socket descriptor to write on
+--						int type - the type of packet that will be written	
+--						void * packet - the packet to write			
 --
 --      RETURNS:        int
 --
 --      NOTES:
---      writes outgoing packet
+--      Writes the passed in packet to the sockfd. Returns the type of packet written (should be the same as the type
+--		specified in the interface on success.)
 ----------------------------------------------------------------------------------------------------------------------*/
 int write_packet(int sockfd, int type, void * packet)
 {
@@ -327,12 +343,12 @@ int write_packet(int sockfd, int type, void * packet)
 --
 --      INTERFACE:      void serialize_cjoin(void* packet, int sockfd)
 --						void * packet - control packet	
---						int sockfd - socket descriptor for socket
+--						int sockfd - descriptor to send data on
 --
 --      RETURNS:        void
 --
 --      NOTES:
---      serializes
+--      Serializes the cjoin struct over the specified descriptor.
 ----------------------------------------------------------------------------------------------------------------------*/
 void serialize_cjoin(void* packet, int sockfd)
 {
@@ -354,12 +370,12 @@ void serialize_cjoin(void* packet, int sockfd)
 --
 --      INTERFACE:      void serialize_smsg_skick(void* packet, int sockfd)
 --						void * packet - control packet	
---						int sockfd - socket descriptor for socket
+--						int sockfd - descriptor to send data on
 --
 --      RETURNS:        void
 --
 --      NOTES:
---      serializes
+--      Serializes the smsg struct over the specified descriptor.
 ----------------------------------------------------------------------------------------------------------------------*/
 void serialize_smsg_skick(void* packet, int sockfd)
 {
@@ -386,7 +402,7 @@ void serialize_smsg_skick(void* packet, int sockfd)
 --      RETURNS:        void
 --
 --      NOTES:
---      serializes
+--      Serialzies the specified channel info struct over the specified descriptor.
 ----------------------------------------------------------------------------------------------------------------------*/
 void serialize_cinfo(void* packet, int sockfd)
 {
@@ -410,12 +426,12 @@ void serialize_cinfo(void* packet, int sockfd)
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      void * recieve_smsg_skick(int sockfd)
---						int sockfd - socket descriptor for socket
+--						int sockfd - descriptor to recieve data on
 --
 --      RETURNS:        void*
 --
 --      NOTES:
---      
+--      Recieves the server message packet. Returns a pointer to it.
 ----------------------------------------------------------------------------------------------------------------------*/
 void * recieve_smsg_skick(int sockfd)
 {
@@ -437,12 +453,12 @@ void * recieve_smsg_skick(int sockfd)
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      void * recieve_cinfo(int sockfd)
---						int sockfd - socket descriptor for socket
+--						int sockfd - descriptor to recieve data on
 --
 --      RETURNS:        void*
 --
 --      NOTES:
---      
+--      Recieves the channel info packet. Returns a pointer to it.
 ----------------------------------------------------------------------------------------------------------------------*/
 void * recieve_cinfo(int sockfd)
 {
@@ -468,12 +484,12 @@ void * recieve_cinfo(int sockfd)
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      void * recieve_cmsg(int sockfd)
---						int sockfd - socket descriptor for socket
+--						int sockfd - descriptor to recieve data on
 --
 --      RETURNS:        void*
 --
 --      NOTES:
---      
+--      Recieves the client message packet. Returns a pointer to it.
 ----------------------------------------------------------------------------------------------------------------------*/
 void * recieve_cmsg(int sockfd)
 {
@@ -499,7 +515,7 @@ void * recieve_cmsg(int sockfd)
 --      RETURNS:        void*
 --
 --      NOTES:
---      
+--      Recieves the client quit message packet. Returns a pointer to it.
 ----------------------------------------------------------------------------------------------------------------------*/
 void *recieve_cquit(int sockfd)
 {
@@ -525,7 +541,7 @@ void *recieve_cquit(int sockfd)
 --      RETURNS:        void*
 --
 --      NOTES:
---      
+--      Recieves the client join message packet. Returns a pointer to it.
 ----------------------------------------------------------------------------------------------------------------------*/
 void * recieve_cjoin(int sockfd)
 {
@@ -555,7 +571,7 @@ void * recieve_cjoin(int sockfd)
 --      RETURNS:        void
 --
 --      NOTES:
---      
+--      Recieves a specified variable over a socket. Works for both pipes and tcp sockets.
 ----------------------------------------------------------------------------------------------------------------------*/
 void rcv_variable(int sockfd, void * incoming, int size)
 {

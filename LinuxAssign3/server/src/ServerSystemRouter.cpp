@@ -1,6 +1,5 @@
 #include "server_defs.h"
 #include "utils.h"
-
 /*------------------------------------------------------------------------------------------------------------------
 --      SOURCE FILE:    ServerSystemRouter.cpp -An application that will allow users to join chat channel
 --                                      with asynchronous socket communcation using Select
@@ -25,8 +24,14 @@
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      NOTES:
---      The user can join chat channel by typing /join [channelname] and can start chatting with other
---      client who are in the same channel. They can also leave channel and join another one.
+--      The server side of the linux chat server. A user can create channels on the server and clients can join these channels.
+--      The server can handle multiple channels and users on different channels at the same time, and broadcast messages between
+--      them. 
+--      COMMANDS
+--      /create <channel name> - creates a new channel
+--      /users <channel name> - displays users in a channel
+--      /close <channel name> - closes the sepcified channel
+--      /exit - exits the server and closes all connections
 ----------------------------------------------------------------------------------------------------------------------*/
 extern int          packet_sizes[];
 static int          open_channels = 0;
@@ -35,7 +40,6 @@ static int          num_clients = 0;
 static char         channel_name_list[MAX_CHANNELS][MAX_CHANNEL_NAME];
 static int          channel_pipes[MAX_CHANNELS][2];
 static pthread_t    thread_channel[MAX_CHANNELS];
-
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION:       main
 --
@@ -50,7 +54,7 @@ static pthread_t    thread_channel[MAX_CHANNELS];
 --      RETURNS:        int
 --
 --      NOTES:
---      
+--      Main hub of the server. Handles all channel and input management. Also listens for connecting users.
 ----------------------------------------------------------------------------------------------------------------------*/
 int main()
 {
@@ -126,10 +130,6 @@ int main()
                 break;
             }
     	}
-        if(list_change)
-        {
-           //reform_lists();
-        }
     }
 
     free(idata);
@@ -308,7 +308,6 @@ void close_server(int input_pipes[2])
 
     printf("Server exiting.\n");
 }
-
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION:       display_users
 --
@@ -324,8 +323,8 @@ void close_server(int input_pipes[2])
 --      RETURNS:        void
 --
 --      NOTES:
---      Closes all open pipes and broadcasts an exit message to the channels.
---      Server will exit after all channels have finished their closing operations.
+--      Sends a USER_DISPLAY message to the proper channel. The result will be all users in that
+--      channel being printed out.
 ----------------------------------------------------------------------------------------------------------------------*/
 void display_users(int input_pipe)
 {
@@ -357,7 +356,8 @@ void display_users(int input_pipe)
 --      RETURNS:        void*
 --
 --      NOTES:
---      Takes input from the chat and writes the packet or mesasage from the client
+--      Takes input from the terminal and responds accordingly. Will listen for the /users /create /close /exit and 
+--      plain message commands. Will always send its responses to main() for proper routing.
 ----------------------------------------------------------------------------------------------------------------------*/
 void* InputManager(void * indata)
 {

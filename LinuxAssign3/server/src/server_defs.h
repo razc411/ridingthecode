@@ -8,7 +8,6 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <cstring>
-//#include <SDL2/SDL.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>

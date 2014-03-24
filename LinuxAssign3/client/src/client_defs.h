@@ -1,6 +1,6 @@
 #ifndef CLIENT_DEFS_H
 #define CLIENT_DEFS_H
-
+// Contains definitions specific to the client.
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
@@ -23,6 +23,7 @@
 #define SCREEN_BPP 		32
 #define MAIN_CHANNEL 	0
 #define LOG				13
+#define MAXIP			20
 
 typedef struct{
 	int write_pipe;

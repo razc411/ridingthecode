@@ -1,6 +1,5 @@
 #include "server_defs.h"
 #include "utils.h"
-
 /*------------------------------------------------------------------------------------------------------------------
 --      SOURCE FILE:    ChannelSystem.cpp -An application that will allow users to join chat channel
 --                                      with asynchronous socket communcation using Select
@@ -22,11 +21,10 @@
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      NOTES:
---      The user can join chat channel by typing /join [channelname] and can start chatting with other
---      client who are in the same channel. They can also leave channel and join another one.
+--      Manages communication for a single channel. The functions within are called only by the channel created for them.
+--      Will listen for input from the network thread and respond accordingly, also responds to any socket communication
+--      from the clients on the channel.
 ----------------------------------------------------------------------------------------------------------------------*/
-
-
 extern int packet_sizes[];
 static char client_names[MAX_CHANNELS][MAX_CLIENTS][MAX_USER_NAME];
 static int socket_list[MAX_CHANNELS][MAX_CLIENTS];
@@ -47,7 +45,8 @@ static char channel_name[MAX_CHANNELS][MAX_CHANNEL_NAME];
 --      RETURNS:        void*
 --
 --      NOTES:
---      Takes care of control packet and message to the correct channel
+--      Central hub for the channel, manages any incoming data from the network thread and any data on the client sockets. 
+--      Will respond accordingly.
 ----------------------------------------------------------------------------------------------------------------------*/
 void* ChannelManager(void * chdata)
 {
@@ -135,16 +134,17 @@ void* ChannelManager(void * chdata)
 --      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      void process_incoming_message(int sock, C_MSG_PKT * client_msg, int c_num, int * channel_num, int * current_clients)
---                      int sock - client socket
+--                      int sock - socket of client who sent message
 --                      C_MSG_PKT * client_msg - message packet from the client
---                      int c_num - client number
---                      int * channel_num - channel number
---                      int * current_clients - current number of clients
+--                      int c_num - number of the client who sent the message
+--                      int * channel_num - this channel number
+--                      int * current_clients - current number of clients connected to this channel
 --
 --      RETURNS:        void*
 --
 --      NOTES:
---      processes incoming message into the correct channel
+--      Processes the incoming socket message and sends the message out to all clients connected to the channel.
+--      Does not send the message out to the client who sent it.
 ----------------------------------------------------------------------------------------------------------------------*/
 void process_incoming_message(int sock, C_MSG_PKT * client_msg, int c_num, int * channel_num, int * current_clients)
 {
@@ -184,7 +184,7 @@ void process_incoming_message(int sock, C_MSG_PKT * client_msg, int c_num, int *
 --      RETURNS:        void
 --
 --      NOTES:
---      If user wants to quit, send quit message to the channel manager
+--      Responds to a client quit packet. Will disconnect from the sending client.
 ----------------------------------------------------------------------------------------------------------------------*/
 void process_client_quit(int sock, C_QUIT_PKT * client_quit, int c_num, int * channel_num, int * current_clients)
 {
@@ -217,7 +217,9 @@ void process_client_quit(int sock, C_QUIT_PKT * client_quit, int c_num, int * ch
 --      RETURNS:        void
 --
 --      NOTES:
---      Adds the client to the channel
+--      Adds a client recieved from the network router to the channel. If the client already exists a CONNECTION_REJECTED
+--      message is sent to the client. If they do not exist already, they recieve a CONNECTION_ACCEPTED message and a channel
+--      info packet.
 ----------------------------------------------------------------------------------------------------------------------*/
 void process_add_client(int cm_pipe, int * max_fd, fd_set * listen_fds, int * channel_num, int * current_clients)
 {
