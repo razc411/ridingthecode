@@ -89,8 +89,9 @@ void* ChannelManager(void * chdata)
             {
                 void * packet = read_packet(socket_list[channel_num][i], &type);
 
-                if(type == CLIENT_QUIT)
+                if(type == CLIENT_QUIT_PKT)
                 {
+                    FD_CLR(socket_list[channel_num][i], &listen_fds);
                     process_client_quit(socket_list[channel_num][i], (C_QUIT_PKT*)packet, i, 
                         &channel_num, &current_clients);
                 }
@@ -136,6 +137,7 @@ void channel_client_kick(int sock, int client, char * msg, int * channel_num)
 
     printf("Client %s kicked from %s with msg %s.\n", client_names[*channel_num][client], channel_name[*channel_num], msg);
     memset(client_names[*channel_num][client], 0, MAX_USER_NAME);
+    close(socket_list[*channel_num][client]);
     socket_list[*channel_num][client] = -1;
 }
 /*------------------------------------------------------------------------------------------------------------------
@@ -167,7 +169,7 @@ void process_incoming_message(int sock, C_MSG_PKT * client_msg, int c_num, int *
             write_packet(socket_list[*channel_num][i], SERVER_MSG_PKT, &broadcast_msg);       
     }
 
-    printf("%s: %s: %s\n", channel_name[*channel_num], client_names[*channel_num][c_num], client_msg->msg);
+    printf("%s: %s: %s", channel_name[*channel_num], client_names[*channel_num][c_num], client_msg->msg);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: init_client
@@ -187,9 +189,6 @@ void process_incoming_message(int sock, C_MSG_PKT * client_msg, int c_num, int *
 ----------------------------------------------------------------------------------------------------------------------*/
 void process_client_quit(int sock, C_QUIT_PKT * client_quit, int c_num, int * channel_num, int * current_clients)
 {
-    socket_list[*channel_num][c_num] = -1;
-    memset(client_names[*channel_num][c_num], 0, MAX_USER_NAME);
-
     if(client_quit->code == CLIENT_QUIT)
     {
         printf("Client %s left channel.\n", client_names[*channel_num][c_num]);
@@ -199,7 +198,9 @@ void process_client_quit(int sock, C_QUIT_PKT * client_quit, int c_num, int * ch
         printf("Client %s shutdown.\n", client_names[*channel_num][c_num]);
     }
 
-    *current_clients = *current_clients - 1;
+    memset(client_names[*channel_num][c_num], 0, MAX_USER_NAME);
+    close(socket_list[*channel_num][c_num]);
+    socket_list[*channel_num][c_num] = -1;
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: init_client

@@ -58,7 +58,7 @@ int main(int argc, char ** argv)
     	select(max_fd + 1, &active, NULL, NULL, NULL);
 
         check_input_pipes(&active, &listen_fds, &max_fd);
-        check_output_sockets(&active);
+        check_output_sockets(&active, &listen_fds);
         
     }
 
@@ -240,23 +240,31 @@ void check_input_pipes(fd_set * active, fd_set * listen_fds, int * max_fd)
 
         else if(type == QUIT_CHANNEL)
         {
-            //quit_channel();
+            quit_channel(listen_fds, CLIENT_QUIT);
         }
 
         else if(type == CLIENT_MSG)
         {
-            C_MSG_PKT * c_msg;
-            c_msg = (C_MSG_PKT*)recieve_cmsg(input_pipe[READ]);
-            if(write_packet(client_socket, CLIENT_MSG_PKT, c_msg) != CLIENT_MSG)
+            if(in_channel == true)
             {
-                //perror("Failed to send message");
-                return;
+                C_MSG_PKT * c_msg;
+                c_msg = (C_MSG_PKT*)recieve_cmsg(input_pipe[READ]);
+                if(write_packet(client_socket, CLIENT_MSG_PKT, c_msg) != CLIENT_MSG)
+                {
+                    perror("Failed to send message");
+                    return;
+                }
+            }
+            else
+            {
+                printf("You must be in a channel to send messages.\n");
             }
         }
 
         else if(type == EXIT)
         {
-            return;
+            quit_channel(listen_fds, EXIT);
+            exit(1);
         }
     }  
 }
@@ -277,7 +285,7 @@ void check_input_pipes(fd_set * active, fd_set * listen_fds, int * max_fd)
 --      Intializes the client, the type of intialization depends on the chosen protocol in the settings. Binds whenever
 --      the connection is TCP.
 ----------------------------------------------------------------------------------------------------------------------*/
-void check_output_sockets(fd_set * active)
+void check_output_sockets(fd_set * active, fd_set * listen_fds)
 {
    
     if(FD_ISSET(client_socket, active))
@@ -287,8 +295,7 @@ void check_output_sockets(fd_set * active)
 
         if(type == SERVER_KICK_PKT)
         {
-            //channel_close(input_pipe[READ]);
-            close(client_socket);
+            server_kick((S_KICK_PKT*)packet, listen_fds);
         }
 
         else if(type == SERVER_MSG_PKT)
@@ -304,13 +311,31 @@ void check_output_sockets(fd_set * active)
     }
 }
 
-void render_windows()
+void server_kick(S_KICK_PKT * pkt, fd_set * listen_fds)
 {
+    printf("You have been kicked from the server with the message : %s\n", pkt->msg);
     
+    in_channel = false;
+    memset(channel_name, 0, MAX_CHANNEL_NAME);
+    FD_CLR(client_socket, listen_fds);
+    
+    close(client_socket);   
+}
+
+void quit_channel(fd_set * listen_fds, int code)
+{
+    printf("You have left the channel %s.\n", channel_name);
+    
+    C_QUIT_PKT pkt;
+    pkt.code = code;
+    write_packet(client_socket, CLIENT_QUIT_PKT, &pkt);
+
+    in_channel = false;
+    memset(channel_name, 0, MAX_CHANNEL_NAME);
+    FD_CLR(client_socket, listen_fds);
 }
 
 void display_incoming_message(S_MSG_PKT * packet)
 {
-    printf("%s : %s\n", packet->client_name, packet->msg);
-    //retrieve timestamp and add that
+    printf("%s : %s", packet->client_name, packet->msg);
 }

@@ -33,7 +33,7 @@ typedef struct{
 	char * client_list;
 } CHANNEL_DATA;
 
-void check_output_sockets(fd_set * active);
+void check_output_sockets(fd_set * active, fd_set * listen_fds);
 void setup_channel_variables(S_CHANNEL_INFO_PKT * c_info);
 void* InputManager(void * indata);
 int connect_to_server();
@@ -42,4 +42,6 @@ void check_input_pipes(fd_set * active, fd_set * listen_fds, int * max_fd);
 void serialize_cjoin(void* packet, int sockfd);
 int connected_join_request(int client, int input_pipe);
 void display_incoming_message(S_MSG_PKT * packet);
+void quit_channel(fd_set * listen_fds, int code);
+void server_kick(S_KICK_PKT * pkt, fd_set * listen_fds);
 #endif
