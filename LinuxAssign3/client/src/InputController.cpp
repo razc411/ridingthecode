@@ -68,6 +68,13 @@ void* InputManager(void * indata)
             type = QUIT_CHANNEL;
             write_pipe(input_data->write_pipe, &type, TYPE_SIZE);
         }
+
+        else if(strcmp(cmd, "/log") == 0)
+        {
+            type = LOG;
+            write_pipe(input_data->write_pipe, &type, TYPE_SIZE);
+        }
+
         else if(strcmp(cmd, "/exit") == 0)
         {
             type = EXIT;
