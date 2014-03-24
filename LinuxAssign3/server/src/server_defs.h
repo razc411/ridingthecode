@@ -39,11 +39,11 @@ void reform_router_lists();
 
 void* ChannelManager(void * chdata);
 void new_channel_client(int read_pipe);
-void channel_client_kick(int sock, int client, char * msg);
-void process_incoming_message(int sock, C_MSG_PKT * client_msg, int c_num);
-void process_client_quit(int sock, C_QUIT_PKT * client_msg, int c_num);
-void process_add_client(int cm_pipe, int * max_fd, fd_set * listen_fds);
-void reform_lists();
+void channel_client_kick(int sock, int client, char * msg, int * channel_num);
+void process_incoming_message(int sock, C_MSG_PKT * client_msg, int c_num, int * channel_num, int * current_clients);
+void process_client_quit(int sock, C_QUIT_PKT * client_msg, int c_num, int * channel_num, int * current_clients);
+void process_add_client(int cm_pipe, int * max_fd, fd_set * listen_fds, int * channel_num, int * current_clients);
+void reform_lists(int * channel_num, int * current_clients);
 
 
 #endif
