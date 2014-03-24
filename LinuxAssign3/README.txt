@@ -3,7 +3,7 @@ Author: Tim Kim   Ramzi Chennafi
 Date: March 24, 2014
 Set: 4O (Data Comm)
 
-INSTRUCTION-----------------------------------------------------------------
+-----------------INSTRUCTIONS----------------------------------------------
 To run the server,
 - In the UNIX terminal, run server_chat in server/bin folder
 	(You might have to change permission)
@@ -20,7 +20,7 @@ To run the client,
 - Type /log to display current users
 - Type /exit to exit the program
 
-INCLUDED FILES--------------------------------------------------------------
+-----------------INCLUDED FILES---------------------------------------------
 There are three source files and three header in server/src folder. They are
 - ChannelSystem.cpp
 - ServerSystemRouter.cpp
@@ -37,6 +37,6 @@ There are three source files and three header in client/src folder. They are
 - utils.cpp
 - utils.h
 
-DOCUMENTATION---------------------------------------------------------------
+-----------------DOCUMENTATION----------------------------------------------
 DocumentationPaper.pdf is also included and it contains all the design work
 including State Diagram, Pseudocode, and testing documents.
