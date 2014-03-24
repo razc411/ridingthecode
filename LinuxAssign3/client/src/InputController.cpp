@@ -16,8 +16,14 @@ void* InputManager(void * indata)
         if(strcmp(cmd, "/join") == 0)
         {
             C_JOIN_PKT * cjoin = (C_JOIN_PKT*) malloc(sizeof(C_JOIN_PKT));
-            sscanf(temp, "%s %s", cmd, cjoin->channel_name);
-            write_packet(input_data->write_pipe, CLIENT_JOIN_PKT, cjoin);
+            if(sscanf(temp, "%s %s", cmd, cjoin->channel_name) == 2)
+            {
+                write_packet(input_data->write_pipe, CLIENT_JOIN_PKT, cjoin);
+            }
+            else
+            {
+                printf("Improper syntax, expected: /join <channel name>\n");
+            }
         }
         else if(strcmp(cmd, "/leave") == 0)
         {

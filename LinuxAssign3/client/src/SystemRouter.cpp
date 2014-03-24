@@ -23,6 +23,7 @@ static int input_pipe[2];
 static int client_socket;
 static char clientname[MAX_USER_NAME];
 static char channel_name[MAX_CHANNEL_NAME];
+static bool logging = false;
 char ** channel_users = (char**) malloc(sizeof(char*) * MAX_CLIENTS);
 
 int main(int argc, char ** argv)
@@ -149,7 +150,7 @@ void join_channel(fd_set * listen_fds, int * max_fd, int input_pipe)
 
     if(!write_packet(sd, CLIENT_JOIN_PKT, info_packet))
     {
-        perror("Failed to join channel");
+        perror("Failed to join channel.\n");
         return;
     }
 
@@ -161,7 +162,7 @@ void join_channel(fd_set * listen_fds, int * max_fd, int input_pipe)
     
     if(c_info_packet->code == CONNECTION_REJECTED)
     {
-        printf("Channel join failed: Server connection rejected.");
+        printf("Channel join failed: Server connection rejected.\n");
         return;
     }
 
@@ -293,12 +294,7 @@ void check_output_sockets(fd_set * active, fd_set * listen_fds)
         int type;
         void * packet = (char*) read_packet(client_socket, &type);
 
-        if(type == SERVER_KICK_PKT)
-        {
-            server_kick((S_KICK_PKT*)packet, listen_fds);
-        }
-
-        else if(type == SERVER_MSG_PKT)
+        if(type == SERVER_MSG_PKT)
         {
             display_incoming_message((S_MSG_PKT*)packet);
         }
@@ -309,17 +305,6 @@ void check_output_sockets(fd_set * active, fd_set * listen_fds)
         }
         free(packet);
     }
-}
-
-void server_kick(S_KICK_PKT * pkt, fd_set * listen_fds)
-{
-    printf("You have been kicked from the server with the message : %s\n", pkt->msg);
-    
-    in_channel = false;
-    memset(channel_name, 0, MAX_CHANNEL_NAME);
-    FD_CLR(client_socket, listen_fds);
-    
-    close(client_socket);   
 }
 
 void quit_channel(fd_set * listen_fds, int code)
@@ -338,4 +323,8 @@ void quit_channel(fd_set * listen_fds, int code)
 void display_incoming_message(S_MSG_PKT * packet)
 {
     printf("%s : %s", packet->client_name, packet->msg);
+    if(logging == true)
+    {
+
+    }
 }

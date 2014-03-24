@@ -112,7 +112,6 @@ void* read_packet(int sockfd, int * type)
 	switch(*type)
 	{
 		case SERVER_MSG_PKT:
-		case SERVER_KICK_PKT:
 			return recieve_smsg_skick(sockfd);
 		break;
 
