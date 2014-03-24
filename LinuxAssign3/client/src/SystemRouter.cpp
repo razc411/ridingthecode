@@ -24,6 +24,7 @@ static int client_socket;
 static char clientname[MAX_USER_NAME];
 static char channel_name[MAX_CHANNEL_NAME];
 static bool logging = false;
+static std::ofstream myfile;
 char ** channel_users = (char**) malloc(sizeof(char*) * MAX_CLIENTS);
 
 int main(int argc, char ** argv)
@@ -38,6 +39,8 @@ int main(int argc, char ** argv)
         printf("Please input a user name. Can be no longer than 20 characters.");
         exit(2);
     }
+
+    myfile.open ("chatlog.txt");  
 
     memcpy(clientname, argv[1], MAX_USER_NAME);
 
@@ -239,6 +242,12 @@ void check_input_pipes(fd_set * active, fd_set * listen_fds, int * max_fd)
             join_channel(listen_fds, max_fd, input_pipe[READ]);
         }
 
+        else if(type == LOG)
+        {
+            (logging) ? logging = false : logging = true;
+            printf("Chat logging enabled.\n");
+        }
+
         else if(type == QUIT_CHANNEL)
         {
             quit_channel(listen_fds, CLIENT_QUIT);
@@ -250,6 +259,10 @@ void check_input_pipes(fd_set * active, fd_set * listen_fds, int * max_fd)
             {
                 C_MSG_PKT * c_msg;
                 c_msg = (C_MSG_PKT*)recieve_cmsg(input_pipe[READ]);
+                if(logging == true)
+                {
+                    myfile << c_msg->msg;
+                }
                 if(write_packet(client_socket, CLIENT_MSG_PKT, c_msg) != CLIENT_MSG)
                 {
                     perror("Failed to send message");
@@ -265,6 +278,7 @@ void check_input_pipes(fd_set * active, fd_set * listen_fds, int * max_fd)
         else if(type == EXIT)
         {
             quit_channel(listen_fds, EXIT);
+            myfile.close();
             exit(1);
         }
     }  
@@ -322,9 +336,13 @@ void quit_channel(fd_set * listen_fds, int code)
 
 void display_incoming_message(S_MSG_PKT * packet)
 {
-    printf("%s : %s", packet->client_name, packet->msg);
+    char temp[MAX_STRING + MAX_USER_NAME + 3];
+    sprintf(temp, "%s : %s", packet->client_name, packet->msg);
+    
+    printf("%s", temp);
+    
     if(logging == true)
     {
-
+        myfile << temp;
     }
 }

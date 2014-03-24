@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <iostream>
+#include <fstream>
 #include <unistd.h>
 #include <strings.h>
 #include <string.h>
@@ -20,6 +22,7 @@
 #define SCREEN_HEIGHT 	768
 #define SCREEN_BPP 		32
 #define MAIN_CHANNEL 	0
+#define LOG				13
 
 typedef struct{
 	int write_pipe;
