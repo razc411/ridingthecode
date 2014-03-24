@@ -115,15 +115,15 @@ int main()
     		{
     			add_channel(&max_fd, &listen_fds, input_pipe[READ]);
     		}
-    		
-            else if(type == CLIENT_KICK)
-            {
-                kick_client(input_pipe[READ]);
-            }
 
     		else if(type == CHANNEL_CLOSE)
             {
                 channel_close(input_pipe[READ]);
+            }
+
+            else if(type == USER_DISPLAY)
+            {
+                display_users(input_pipe[READ]);
             }
 
     		else if(type == SERVER_EXIT)
@@ -166,6 +166,7 @@ int main()
 void add_client(int client_sd, void * join_req, int joined)
 {
     C_JOIN_PKT * info_packet;
+    bool valid = false;
     int type = -1;
         
     info_packet = (C_JOIN_PKT*)read_packet(client_sd, &type);
@@ -185,12 +186,29 @@ void add_client(int client_sd, void * join_req, int joined)
         {
             write_pipe(channel_pipes[i][WRITE], &type, TYPE_SIZE);
             write_pipe(channel_pipes[i][WRITE], info_packet, sizeof(C_JOIN_PKT));
+            valid = true;
             break;
         }
     }
     
+    if(valid == false)
+    {
+        reject_client(client_sd, info_packet);
+        return;
+    }
+
     num_clients++;
     printf("Client passed to channel for adding.\n");
+}
+
+void reject_client(int client_sd, C_JOIN_PKT * info_pkt)
+{
+    S_CHANNEL_INFO_PKT pkt;
+    pkt.code = CONNECTION_REJECTED;
+    write_packet(client_sd, CHANNEL_INFO_PKT, &pkt);
+
+    printf("Channel does not exist, client %s rejected for channel %s.\n", 
+            info_pkt->client_name, info_pkt->channel_name);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: add_channel
@@ -232,40 +250,6 @@ void add_channel(int * max_fd, fd_set * listen_fds, int input_pipe)
     pthread_join(thread_channel[open_channels++], NULL);
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: kick_client
---
---      DATE: March 15 2014
---      REVISIONS: none
---
---      DESIGNER: Ramzi Chennafi
---      PROGRAMMER: Ramzi Chennafi
---
---      INTERFACE: void kick_client(int input_pipe)
---                  int input_pipe - file descriptor to the input manager pipe
---      RETURNS: void
---
---      NOTES:
---      Passes the kick message to the apropriate channel.
-----------------------------------------------------------------------------------------------------------------------*/
-void kick_client(int input_pipe)
-{
-    S_KICK_PKT s_kick;
-
-    read_pipe(input_pipe, &s_kick, packet_sizes[CLIENT_KICK]);
-        
-    for(int i = 0; i < open_channels; i++)
-    {
-        if(strcmp(channel_name_list[i], s_kick.channel_name) == 0)
-        {
-            write_packet(channel_pipes[i][WRITE], CLIENT_KICK, &s_kick);
-            printf("Client kick msg passed to channel %s.\n", channel_name_list[i]);
-            break;
-        }
-    }
-        
-    --num_clients;
-}
-/*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: channel_close
 --
 --      DATE: March 15 2014
@@ -284,9 +268,9 @@ void kick_client(int input_pipe)
 void channel_close(int input_pipe)
 {
     uint32_t type = CHANNEL_CLOSE;
-    char * channel_name = NULL;
+    char channel_name[MAX_CHANNEL_NAME];
 
-    read_pipe(input_pipe, &channel_name, MAX_CHANNEL_NAME);
+    read_pipe(input_pipe, channel_name, MAX_CHANNEL_NAME);
     for(int i = 0; i < open_channels; i++)
     {
         if(strcmp(channel_name_list[i], channel_name) == 0)
@@ -327,6 +311,22 @@ void close_server(int input_pipes[2])
 
     printf("Server exiting.\n");
 }
+
+void display_users(int input_pipe)
+{
+    char channel_name[MAX_CHANNEL_NAME];
+    int type = USER_DISPLAY;
+    read_pipe(input_pipe, channel_name, MAX_CHANNEL_NAME);
+
+    for(int i = 0; i < open_channels; i++)
+    {
+        if(strcmp(channel_name_list[i], channel_name) == 0)
+        {
+            write_pipe(channel_pipes[i][WRITE], &type, TYPE_SIZE);
+            break;
+        }
+    }  
+}
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: init_client
 --
@@ -361,15 +361,15 @@ void* InputManager(void * indata)
         if(strcmp(cmd, "/create") == 0)
         {
             type = CHANNEL_CREATE;
-            sscanf(temp, "%s %s", cmd, channelname);
-            write_pipe(input_data->write_pipe, &type, TYPE_SIZE);
-            write_pipe(input_data->write_pipe, channelname, MAX_CHANNEL_NAME);
-        }
-        else if(strcmp(cmd, "/kick") == 0)
-        {
-            S_KICK_PKT s_kick;
-            sscanf(temp, "%s %s %s %s", cmd, s_kick.channel_name, s_kick.client_name, s_kick.msg);
-            write_packet(input_data->write_pipe, CLIENT_KICK, &s_kick);
+            if(sscanf(temp, "%s %s", cmd, channelname) == 2)
+            {
+                write_pipe(input_data->write_pipe, &type, TYPE_SIZE);
+                write_pipe(input_data->write_pipe, channelname, MAX_CHANNEL_NAME);
+            }
+            else
+            {
+                printf("Improper syntax, expected: /create <channel name>, channel must be one word.\n");
+            }
         }
         else if(strcmp(cmd, "/exit") == 0)
         {
@@ -377,30 +377,33 @@ void* InputManager(void * indata)
             write_pipe(input_data->write_pipe, &type, TYPE_SIZE);
             break;
         }
+        else if(strcmp(cmd, "/users") == 0)
+        {
+            type = USER_DISPLAY;
+            if(sscanf(temp, "%s %s", cmd, channelname) == 2)
+            {
+                write_pipe(input_data->write_pipe, &type, TYPE_SIZE);
+                write_pipe(input_data->write_pipe, channelname, MAX_CHANNEL_NAME);
+            }
+            else
+            {
+                printf("Improper syntax, expected: /users <channel name>.\n");
+            }
+        }
         else if(strcmp(cmd, "/close") == 0)
         {
             type = CHANNEL_CLOSE;
-            sscanf(temp, "%s %s", cmd, channelname);
-            write_pipe(input_data->write_pipe, &type, TYPE_SIZE);
-            write_pipe(input_data->write_pipe, channelname, MAX_CHANNEL_NAME);
+            if(sscanf(temp, "%s %s", cmd, channelname) == 2)
+            {
+                write_pipe(input_data->write_pipe, &type, TYPE_SIZE);
+                write_pipe(input_data->write_pipe, channelname, MAX_CHANNEL_NAME);
+            }
+            else
+            {
+                printf("Improper syntax, expected: /close <channel name>\n");
+            }
         }
     }
 
     return NULL;
-}
-
-void reform_router_lists()
-{
-    char * temp_channel_names[MAX_CHANNELS];
-
-    int j = 0;
-    for(int i = 0; i < MAX_CLIENTS; i++)
-    {
-        if(channel_name_list[i] != NULL)
-        {
-            temp_channel_names[j++] = channel_name_list[i];
-        }
-    }
-
-    memcpy(channel_name_list, temp_channel_names, (sizeof(char) * MAX_CHANNEL_NAME) * MAX_CHANNELS);
 }
