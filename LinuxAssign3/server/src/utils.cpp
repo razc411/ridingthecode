@@ -14,9 +14,9 @@
 --
 --      REVISIONS:      (Date and Description)
 --
---      DESIGNER:       Tim Kim
+--      DESIGNER:       Ramzi Chennafi
 --
---      PROGRAMMER:     Tim Kim
+--      PROGRAMMER:     Ramzi Chennafi
 --
 --      NOTES:
 --      The user can join chat channel by typing /join [channelname] and can start chatting with other

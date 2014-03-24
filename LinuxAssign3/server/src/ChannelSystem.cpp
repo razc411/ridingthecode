@@ -17,9 +17,9 @@
 --
 --      REVISIONS:      (Date and Description)
 --
---      DESIGNER:       Tim Kim
+--      DESIGNER:       Ramzi Chennafi
 --
---      PROGRAMMER:     Tim Kim
+--      PROGRAMMER:     Ramzi Chennafi
 --
 --      NOTES:
 --      The user can join chat channel by typing /join [channelname] and can start chatting with other
@@ -38,8 +38,8 @@ static char channel_name[MAX_CHANNELS][MAX_CHANNEL_NAME];
 --      DATE:           March 14 2014
 --      REVISIONS:      none
 --
---      DESIGNER:       Tim Kim
---      PROGRAMMER:     Tim Kim
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      void* ChannelManager(void * chdata)
 --
@@ -130,8 +130,8 @@ void* ChannelManager(void * chdata)
 --      DATE:           March 14 2014
 --      REVISIONS:      none
 --
---      DESIGNER:       Tim Kim
---      PROGRAMMER:     Tim Kim
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      void process_incoming_message(int sock, C_MSG_PKT * client_msg, int c_num, int * channel_num, int * current_clients)
 --
@@ -165,8 +165,8 @@ void process_incoming_message(int sock, C_MSG_PKT * client_msg, int c_num, int *
 --      DATE:           March 14 2014
 --      REVISIONS:      none
 --
---      DESIGNER:       Tim Kim
---      PROGRAMMER:     Tim Kim
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      void process_client_quit(int sock, C_QUIT_PKT * client_quit, int c_num, int * channel_num, int * current_clients)
 --
@@ -193,8 +193,8 @@ void process_client_quit(int sock, C_QUIT_PKT * client_quit, int c_num, int * ch
 --      DATE:           March 14 2014
 --      REVISIONS:      none
 --
---      DESIGNER:       Tim Kim
---      PROGRAMMER:     Tim Kim
+--      DESIGNER:       Ramzi Chennafi
+--      PROGRAMMER:     Ramzi Chennafi
 --
 --      INTERFACE:      void process_add_client(int cm_pipe, int * max_fd, fd_set * listen_fds, int * channel_num, int * current_clients)
 --
