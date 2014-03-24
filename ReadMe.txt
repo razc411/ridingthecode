@@ -1,1 +1,1 @@
-My personal repository! Soon there shall be work.
+My personal repository! Contains both school and personal work.
