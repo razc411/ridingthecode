@@ -134,7 +134,7 @@ int main()
     	}
         if(list_change)
         {
-           reform_lists();
+           //reform_lists();
         }
     }
 

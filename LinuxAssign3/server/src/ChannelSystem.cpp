@@ -76,14 +76,14 @@ void* ChannelManager(void * chdata)
                 {
                     if(strcmp(client_names[channel_num][i], username))
                     {
-                        channel_client_kick(socket_list[channel_num][i], i, msg, &channel_num, &current_clients);
+                        channel_client_kick(socket_list[channel_num][i], i, msg, &channel_num);
                         break;
                     }
                 }
             }
     	}
         
-        for(int i = 0; i < num_clients; i++)
+        for(int i = 0; i < current_clients; i++)
         {
             if(FD_ISSET(socket_list[channel_num][i], &active))
             {
@@ -91,13 +91,13 @@ void* ChannelManager(void * chdata)
 
                 if(type == CLIENT_QUIT)
                 {
-                    process_client_quit(socket_list[channel_num][i], (C_QUIT_PKT*)packet, client_names[channel_num][i], 
+                    process_client_quit(socket_list[channel_num][i], (C_QUIT_PKT*)packet, i, 
                         &channel_num, &current_clients);
                 }
 
                 else if(type == CLIENT_MSG_PKT)
                 {
-                    process_incoming_message(socket_list[channel_num][i], (C_MSG_PKT*)packet, client_names[channel_num][i], 
+                    process_incoming_message(socket_list[channel_num][i], (C_MSG_PKT*)packet, i, 
                         &channel_num, &current_clients);
                 }
             }
@@ -154,7 +154,7 @@ void channel_client_kick(int sock, int client, char * msg, int * channel_num)
 --      NOTES:
 --      
 ----------------------------------------------------------------------------------------------------------------------*/
-void process_incoming_message(int sock, C_MSG_PKT * client_msg, char * client, int * channel_num, int * current_clients)
+void process_incoming_message(int sock, C_MSG_PKT * client_msg, int c_num, int * channel_num, int * current_clients)
 {
     S_MSG_PKT broadcast_msg;
 
@@ -199,7 +199,7 @@ void process_client_quit(int sock, C_QUIT_PKT * client_quit, int c_num, int * ch
         printf("Client %s shutdown.\n", client_names[*channel_num][c_num]);
     }
 
-    *current_clients--;
+    *current_clients = *current_clients - 1;
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: init_client
@@ -241,14 +241,13 @@ void process_add_client(int cm_pipe, int * max_fd, fd_set * listen_fds, int * ch
     *max_fd = *max_fd > socket_list[*channel_num][*current_clients] ? *max_fd : socket_list[*channel_num][*current_clients];
     FD_SET(socket_list[*channel_num][*current_clients], listen_fds);
     
-    num_clients++;
     s_info_pkt.code = CONNECTION_ACCEPTED;
-    s_info_pkt.num_clients = num_clients;
+    s_info_pkt.num_clients = *current_clients;
     memcpy(s_info_pkt.channel_name, channel_name[*channel_num], MAX_CHANNEL_NAME);
     memcpy(s_info_pkt.channel_clients, client_names[*channel_num], MAX_USER_NAME);
     write_packet(info_packet.tcp_socket, CHANNEL_INFO_PKT,(void*)&s_info_pkt);
 
-    *current_clients++;
+    *current_clients = *current_clients + 1;
     printf("Client %s added to channel %s.\n", info_packet.client_name, info_packet.channel_name);
 }
 /*------------------------------------------------------------------------------------------------------------------
