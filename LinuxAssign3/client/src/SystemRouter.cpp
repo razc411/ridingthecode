@@ -25,13 +25,18 @@
 --      PROGRAMMER:     Tim Kim
 --
 --      NOTES:
---      The user can join chat channel by typing /join [channelname] and can start chatting with other
---      client who are in the same channel. They can also leave channel and join another one.
+--      Central hub of this linux chat client. Recieves input from the user by means of another thread
+--      and acts accordingly, dealing with any network traffic which must occur in response, or is recieved.
+--      
+--      Allows the user to join, leave and send messages to channels. Also allows the user to enable logging
+--      with the /log switch. All data logged will be written to chatlog.txt. Refer InputController.cpp for more
+--      information on the various commands.
 ----------------------------------------------------------------------------------------------------------------------*/
 
 static int in_channel = false;
 static int input_pipe[2];
 static int client_socket;
+static char ip[MAXIP];
 static char clientname[MAX_USER_NAME];
 static char channel_name[MAX_CHANNEL_NAME];
 static bool logging = false;
@@ -52,7 +57,8 @@ char ** channel_users = (char**) malloc(sizeof(char*) * MAX_CLIENTS);
 --      RETURNS:        int
 --
 --      NOTES:
---      Takes an ip address and user name as arguments. Opens read and write pipe in separate threads.
+--      Takes an ip address and user name as arguments. Dispatches the input thread and begins
+--      watching for input from the input thread or any network activity.
 ----------------------------------------------------------------------------------------------------------------------*/
 int main(int argc, char ** argv)
 {
@@ -61,15 +67,16 @@ int main(int argc, char ** argv)
     fd_set      active;
     pthread_t   thread_input;
 
-    if(argc != 2 || strlen(argv[1]) > 20)
+    if(argc != 3 || strlen(argv[1]) > MAX_USER_NAME || strlen(argv[2] > MAXIP))
     {
-        printf("Please input a user name. Can be no longer than 20 characters.");
+        printf("Please input a user name and ip. User can be no longer than 20 characters.");
         exit(2);
     }
 
     myfile.open ("chatlog.txt");  
 
     memcpy(clientname, argv[1], MAX_USER_NAME);
+    memcpy(ip, argv[2], 20);
 
 	pipe(input_pipe);
     THREAD_DATA * idata = (THREAD_DATA*)malloc(sizeof(THREAD_DATA));
@@ -90,7 +97,6 @@ int main(int argc, char ** argv)
 
         check_input_pipes(&active, &listen_fds, &max_fd);
         check_output_sockets(&active, &listen_fds);
-        
     }
 
     return 0;
@@ -110,7 +116,7 @@ int main(int argc, char ** argv)
 --      RETURNS:        int
 --
 --      NOTES:
---      Creates a socket, connects to the remote server by using an ip address and port number
+--      Creates a socket, connects to the remote server by using an ip address and port number.
 ----------------------------------------------------------------------------------------------------------------------*/
 int connect_to_server(){
     int sd = -1;
@@ -128,7 +134,7 @@ int connect_to_server(){
     server.sin_family = AF_INET;
     server.sin_port = htons(TCP_PORT);
 
-    if ((hp = gethostbyname("127.0.0.1")) == NULL)
+    if ((hp = gethostbyname(ip)) == NULL)
     {
         fprintf(stderr, "Unknown server ip address\n");
         exit(1);
@@ -156,11 +162,18 @@ int connect_to_server(){
 --      PROGRAMMER:     Tim Kim
 --
 --      INTERFACE:      void join_channel(fd_set * listen_fds, int * max_fd, int input_pipe)
+--                      fd_set * listen_fds - a pointer to the listening set for the select statement
+--                      int * max_fd - the maximum value of the file descriptor to check
+--                      int input_pipe - pipe to the input controller
 --
 --      RETURNS:        void
 --
 --      NOTES:
---      Sends join channel control packet to the server, and does error handling when joining channel
+--      Retrieves a client join packet from the input thread and sends it to the server after establishing a connection.
+--      A handshake occurs and the server will return whether the user can actually join the channel they requested.
+--      If they can join the channel, a CONNECTION_ACCEPTED is returned, else a CONNECTION_REJECTED is returned.
+--
+--      Also adds the new socket to the select statement in main to watch for network events.      
 ----------------------------------------------------------------------------------------------------------------------*/
 void join_channel(fd_set * listen_fds, int * max_fd, int input_pipe)
 {
@@ -219,11 +232,12 @@ void join_channel(fd_set * listen_fds, int * max_fd, int input_pipe)
 --      PROGRAMMER:     Tim Kim
 --
 --      INTERFACE:      void setup_channel_variables(S_CHANNEL_INFO_PKT * c_info)
+--                          c_info - contains the variables for setting up the channel info.
 --
 --      RETURNS:        void
 --
 --      NOTES:
---      Initializes each chat channel information
+--      Initializes channel information.
 ----------------------------------------------------------------------------------------------------------------------*/
 void setup_channel_variables(S_CHANNEL_INFO_PKT * c_info)
 {
@@ -245,11 +259,13 @@ void setup_channel_variables(S_CHANNEL_INFO_PKT * c_info)
 --      PROGRAMMER:     Tim Kim
 --
 --      INTERFACE:      void check_input_pipes(fd_set * active, fd_set * listen_fds, int * max_fd)
---
+--                          *active - the active descriptors
+--                          *listen_fds - the listening set of descriptors
+--                          *max_fd - the maximum descriptor to be checked for in select
 --      RETURNS:        void
 --
 --      NOTES:
---      Reads control packet from the input pipe and handle each messages accordingly.
+--      Reads control packets from the input pipe and reacts accordingly.
 ----------------------------------------------------------------------------------------------------------------------*/
 void check_input_pipes(fd_set * active, fd_set * listen_fds, int * max_fd)
 {
@@ -272,6 +288,8 @@ void check_input_pipes(fd_set * active, fd_set * listen_fds, int * max_fd)
         else if(type == LOG)
         {
             (logging) ? logging = false : logging = true;
+            (logging) ?  myfile.open("chatlog.txt") : myfile.close();
+          
             printf("Chat logging enabled.\n");
         }
 
@@ -312,7 +330,7 @@ void check_input_pipes(fd_set * active, fd_set * listen_fds, int * max_fd)
 }
 
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION:       check_input_pipes
+--      FUNCTION:       check_output_sockets
 --
 --      DATE:           March 11 2014
 --      REVISIONS:      none
@@ -320,11 +338,14 @@ void check_input_pipes(fd_set * active, fd_set * listen_fds, int * max_fd)
 --      DESIGNER:       Tim Kim
 --      PROGRAMMER:     Tim Kim
 --
---      INTERFACE:      void check_input_pipes(fd_set * active, fd_set * listen_fds, int * max_fd)
---
+--      INTERFACE:      void check_output_sockets(fd_set * active, fd_set * listen_fds)
+--                          *active - the active descriptors
+--                          *listen_fds - the listening set of descriptors
+--                    
 --      RETURNS:        void
 --
 --      NOTES:
+--      Checks the connected tcp socket for any incoming data. Reacts accordingly.          
 ----------------------------------------------------------------------------------------------------------------------*/
 void check_output_sockets(fd_set * active, fd_set * listen_fds)
 {
@@ -339,10 +360,6 @@ void check_output_sockets(fd_set * active, fd_set * listen_fds)
             display_incoming_message((S_MSG_PKT*)packet);
         }
 
-        else if(type == CHANNEL_INFO_PKT)
-        {
-            printf("Channel %s updated with new client listings.\n", channel_name);
-        }
         free(packet);
     }
 }
@@ -357,11 +374,14 @@ void check_output_sockets(fd_set * active, fd_set * listen_fds)
 --      PROGRAMMER:     Tim Kim
 --
 --      INTERFACE:      void quit_channel(fd_set * listen_fds, int code)
+--                          *listen_fds - set of the listening descriptors
+--                          code - the quit code to return to the server, can be CLIENT_QUIT or EXIT
 --
 --      RETURNS:        void
 --
 --      NOTES:
---      It will print quit channel message and write quit control packet to the server
+--      Will leave a channel and notify the server of this action. Closes the currently open socket
+--      and removes it from the listening descriptors.
 ----------------------------------------------------------------------------------------------------------------------*/
 void quit_channel(fd_set * listen_fds, int code)
 {
@@ -386,11 +406,11 @@ void quit_channel(fd_set * listen_fds, int code)
 --      PROGRAMMER:     Tim Kim
 --
 --      INTERFACE:      void display_incoming_message(S_MSG_PKT * packet)
---
+--                          *packet - struct that contains the incoming server message data
 --      RETURNS:        void
 --
 --      NOTES:
---      displays the chat incoming message
+--      Displays incoming chat messages. If logging is enabled, writes the incoming messages to file.
 ----------------------------------------------------------------------------------------------------------------------*/
 void display_incoming_message(S_MSG_PKT * packet)
 {

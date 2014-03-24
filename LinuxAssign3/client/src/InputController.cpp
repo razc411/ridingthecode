@@ -18,8 +18,13 @@
 --      PROGRAMMER:     Tim Kim
 --
 --      NOTES:
---      The user can join chat channel by typing /join [channelname] and can start chatting with other
---      client who are in the same channel. They can also leave channel and join another one.
+--      Manages all input on the client side. The following commands can be sent by the user.
+--      /join <channel name> - joins the specified channel
+--      /leave - leaves the current channel
+--      /log   - Enables chat logging. Starts off disabled.
+--      /exit  - Cleanly exits the client.
+--      <string> - no command is specified, only a string is typed. Will result in a message being sent to the
+--              currently open channel.
 ----------------------------------------------------------------------------------------------------------------------*/
 
 /*------------------------------------------------------------------------------------------------------------------
@@ -32,11 +37,13 @@
 --      PROGRAMMER:     Tim Kim
 --
 --      INTERFACE:      void* InputManager(void * indata)
+--                          indata - contains the pipes used to communicate with the SystemRouter
 --
 --      RETURNS:        void*
 --
 --      NOTES:
---      Takes input from the chat and writes the packet or mesasage to the remote server
+--      Takes input from the terminal and passes the data to the SystemRouter, so that it may take
+--      the correct actions.
 ----------------------------------------------------------------------------------------------------------------------*/
 void* InputManager(void * indata)
 {

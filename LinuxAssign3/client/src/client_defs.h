@@ -36,13 +36,15 @@ typedef struct{
 	char * client_list;
 } CHANNEL_DATA;
 
-void check_output_sockets(fd_set * active, fd_set * listen_fds);
-void setup_channel_variables(S_CHANNEL_INFO_PKT * c_info);
 void* InputManager(void * indata);
-int connect_to_server();
-void join_channel(fd_set * listen_fds, int * max_fd, int input_pipe, int c_id);
+
 void check_input_pipes(fd_set * active, fd_set * listen_fds, int * max_fd);
-int connected_join_request(int client, int input_pipe);
+void check_output_sockets(fd_set * active, fd_set * listen_fds);
+
+int connect_to_server();
 void display_incoming_message(S_MSG_PKT * packet);
+void join_channel(fd_set * listen_fds, int * max_fd, int input_pipe, int c_id);
 void quit_channel(fd_set * listen_fds, int code);
+void setup_channel_variables(S_CHANNEL_INFO_PKT * c_info);
+
 #endif
