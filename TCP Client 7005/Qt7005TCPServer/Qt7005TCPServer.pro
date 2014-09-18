@@ -15,10 +15,12 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     connectionmanager.cpp \
-    clienthandler.cpp
+    clienthandler.cpp \
+    filemanager.cpp
 
 HEADERS  += mainwindow.h \
     connectionmanager.h \
-    clienthandler.h
+    clienthandler.h \
+    filemanager.h
 
 FORMS    += mainwindow.ui
