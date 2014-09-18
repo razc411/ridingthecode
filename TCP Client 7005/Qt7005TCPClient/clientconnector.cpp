@@ -28,7 +28,7 @@ void ClientConnector::connected()
 {
     qDebug() << "Connected!";
 
-    socket->write("HEAD / HTTP/1.0\r\n\r\n\r\n\r\n");
+    socket->write("Hello");
 }
 
 void ClientConnector::disconnected()

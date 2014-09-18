@@ -8,7 +8,8 @@ int main(int argc, char *argv[])
     MainWindow w;
     w.show();
 
-    ConnectionManager acceptorMngr;
+    ConnectionManager server;
+    server.StartServer();
 
     return a.exec();
 }

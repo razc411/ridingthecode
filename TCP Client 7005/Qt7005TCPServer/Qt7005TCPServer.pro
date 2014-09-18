@@ -1,6 +1,6 @@
 #-------------------------------------------------
 #
-# Project created by QtCreator 2014-09-16T18:12:37
+# Project created by QtCreator 2014-09-16T18:12:35
 #
 #-------------------------------------------------
 
@@ -14,9 +14,11 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    connectionmanager.cpp
+    connectionmanager.cpp \
+    clienthandler.cpp
 
 HEADERS  += mainwindow.h \
-    connectionmanager.h
+    connectionmanager.h \
+    clienthandler.h
 
 FORMS    += mainwindow.ui

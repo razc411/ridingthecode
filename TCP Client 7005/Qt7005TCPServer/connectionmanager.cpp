@@ -1,27 +1,27 @@
 #include "connectionmanager.h"
 
-ConnectionManager::ConnectionManager(QObject *parent):
-    QObject(parent)
+ConnectionManager::ConnectionManager(QObject *parent) :
+    QTcpServer(parent)
 {
-    server = new QTcpServer(this);
-    connect(server, SIGNAL(newConnection()), this, SLOT(newConnection()));
+}
 
-    if(!server->listen(QHostAddress::Any, 3224))
+void ConnectionManager::StartServer()
+{
+    if(!this->listen(QHostAddress::Any,3224))
     {
-        qDebug() << "Server could not start!";
+        qDebug() << "Could not start server";
     }
     else
     {
-        qDebug() << "Server started!";
+        qDebug() << "Listening...";
     }
 }
 
-void ConnectionManager::newConnection()
+void ConnectionManager::incomingConnection(int socketDescriptor)
 {
-    QTcpSocket *socket = server->nextPendingConnection();
-
-    socket->write("hello client\r\n");
-    socket->flush();
-
-    socket->close();
+    qDebug() << socketDescriptor << " Connecting...";
+    ClientHandler *thread = new ClientHandler(socketDescriptor, this);
+    connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
+    thread->start();
 }
+

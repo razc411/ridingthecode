@@ -1,25 +1,23 @@
 #ifndef CONNECTIONMANAGER_H
 #define CONNECTIONMANAGER_H
 
-#include <QObject>
 #include <QDebug>
 #include <QTcpServer>
-#include <QTcpSocket>
+#include "clienthandler.h"
 
-class ConnectionManager : public QObject
+class ConnectionManager : public QTcpServer
 {
     Q_OBJECT
+  public:
+      explicit ConnectionManager(QObject *parent = 0);
+      void StartServer();
 
-    public:
-        explicit ConnectionManager(QObject *parent=0);
+  signals:
 
-    signals:
+  public slots:
 
-    public slots:
-        void newConnection();
-
-    private:
-        QTcpServer * server;
+  protected:
+      void incomingConnection(int socketDescriptor);
 };
 
 #endif // CONNECTIONMANAGER_H
