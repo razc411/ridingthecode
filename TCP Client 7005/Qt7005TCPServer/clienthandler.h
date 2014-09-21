@@ -5,14 +5,17 @@
 #include <QTcpSocket>
 #include <QDebug>
 #include <QFile>
+#include <QByteArray>
+#include "filemanager.h"
+#include "ServerDefs.h"
 
 class ClientHandler: public QThread
 {
     Q_OBJECT
 public:
-    explicit ClientHandler(int ID, QObject *parent = 0);
+    explicit ClientHandler(int ID, QObject *parent = 0, FileManager * fManager = 0);
     void run();
-    void static PKT = ";T7005PKT";
+
 
 signals:
     void error(QTcpSocket::SocketError socketerror);

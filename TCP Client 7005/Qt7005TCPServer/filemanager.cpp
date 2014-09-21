@@ -4,6 +4,7 @@ FileManager::FileManager(QString dir, QObject *parent) :
     QObject(parent)
 {
     directory(dir);
+    loadFileListing();
 }
 
 int FileManager::doesFileExist(QString fname)
@@ -46,9 +47,4 @@ void FileManager::setDirectory(QString dir)
 void loadFileListing()
 {
     fileListing = directory.entryList;
-}
-
-void refreshFileListing()
-{
-
 }

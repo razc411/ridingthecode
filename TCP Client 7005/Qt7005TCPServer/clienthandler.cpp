@@ -1,6 +1,6 @@
 #include clienthandler.h"
 
-ClientHandler::ClientHandler(int ID, QObject *parent) :
+ClientHandler::ClientHandler(int ID, QObject *parent, FileManager * fManager) :
     QThread(parent)
 {
     this->socketDescriptor = ID;
@@ -8,7 +8,6 @@ ClientHandler::ClientHandler(int ID, QObject *parent) :
 
 void ClientHandler::run()
 {
-    // thread starts here
     qDebug() << socketDescriptor << " Starting thread";
     socket = new QTcpSocket();
     if(!socket->setSocketDescriptor(this->socketDescriptor))
@@ -29,8 +28,8 @@ void ClientHandler::run()
 void ClientHandler::readyRead()
 {
     QByteArray data = socket->read(20);
-    parsePacket(data)
-    qDebug() << socketDescriptor << " Data in: " << data;
+    parsePacket(data);
+
 }
 
 void ClientHandler::disconnected()
@@ -44,7 +43,9 @@ void ClientHandler::parsePacket(QByteArray Data)
 {
     if(Data.startsWith(PKT + "FLISTREQ"))
     {
-       //return file list
+        QByteArray fList = fManager.grabFileList();
+        socket.write(fList);
+        socket.flush();
     }
     else if(Data.startsWith(PKT + "FILEREQ"))
     {

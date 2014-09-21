@@ -4,7 +4,8 @@
 #include <QDebug>
 #include <QTcpServer>
 #include "clienthandler.h"
-
+#include "filemanager.h"
+#include <QQueue>
 class ConnectionManager : public QTcpServer
 {
     Q_OBJECT
@@ -18,6 +19,10 @@ class ConnectionManager : public QTcpServer
 
   protected:
       void incomingConnection(int socketDescriptor);
+
+  private:
+      FileManager fManager;
+
 };
 
 #endif // CONNECTIONMANAGER_H

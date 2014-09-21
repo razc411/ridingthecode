@@ -3,6 +3,7 @@
 ConnectionManager::ConnectionManager(QObject *parent) :
     QTcpServer(parent)
 {
+    fManager = new Filemanager("/home/raz/music");
 }
 
 void ConnectionManager::StartServer()
@@ -20,7 +21,7 @@ void ConnectionManager::StartServer()
 void ConnectionManager::incomingConnection(int socketDescriptor)
 {
     qDebug() << socketDescriptor << " Connecting...";
-    ClientHandler *thread = new ClientHandler(socketDescriptor, this);
+    ClientHandler *thread = new ClientHandler(socketDescriptor, this, &fManager);
     connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
     thread->start();
 }

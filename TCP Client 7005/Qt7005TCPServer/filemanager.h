@@ -24,7 +24,6 @@ class FileManager : public QObject
         QStringList fileListing;
 
         void loadFileListing();
-        void refreshFileListing();
 };
 
 #endif // FILEMANAGER_H
