@@ -4,9 +4,11 @@
  * @brief FileManager::FileManager - Constructor for FileManager
  * @param parent - parent of calling QObject
  */
-FileManager::FileManager(QObject *parent) :
+FileManager::FileManager(QString dir, QObject *parent) :
     QObject(parent)
 {
+    directory = QDir(dir);
+    loadFileListing();
 }
 
 /**

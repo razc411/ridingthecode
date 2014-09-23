@@ -1,13 +1,14 @@
 #include "connectionmanager.h"
 
-ConnectionManager::ConnectionManager(QObject *parent) :
+ConnectionManager::ConnectionManager(QString dir, QObject *parent) :
     QTcpServer(parent)
 {
+     fManager = new FileManager(dir);
 }
 
-void ConnectionManager::StartServer(QString dir)
+void ConnectionManager::StartServer()
 {
-    fManager->setDirectory(dir);
+
 
     if(!this->listen(QHostAddress::Any,3224))
     {

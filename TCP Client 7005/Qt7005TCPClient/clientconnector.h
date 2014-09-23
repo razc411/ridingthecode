@@ -5,12 +5,13 @@
 #include <QDebug>
 #include <QTcpSocket>
 #include <QAbstractSocket>
+
 class ClientConnector : public QThread
 {
     Q_OBJECT
     public:
         explicit ClientConnector(QObject *parent = 0);
-        void run();
+
 
     signals:
 
@@ -22,6 +23,7 @@ class ClientConnector : public QThread
 
     private:
         QTcpSocket *socket;
+        void run();
 
 };
 

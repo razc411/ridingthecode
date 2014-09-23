@@ -10,8 +10,8 @@ class ConnectionManager : public QTcpServer
 {
     Q_OBJECT
   public:
-      explicit ConnectionManager(QObject *parent = 0);
-      void StartServer(QString dir);
+      explicit ConnectionManager(QString dir, QObject *parent = 0);
+      void StartServer();
 
   signals:
 
@@ -19,7 +19,7 @@ class ConnectionManager : public QTcpServer
     void incomingConnection(qintptr socketDescriptor);
 
   private:
-      FileManager *fManager = new FileManager();
+      FileManager * fManager;
 
 };
 
