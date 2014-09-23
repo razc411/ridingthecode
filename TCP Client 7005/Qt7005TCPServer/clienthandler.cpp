@@ -1,7 +1,7 @@
 #include "clienthandler.h"
 
-ClientHandler::ClientHandler(int ID, QObject *parent, FileManager * fManager) :
-    QThread(parent)
+ClientHandler::ClientHandler(int ID, FileManager * fm, QObject *parent) :
+    QThread(parent), fManager(fm)
 {
     this->socketDescriptor = ID;
 }
@@ -21,15 +21,15 @@ void ClientHandler::run()
 
     qDebug() << socketDescriptor << " Client connected";
 
-    // make this thread a loop
     exec();
 }
 
 void ClientHandler::readyRead()
 {
-    QByteArray data = socket->read(20);
-    parsePacket(data);
-
+    QByteArray data = socket->read(17);
+    if(!data.isEmpty()){
+        parsePacket(data);
+    }
 }
 
 void ClientHandler::disconnected()
@@ -41,15 +41,37 @@ void ClientHandler::disconnected()
 
 void ClientHandler::parsePacket(QByteArray Data)
 {
-    if(Data.startsWith(PKT + "FLISTREQ"))
+    if(Data.startsWith(";T7005PKTFLISTREQ"))
     {
-        QByteArray fList = fManager.grabFileList();
-        socket.write(fList);
-        socket.flush();
+        QByteArray fList;
+        QStringList stringList = fManager->grabFileListing();
+        for(int i = 0; i < stringList.size(); i++)
+        {
+            fList.append("," + stringList.at(i));
+        }
+
+        socket->write(fList);
+        socket->flush();
     }
-    else if(Data.startsWith(PKT + "FILEREQ"))
+    else if(Data.startsWith(";T7005PKTFILEREQ"))
     {
-        //return requested file
+        QString filename = grabFileName(Data);
+    }
+    else if(Data.startsWith(";T7005PKTFILESND"))
+    {
+        QString filename = grabFileName(Data);
+        quint64 fileSize = socket->read(sizeof(quint64));
+
+        int bytesToRead = 0;
+        int totalBytesRead = 0;
+        QByteArray fileData;
+
+        while((bytesToRead = socket->bytesAvailable()) && totalBytesRead < fileSize)
+        {
+            totalBytesRead += bytesToRead;
+            fileData.append(socket->read(bytesToRead));
+        }
+
     }
     else
     {
@@ -60,4 +82,15 @@ void ClientHandler::parsePacket(QByteArray Data)
 void ClientHandler::sendFile(QString fname)
 {
 
+}
+
+QString ClientHandler::grabFileName(QByteArray data)
+{
+    QString filename("");
+    for(int i = 16; i < 3200; i++){
+        if(data.at(i) == ';'){
+            break;
+        }
+        filename.append(data.at(i - 16));
+    }
 }

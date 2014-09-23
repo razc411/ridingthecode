@@ -7,7 +7,7 @@ FileManager::FileManager(QObject *parent) :
 
 int FileManager::doesFileExist(QString fname)
 {
-    for(int i = 0; i < fileListing; i++)
+    for(int i = 0; i < fileListing.size(); i++)
     {
         if(fileListing.at(i) == fname)
         {
@@ -18,13 +18,14 @@ int FileManager::doesFileExist(QString fname)
     return 0;
 }
 
-QFile FileManager::grabFileHandle(QString fname)
+QFile * FileManager::grabFileHandle(QString fname)
 {
-    for(int i = 0; i < fileListing; i++)
+    for(int i = 0; i < fileListing.size(); i++)
     {
         if(fileListing.at(i) == fname)
         {
-            QFile file(directory.absolutePath() + "/" + fname);
+            QString dir(directory.absolutePath() + "/" + fname);
+            QFile * file = new QFile(dir);
             return file;
         }
     }
@@ -37,13 +38,13 @@ QStringList FileManager::grabFileListing()
     return fileListing;
 }
 
-void FileManager::setDirectory(QString *dir)
+void FileManager::setDirectory(QString dir)
 {
     directory = QDir(dir);
     loadFileListing();
 }
 
-void loadFileListing()
+void FileManager::loadFileListing()
 {
-    fileListing = directory.entryList;
+    fileListing = directory.entryList();
 }

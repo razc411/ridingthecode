@@ -13,7 +13,7 @@ class ClientHandler: public QThread
 {
     Q_OBJECT
 public:
-    explicit ClientHandler(int ID, QObject *parent = 0, FileManager * fManager = 0);
+    explicit ClientHandler(int ID, FileManager * fm, QObject *parent = 0);
     void run();
 
 
@@ -29,9 +29,11 @@ public slots:
 private:
     QTcpSocket *socket;
     int socketDescriptor;
+    FileManager * fManager;
+
     void parsePacket(QByteArray Data);
     void sendFile(QString fname);
-
+    QString grabFileName(QByteArray data);
 };
 
 #endif // CLIENTHANDLER_H

@@ -8,8 +8,9 @@ int main(int argc, char *argv[])
     MainWindow w;
     w.show();
 
+    QString dir = "/home/raz/Music";
     ConnectionManager server;
-    server.StartServer(new QString("/home/raz/music"));
+    server.StartServer(dir);
 
     return a.exec();
 }

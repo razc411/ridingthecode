@@ -8,8 +8,8 @@ int main(int argc, char *argv[])
     MainWindow w;
     w.show();
 
-    ClientConnector cManager;
-    cManager.Test();
+    ClientConnector *thread = new ClientConnector();
+    thread->start();
 
     return a.exec();
 }

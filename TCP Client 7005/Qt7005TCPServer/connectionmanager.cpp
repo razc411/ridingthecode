@@ -5,9 +5,9 @@ ConnectionManager::ConnectionManager(QObject *parent) :
 {
 }
 
-void ConnectionManager::StartServer(QString * dir)
+void ConnectionManager::StartServer(QString dir)
 {
-    fManager.setDirectory(dir);
+    fManager->setDirectory(dir);
 
     if(!this->listen(QHostAddress::Any,3224))
     {
@@ -19,10 +19,10 @@ void ConnectionManager::StartServer(QString * dir)
     }
 }
 
-void ConnectionManager::incomingConnection(int socketDescriptor)
+void ConnectionManager::incomingConnection(qintptr socketDescriptor)
 {
     qDebug() << socketDescriptor << " Connecting...";
-    ClientHandler *thread = new ClientHandler(socketDescriptor, this, &fManager);
+    ClientHandler *thread = new ClientHandler(socketDescriptor,  fManager, this);
     connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
     thread->start();
 }

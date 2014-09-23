@@ -11,9 +11,9 @@ class FileManager : public QObject
     public:
         explicit FileManager(QObject *parent = 0);
         int doesFileExist(QString fname);
-        QFile grabFileHandle(QString fname);
+        QFile * grabFileHandle(QString fname);
         QStringList grabFileListing();
-        void setDirectory(QString *dir);
+        void setDirectory(QString dir);
 
     signals:
 

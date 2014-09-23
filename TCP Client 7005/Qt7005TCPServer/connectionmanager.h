@@ -11,17 +11,15 @@ class ConnectionManager : public QTcpServer
     Q_OBJECT
   public:
       explicit ConnectionManager(QObject *parent = 0);
-      void StartServer(QString * dir);
+      void StartServer(QString dir);
 
   signals:
 
-  public slots:
-
   protected:
-      void incomingConnection(int socketDescriptor);
+    void incomingConnection(qintptr socketDescriptor);
 
   private:
-      FileManager fManager;
+      FileManager *fManager = new FileManager();
 
 };
 

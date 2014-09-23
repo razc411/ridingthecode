@@ -1,16 +1,16 @@
 #ifndef CLIENTCONNECTOR_H
 #define CLIENTCONNECTOR_H
 
-#include <QObject>
+#include <QThread>
 #include <QDebug>
 #include <QTcpSocket>
 #include <QAbstractSocket>
-class ClientConnector : public QObject
+class ClientConnector : public QThread
 {
     Q_OBJECT
     public:
         explicit ClientConnector(QObject *parent = 0);
-        void Test();
+        void run();
 
     signals:
 

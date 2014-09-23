@@ -1,11 +1,11 @@
 #include "clientconnector.h"
 
 ClientConnector::ClientConnector(QObject *parent) :
-    QObject(parent)
+    QThread(parent)
 {
 }
 
-void ClientConnector::Test()
+void ClientConnector::run()
 {
     socket = new QTcpSocket(this);
     connect(socket, SIGNAL(connected()), this, SLOT(connected()));
@@ -17,18 +17,15 @@ void ClientConnector::Test()
 
     socket->connectToHost("localhost", 3224);
 
-    if(!socket->waitForDisconnected(1000))
-    {
-        qDebug() << "Error: " << socket->errorString();
-    }
-
+    exec();
 }
 
 void ClientConnector::connected()
 {
     qDebug() << "Connected!";
 
-    socket->write("Hello");
+    socket->write(";T7005PKTFLISTREQ");
+    socket->flush();
 }
 
 void ClientConnector::disconnected()
