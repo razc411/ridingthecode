@@ -1,10 +1,8 @@
 #include "filemanager.h"
 
-FileManager::FileManager(QString dir, QObject *parent) :
+FileManager::FileManager(QObject *parent) :
     QObject(parent)
 {
-    directory(dir);
-    loadFileListing();
 }
 
 int FileManager::doesFileExist(QString fname)
@@ -39,9 +37,10 @@ QStringList FileManager::grabFileListing()
     return fileListing;
 }
 
-void FileManager::setDirectory(QString dir)
+void FileManager::setDirectory(QString *dir)
 {
     directory = QDir(dir);
+    loadFileListing();
 }
 
 void loadFileListing()

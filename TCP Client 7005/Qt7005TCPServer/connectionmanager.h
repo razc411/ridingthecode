@@ -3,15 +3,15 @@
 
 #include <QDebug>
 #include <QTcpServer>
-#include "clienthandler.h"
 #include "filemanager.h"
-#include <QQueue>
+#include "clienthandler.h"
+
 class ConnectionManager : public QTcpServer
 {
     Q_OBJECT
   public:
       explicit ConnectionManager(QObject *parent = 0);
-      void StartServer();
+      void StartServer(QString * dir);
 
   signals:
 

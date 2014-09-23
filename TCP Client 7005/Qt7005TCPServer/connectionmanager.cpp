@@ -3,11 +3,12 @@
 ConnectionManager::ConnectionManager(QObject *parent) :
     QTcpServer(parent)
 {
-    fManager = new Filemanager("/home/raz/music");
 }
 
-void ConnectionManager::StartServer()
+void ConnectionManager::StartServer(QString * dir)
 {
+    fManager.setDirectory(dir);
+
     if(!this->listen(QHostAddress::Any,3224))
     {
         qDebug() << "Could not start server";

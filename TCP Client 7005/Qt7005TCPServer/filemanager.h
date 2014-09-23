@@ -9,11 +9,11 @@ class FileManager : public QObject
 {
     Q_OBJECT
     public:
-        explicit FileManager(QString dir, QObject *parent = 0);
+        explicit FileManager(QObject *parent = 0);
         int doesFileExist(QString fname);
         QFile grabFileHandle(QString fname);
         QStringList grabFileListing();
-        void setDirectory(QString dir);
+        void setDirectory(QString *dir);
 
     signals:
 

@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
     w.show();
 
     ConnectionManager server;
-    server.StartServer();
+    server.StartServer(new QString("/home/raz/music"));
 
     return a.exec();
 }
