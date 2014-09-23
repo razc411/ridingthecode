@@ -14,6 +14,7 @@ class FileManager : public QObject
         QFile * grabFileHandle(QString fname);
         QStringList grabFileListing();
         void setDirectory(QString dir);
+        void loadFileListing();
 
     signals:
 
@@ -22,8 +23,6 @@ class FileManager : public QObject
     private:
         QDir directory;
         QStringList fileListing;
-
-        void loadFileListing();
 };
 
 #endif // FILEMANAGER_H

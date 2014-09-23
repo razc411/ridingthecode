@@ -1,11 +1,19 @@
 #include "clienthandler.h"
 
+/**
+ * @brief ClientHandler::ClientHandler - constructor for the ClientHandler class.
+ * @param ID - the socket descriptor of the connecting client.
+ * @param fm - the file manager instance for the server.
+ * @param parent - defaults to 0, QObject of the calling object.
+ */
 ClientHandler::ClientHandler(int ID, FileManager * fm, QObject *parent) :
     QThread(parent), fManager(fm)
 {
     this->socketDescriptor = ID;
 }
-
+/**
+ * @brief ClientHandler::run
+ */
 void ClientHandler::run()
 {
     qDebug() << socketDescriptor << " Starting thread";
@@ -23,67 +31,110 @@ void ClientHandler::run()
 
     exec();
 }
-
+/**
+ * @brief ClientHandler::readyRead
+ */
 void ClientHandler::readyRead()
 {
     QByteArray data = socket->read(17);
     if(!data.isEmpty()){
         parsePacket(data);
     }
+    else
+    {
+        qDebug() << "Failed to read socket: " << socket->errorString();
+    }
 }
-
+/**
+ * @brief ClientHandler::disconnected
+ */
 void ClientHandler::disconnected()
 {
     qDebug() << socketDescriptor << " Disconnected";
     socket->deleteLater();
     exit(0);
 }
-
+/**
+ * @brief ClientHandler::parsePacket
+ * @param Data
+ */
 void ClientHandler::parsePacket(QByteArray Data)
 {
     if(Data.startsWith(";T7005PKTFLISTREQ"))
     {
-        QByteArray fList;
-        QStringList stringList = fManager->grabFileListing();
-        for(int i = 0; i < stringList.size(); i++)
-        {
-            fList.append("," + stringList.at(i));
-        }
-
-        socket->write(fList);
-        socket->flush();
+       sendFileList();
     }
     else if(Data.startsWith(";T7005PKTFILEREQ"))
     {
         QString filename = grabFileName(Data);
+
+        sendFile(filename);
     }
     else if(Data.startsWith(";T7005PKTFILESND"))
     {
         QString filename = grabFileName(Data);
-        quint64 fileSize = socket->read(sizeof(quint64));
-
-        int bytesToRead = 0;
-        int totalBytesRead = 0;
-        QByteArray fileData;
-
-        while((bytesToRead = socket->bytesAvailable()) && totalBytesRead < fileSize)
-        {
-            totalBytesRead += bytesToRead;
-            fileData.append(socket->read(bytesToRead));
-        }
-
+        quint64 fileSize;
+        QByteArray temp = socket->read(sizeof(quint64));
+        fileSize = temp.toUInt();
+        recieveClientTransfer(filename, fileSize);
     }
     else
     {
-        //return invalid request
+        socket->write(";T7005PKTFAILERR");
+        qDebug() << "Invalid command from client.";
     }
 }
-
-void ClientHandler::sendFile(QString fname)
+/**
+ * @brief ClientHandler::sendFile
+ * @param filename
+ * @return
+ */
+int ClientHandler::sendFile(QString filename)
 {
+    QByteArray data;
+    QDataStream out(&data, QIODevice::WriteOnly);
 
+    QFile * file = fManager->grabFileHandle(filename);
+    file->open(QIODevice::ReadOnly);
+
+    out << (quint64)file->size();
+    out << file;
+    socket->write(data);
+    socket->flush();
+
+    qDebug() << "File sent to client successfully.";
+    return 1;
 }
+/**
+ * @brief ClientHandler::recieveClientTransfer
+ * @param filename
+ * @param fileSize
+ * @return
+ */
+int ClientHandler::recieveClientTransfer(QString filename, quint64 fileSize)
+{
+    int bytesToRead = 0;
+    int totalBytesRead = 0;
+    QByteArray fileData;
 
+    while((bytesToRead = socket->bytesAvailable()) && totalBytesRead < fileSize)
+    {
+        totalBytesRead += bytesToRead;
+        fileData.append(socket->read(bytesToRead));
+    }
+
+    QFile file("C:/Users/Raz/Desktop/" + filename);
+    file.open(QIODevice::WriteOnly);
+    file.write(fileData);
+    file.close();
+
+    fManager->loadFileListing();
+}
+/**
+ * @brief ClientHandler::grabFileName
+ * @param data
+ * @return
+ */
 QString ClientHandler::grabFileName(QByteArray data)
 {
     QString filename("");
@@ -93,4 +144,20 @@ QString ClientHandler::grabFileName(QByteArray data)
         }
         filename.append(data.at(i - 16));
     }
+}
+/**
+ * @brief ClientHandler::sendFileList
+ * @return
+ */
+int ClientHandler::sendFileList()
+{
+    QByteArray fList;
+    QStringList stringList = fManager->grabFileListing();
+    for(int i = 0; i < stringList.size(); i++)
+    {
+        fList.append("," + stringList.at(i));
+    }
+
+    socket->write(fList);
+    socket->flush();
 }

@@ -32,7 +32,9 @@ private:
     FileManager * fManager;
 
     void parsePacket(QByteArray Data);
-    void sendFile(QString fname);
+    int recieveClientTransfer(QString filename, quint64 filesize);
+    int sendFile(QString filename);
+    int sendFileList();
     QString grabFileName(QByteArray data);
 };
 
