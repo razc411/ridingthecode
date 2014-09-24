@@ -7,8 +7,7 @@
 FileManager::FileManager(QString dir, QObject *parent) :
     QObject(parent)
 {
-    directory = QDir(dir);
-    loadFileListing();
+    setDirectory(dir);
 }
 
 /**

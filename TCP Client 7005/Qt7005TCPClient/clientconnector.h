@@ -4,13 +4,15 @@
 #include <QThread>
 #include <QDebug>
 #include <QTcpSocket>
+#include <QFile>
 #include <QAbstractSocket>
+#include "ui_mainwindow.h"
 
 class ClientConnector : public QThread
 {
     Q_OBJECT
     public:
-        explicit ClientConnector(QObject *parent = 0);
+        explicit ClientConnector(Ui::MainWindow * ui, QObject *parent = 0);
 
 
     signals:
@@ -20,11 +22,15 @@ class ClientConnector : public QThread
         void disconnected();
         void bytesWritten(qint64 bytes);
         void readyRead();
+        void sendFile(QString filepath);
+        void requestFile(QString filename);
 
     private:
         QTcpSocket *socket;
-        void run();
+        Ui::MainWindow *ui;
 
+        void run();
+        quint64 sendRequestPacket(QString filename);
 };
 
 #endif // CLIENTCONNECTOR_H

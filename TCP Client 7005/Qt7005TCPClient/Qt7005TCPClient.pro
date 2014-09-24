@@ -14,9 +14,11 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    clientconnector.cpp
+    clientconnector.cpp \
+    clientmanager.cpp
 
 HEADERS  += mainwindow.h \
-    clientconnector.h
+    clientconnector.h \
+    clientmanager.h
 
 FORMS    += mainwindow.ui
