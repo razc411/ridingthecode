@@ -31,6 +31,7 @@ class ClientConnector : public QThread
 
         void run();
         quint64 sendRequestPacket(QString filename);
+        void processFileList(QByteArray list);
 };
 
 #endif // CLIENTCONNECTOR_H

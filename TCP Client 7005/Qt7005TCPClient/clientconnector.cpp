@@ -1,10 +1,16 @@
 #include "clientconnector.h"
-
+/**
+ * @brief ClientConnector::ClientConnector
+ * @param ui
+ * @param parent
+ */
 ClientConnector::ClientConnector(Ui::MainWindow * ui, QObject *parent) :
     ui(ui), QThread(parent)
 {
 }
-
+/**
+ * @brief ClientConnector::run
+ */
 void ClientConnector::run()
 {
     socket = new QTcpSocket(this);
@@ -19,7 +25,9 @@ void ClientConnector::run()
 
     exec();
 }
-
+/**
+ * @brief ClientConnector::connected
+ */
 void ClientConnector::connected()
 {
      ui->statusBox->append("Connected to " + socket->peerName());
@@ -27,17 +35,42 @@ void ClientConnector::connected()
     socket->write(";T7005PKTFLISTREQ");
     socket->flush();
 }
-
+/**
+ * @brief ClientConnector::disconnected
+ */
 void ClientConnector::disconnected()
 {
      ui->statusBox->append("Disconnected from server.");
 }
-
+/**
+ * @brief ClientConnector::readyRead
+ */
 void ClientConnector::readyRead()
 {
-    qDebug() << socket->readAll();
-}
+    QDataArray Data = socket->read(17);
 
+    if(Data.startsWith(";T7005PKTFLISTREQ"))
+    {
+       processFileList();
+    }
+    else if(Data.startsWith(";T7005PKTFILESND"))
+    {
+        QString filename = grabFileName(Data);
+        quint64 fileSize;
+        QByteArray temp = socket->read(sizeof(quint64));
+        fileSize = temp.toUInt();
+       recieveClientTransfer(filename, fileSize);
+    }
+    else
+    {
+        socket->write(";T7005PKTFAILERR");
+        qDebug() << "Invalid command from client.";
+    }
+}
+/**
+ * @brief ClientConnector::sendFile
+ * @param filepath
+ */
 void ClientConnector::sendFile(QString filepath)
 {
     QByteArray data;
@@ -54,7 +87,10 @@ void ClientConnector::sendFile(QString filepath)
 
      ui->statusBox->append("File sent to client successfully!");
 }
-
+/**
+ * @brief ClientConnector::requestFile
+ * @param filename
+ */
 void ClientConnector::requestFile(QString filename)
 {
     QByteArray fileData;
@@ -77,7 +113,37 @@ void ClientConnector::requestFile(QString filename)
     file.write(fileData);
     file.close();
 }
+/**
+ * @brief ClientHandler::grabFileName
+ * @param data
+ * @return
+ */
+QString ClientHandler::grabFileName(QByteArray data)
+{
+    QString filename("");
+    for(int i = 16; i < 3200; i++){
+        if(data.at(i) == ';'){
+            break;
+        }
+        filename.append(data.at(i - 16));
+    }
+}
+/**
+ * @brief ClientConnector::processFileList
+ * @param list
+ */
+void ClientConnector::processFileList(QByteArray list)
+{
 
+    QStringList fileList = list.split(',');
+    ui->fileBox->addItems(fileList);
+
+}
+/**
+ * @brief ClientConnector::sendRequestPacket
+ * @param filename
+ * @return
+ */
 quint64 ClientConnector::sendRequestPacket(QString filename)
 {
     QByteArray data;
