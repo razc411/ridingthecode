@@ -47,7 +47,7 @@ void ClientConnector::disconnected()
  */
 void ClientConnector::readyRead()
 {
-    QDataArray Data = socket->read(17);
+    QByteArray Data = socket->read(17);
 
     if(Data.startsWith(";T7005PKTFLISTREQ"))
     {
@@ -55,11 +55,11 @@ void ClientConnector::readyRead()
     }
     else if(Data.startsWith(";T7005PKTFILESND"))
     {
-        QString filename = grabFileName(Data);
-        quint64 fileSize;
-        QByteArray temp = socket->read(sizeof(quint64));
-        fileSize = temp.toUInt();
-       recieveClientTransfer(filename, fileSize);
+//        QString filename = grabFileName(Data);
+//        quint64 fileSize;
+//        QByteArray temp = socket->read(sizeof(quint64));
+//        fileSize = temp.toUInt();
+//       recieveClientTransfer(filename, fileSize);
     }
     else
     {
@@ -105,7 +105,8 @@ void ClientConnector::requestFile(QString filename)
     {
         totalBytesRead += bytesToRead;
         fileData.append(socket->read(bytesToRead));
-        ui->statusBox->append("//r Download Progress: " + totalBytesRead/fileSize * 100 + "%");
+        QString status = QString("//r Download Progress: ").arg(totalBytesRead/fileSize * 100).append("%");
+        ui->statusBox->append(status);
     }
 
     QFile file("C:/Users/Raz/Desktop/" + filename);
@@ -118,7 +119,7 @@ void ClientConnector::requestFile(QString filename)
  * @param data
  * @return
  */
-QString ClientHandler::grabFileName(QByteArray data)
+QString ClientConnector::grabFileName(QByteArray data)
 {
     QString filename("");
     for(int i = 16; i < 3200; i++){
@@ -132,11 +133,14 @@ QString ClientHandler::grabFileName(QByteArray data)
  * @brief ClientConnector::processFileList
  * @param list
  */
-void ClientConnector::processFileList(QByteArray list)
+void ClientConnector::processFileList()
 {
-
-    QStringList fileList = list.split(',');
-    ui->fileBox->addItems(fileList);
+    QByteArray data = socket->readAll();
+    QList<QByteArray> fileList = data.split(',');
+    for(int i = 0; i < fileList.size(); i++)
+    {
+        ui->fileBox->addItem(fileList.at(i));
+    }
 
 }
 /**

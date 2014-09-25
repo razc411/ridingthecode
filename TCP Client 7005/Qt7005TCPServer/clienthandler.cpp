@@ -158,6 +158,8 @@ int ClientHandler::sendFileList()
         fList.append("," + stringList.at(i));
     }
 
+    socket->write(";T7005PKTFLISTREQ");
+    socket->flush();
     socket->write(fList);
     socket->flush();
 }
