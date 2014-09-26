@@ -16,8 +16,6 @@ public:
     explicit ClientHandler(int ID, FileManager * fm, QObject *parent = 0);
     void run();
 
-    QByteArray IntToArray(qint32 source);
-    QByteArray convertToQuint32(quint32 num);
 signals:
     void error(QTcpSocket::SocketError socketerror);
 
@@ -32,8 +30,8 @@ private:
     int socketDescriptor;
     FileManager * fManager;
     const char * fListPkt = ";T7005PKTFLISTREQ";
-    QString * fReqPkt = new QString(";T7005PKTFILEREQ");
-    QString * fSndPkt = new QString(";T7005PKTFILESND");
+    QString * fReqPkt = new QString(";T7005PKTFILEREQT");
+    QString * fSndPkt = new QString(";T7005PKTFILESEND");
 
     void parsePacket(QByteArray Data);
     int recieveClientTransfer(QString filename, quint64 filesize);

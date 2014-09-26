@@ -54,7 +54,7 @@ void ClientConnector::readyRead()
     {
        processFileList();
     }
-    else if(Data.startsWith(";T7005PKTFILESND"))
+    else if(Data.startsWith(";T7005PKTFILESEND"))
     {
 //        QString filename = grabFileName(Data);
 //        quint64 fileSize;
@@ -79,7 +79,7 @@ void ClientConnector::sendFile(QString filepath)
 
     QFile * file = new QFile(filepath);
     file->open(QIODevice::ReadOnly);
-    out << ";T7005PKTFILESND";
+    out << ";T7005PKTFILESEND";
     out << (quint32)file->size();
     out << file;
 
@@ -166,20 +166,21 @@ void ClientConnector::processFileList()
  */
 quint32 ClientConnector::sendRequestPacket(QString filename)
 {
-    QByteArray data;
-    QDataStream out(&data, QIODevice::ReadWrite);
-    out.writeRawData(";T7005PKTFILEREQ", strlen(";T7005PKTFILEREQ"));
+    QByteArray data, temp;
+    QDataStream out(&data, QIODevice::WriteOnly);
+    QDataStream in(&temp, QIODevice::ReadOnly);
+
+    out.writeRawData(";T7005PKTFILEREQT", strlen(";T7005PKTFILEREQT"));
     out.writeBytes(filename.toStdString().c_str(), strlen(filename.toStdString().c_str()));
 
     socket->write(data);
     socket->flush();
 
-    data.clear();
 
-    while((data = socket->read(sizeof(quint32))).size() != sizeof(quint32)){}
+    while((temp = socket->read(sizeof(quint32))).size() != sizeof(quint32)){}
 
     quint32 size;
-    out >> size;
+    in >> size;
 
     return size;
 }
