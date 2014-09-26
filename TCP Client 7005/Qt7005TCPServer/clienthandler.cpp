@@ -156,11 +156,9 @@ int ClientHandler::sendFileList()
     QStringList stringList = fManager->grabFileListing();
     for(int i = 0; i < stringList.size(); i++)
     {
-      out << "," << stringList.at(i));
+      out << "," << stringList.at(i);
     }
-
-
-
+    socket->write(";T7005PKTFLISTREQ");
     socket->write(fList.size());
     socket->write(fList);
     socket->flush();

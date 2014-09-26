@@ -1,5 +1,9 @@
 #include "clientconnector.h"
-
+/**
+ * @brief ClientConnector::ClientConnector
+ * @param ui
+ * @param parent
+ */
 ClientConnector::ClientConnector(Ui::MainWindow * ui, QObject *parent) :
     ui(ui), QThread(parent)
 {
@@ -43,7 +47,25 @@ void ClientConnector::disconnected()
  */
 void ClientConnector::readyRead()
 {
-    qDebug() << socket->readAll();
+    QByteArray Data = socket->read(17);
+
+    if(Data.startsWith(";T7005PKTFLISTREQ"))
+    {
+       processFileList();
+    }
+    else if(Data.startsWith(";T7005PKTFILESND"))
+    {
+//        QString filename = grabFileName(Data);
+//        quint64 fileSize;
+//        QByteArray temp = socket->read(sizeof(quint64));
+//        fileSize = temp.toUInt();
+//       recieveClientTransfer(filename, fileSize);
+    }
+    else
+    {
+        socket->write(";T7005PKTFAILERR");
+        qDebug() << "Invalid command from client.";
+    }
 }
 /**
  * @brief ClientConnector::sendFile
@@ -65,7 +87,10 @@ void ClientConnector::sendFile(QString filepath)
 
      ui->statusBox->append("File sent to client successfully!");
 }
-
+/**
+ * @brief ClientConnector::requestFile
+ * @param filename
+ */
 void ClientConnector::requestFile(QString filename)
 {
     QByteArray fileData;
@@ -89,6 +114,38 @@ void ClientConnector::requestFile(QString filename)
     file.close();
 }
 /**
+<<<<<<< HEAD
+=======
+ * @brief ClientHandler::grabFileName
+ * @param data
+ * @return
+ */
+QString ClientConnector::grabFileName(QByteArray data)
+{
+    QString filename("");
+    for(int i = 16; i < 3200; i++){
+        if(data.at(i) == ';'){
+            break;
+        }
+        filename.append(data.at(i - 16));
+    }
+}
+/**
+ * @brief ClientConnector::processFileList
+ * @param list
+ */
+void ClientConnector::processFileList()
+{
+    QByteArray data = socket->readAll();
+    QList<QByteArray> fileList = data.split(',');
+    for(int i = 0; i < fileList.size(); i++)
+    {
+        ui->fileBox->addItem(fileList.at(i));
+    }
+
+}
+/**
+>>>>>>> f5bd748886ff6dd958f976f070339bdcd1e611d0
  * @brief ClientConnector::sendRequestPacket
  * @param filename
  * @return

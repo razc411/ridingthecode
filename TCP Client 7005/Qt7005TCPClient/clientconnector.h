@@ -20,7 +20,6 @@ class ClientConnector : public QThread
     public slots:
         void connected();
         void disconnected();
-        void bytesWritten(qint64 bytes);
         void readyRead();
         void sendFile(QString filepath);
         void requestFile(QString filename);
@@ -31,6 +30,8 @@ class ClientConnector : public QThread
 
         void run();
         quint64 sendRequestPacket(QString filename);
+        void processFileList();
+        QString grabFileName(QByteArray data);
 };
 
 #endif // CLIENTCONNECTOR_H
