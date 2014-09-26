@@ -6,6 +6,7 @@
 #include <QTcpSocket>
 #include <QFile>
 #include <QAbstractSocket>
+#include <QListWidgetItem>
 #include "ui_mainwindow.h"
 
 class ClientConnector : public QThread
@@ -22,14 +23,14 @@ class ClientConnector : public QThread
         void disconnected();
         void readyRead();
         void sendFile(QString filepath);
-        void requestFile(QString filename);
+        void requestFile(QListWidgetItem * item);
 
     private:
         QTcpSocket *socket;
         Ui::MainWindow *ui;
 
         void run();
-        quint64 sendRequestPacket(QString filename);
+        quint32 sendRequestPacket(QString filename);
         void processFileList();
         QString grabFileName(QByteArray data);
 };

@@ -1,6 +1,11 @@
 #ifndef SERVERDEFS_H
 #define SERVERDEFS_H
+#include <QString>
+class ServerDefs
+{
 
-static const QString PKT = ";T7005PKT";
+};
+
+
 
 #endif // SERVERDEFS_H

@@ -66,13 +66,13 @@ void ClientHandler::parsePacket(QByteArray Data)
     }
     else if(Data.startsWith(";T7005PKTFILEREQ"))
     {
-        QString filename = grabFileName(Data);
+        QString filename = grabFileName();
 
         sendFile(filename);
     }
     else if(Data.startsWith(";T7005PKTFILESND"))
     {
-        QString filename = grabFileName(Data);
+        QString filename = grabFileName();
         quint64 fileSize;
         QByteArray temp = socket->read(sizeof(quint64));
         fileSize = temp.toUInt();
@@ -91,14 +91,15 @@ void ClientHandler::parsePacket(QByteArray Data)
  */
 int ClientHandler::sendFile(QString filename)
 {
-    QByteArray data;
-    QDataStream out(&data, QIODevice::WriteOnly);
+    QByteArray data, temp;
+    QDataStream out(&data, QIODevice::WriteOnly), in(&temp, QIODevice::WriteOnly);
 
     QFile * file = fManager->grabFileHandle(filename);
     file->open(QIODevice::ReadOnly);
 
-    out << (quint64)file->size();
-    out << file;
+    in << file;
+    out.writeBytes(temp.data(), strlen(temp.data()));
+
     socket->write(data);
     socket->flush();
 
@@ -135,15 +136,23 @@ int ClientHandler::recieveClientTransfer(QString filename, quint64 fileSize)
  * @param data
  * @return
  */
-QString ClientHandler::grabFileName(QByteArray data)
+QString ClientHandler::grabFileName()
 {
-    QString filename("");
-    for(int i = 16; i < 3200; i++){
-        if(data.at(i) == ';'){
-            break;
-        }
-        filename.append(data.at(i - 16));
-    }
+    QByteArray data;
+    QString filename;
+    QDataStream out(&data, QIODevice::ReadOnly);
+
+    while((data = socket->read(sizeof(quint32))).size() != sizeof(quint32)){}
+
+    quint32 size;
+    out >> size;
+    data.clear();
+
+    while((data = socket->read(size)).size() != size){}
+
+    out >> filename;
+
+    return filename;
 }
 /**
  * @brief ClientHandler::sendFileList
@@ -151,15 +160,42 @@ QString ClientHandler::grabFileName(QByteArray data)
  */
 int ClientHandler::sendFileList()
 {
-    QByteArray data;
+    QByteArray data, list;
     QDataStream out(&data, QIODevice::WriteOnly);
+    QDataStream flist(&list, QIODevice::WriteOnly);
     QStringList stringList = fManager->grabFileListing();
+
+    out.writeRawData(fListPkt, strlen(fListPkt));
+
     for(int i = 0; i < stringList.size(); i++)
     {
-      out << "," << stringList.at(i);
-    }
-    socket->write(";T7005PKTFLISTREQ");
-    socket->write(fList.size());
-    socket->write(fList);
+      flist.writeRawData(",", 1);
+      flist.writeRawData(stringList.at(i).toStdString().c_str(), strlen(stringList.at(i).toStdString().c_str()));
+    } 
+
+    out.writeBytes(list.data(), strlen(list.data()));
+
+    socket->write(data);
+    socket->write(list);
     socket->flush();
+}
+
+QByteArray ClientHandler::convertToQuint32(quint32 num)
+{
+    QByteArray data;
+    QDataStream out(&data, QIODevice::WriteOnly);
+
+    out << num;
+
+    return data;
+}
+
+
+QByteArray ClientHandler::IntToArray(qint32 source)
+{
+
+    QByteArray temp;
+    QDataStream data(&temp, QIODevice::ReadWrite);
+    data << source;
+    return temp;
 }
