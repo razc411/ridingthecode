@@ -4,7 +4,9 @@ ClientConnector::ClientConnector(Ui::MainWindow * ui, QObject *parent) :
     ui(ui), QThread(parent)
 {
 }
-
+/**
+ * @brief ClientConnector::run
+ */
 void ClientConnector::run()
 {
     socket = new QTcpSocket(this);
@@ -19,7 +21,9 @@ void ClientConnector::run()
 
     exec();
 }
-
+/**
+ * @brief ClientConnector::connected
+ */
 void ClientConnector::connected()
 {
      ui->statusBox->append("Connected to " + socket->peerName());
@@ -27,17 +31,24 @@ void ClientConnector::connected()
     socket->write(";T7005PKTFLISTREQ");
     socket->flush();
 }
-
+/**
+ * @brief ClientConnector::disconnected
+ */
 void ClientConnector::disconnected()
 {
      ui->statusBox->append("Disconnected from server.");
 }
-
+/**
+ * @brief ClientConnector::readyRead
+ */
 void ClientConnector::readyRead()
 {
     qDebug() << socket->readAll();
 }
-
+/**
+ * @brief ClientConnector::sendFile
+ * @param filepath
+ */
 void ClientConnector::sendFile(QString filepath)
 {
     QByteArray data;
@@ -69,7 +80,7 @@ void ClientConnector::requestFile(QString filename)
     {
         totalBytesRead += bytesToRead;
         fileData.append(socket->read(bytesToRead));
-        ui->statusBox->append("//r Download Progress: " + totalBytesRead/fileSize * 100 + "%");
+        ui->statusBox->append(QString("//r Download Progress: ").arg(totalBytesRead/fileSize * 100).append("%"));
     }
 
     QFile file("C:/Users/Raz/Desktop/" + filename);
@@ -77,7 +88,11 @@ void ClientConnector::requestFile(QString filename)
     file.write(fileData);
     file.close();
 }
-
+/**
+ * @brief ClientConnector::sendRequestPacket
+ * @param filename
+ * @return
+ */
 quint64 ClientConnector::sendRequestPacket(QString filename)
 {
     QByteArray data;

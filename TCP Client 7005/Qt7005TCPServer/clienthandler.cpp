@@ -151,13 +151,17 @@ QString ClientHandler::grabFileName(QByteArray data)
  */
 int ClientHandler::sendFileList()
 {
-    QByteArray fList;
+    QByteArray data;
+    QDataStream out(&data, QIODevice::WriteOnly);
     QStringList stringList = fManager->grabFileListing();
     for(int i = 0; i < stringList.size(); i++)
     {
-        fList.append("," + stringList.at(i));
+      out << "," << stringList.at(i));
     }
 
+
+
+    socket->write(fList.size());
     socket->write(fList);
     socket->flush();
 }
