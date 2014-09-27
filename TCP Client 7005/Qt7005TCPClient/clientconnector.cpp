@@ -62,11 +62,6 @@ void ClientConnector::readyRead()
 //        fileSize = temp.toUInt();
 //       recieveClientTransfer(filename, fileSize);
     }
-    else
-    {
-        socket->write(";T7005PKTFAILERR");
-        qDebug() << "Invalid command from client.";
-    }
 }
 /**
  * @brief ClientConnector::sendFile
@@ -97,16 +92,20 @@ void ClientConnector::requestFile(QListWidgetItem *item)
     QByteArray fileData;
 
     quint32 fileSize = sendRequestPacket(item->text());
-    int bytesToRead = 0;
     int totalBytesRead = 0;
-
+    int lastRead = totalBytesRead;
+    int sizebytes = 0;
     ui->statusBox->append("Waiting for file request...");
 
-    while((fileData = socket->read(fileSize)).size() != fileSize)
+    while((sizebytes = socket->bytesAvailable()) || (totalBytesRead != fileSize))
     {
-        totalBytesRead += bytesToRead;
-        fileData.append(socket->read(bytesToRead));
-        ui->statusBox->append(QString("Download Progress: ").arg(totalBytesRead/fileSize * 100).append("%"));
+        fileData.append(socket->readAll());
+        socket->flush();
+        totalBytesRead += fileData.size() - totalBytesRead;
+        if(lastRead != totalBytesRead){
+            ui->statusBox->append(QString("Downloading: %1").arg(((fileData.size()/fileSize) * 100)).append("% completed..."));
+        }
+        lastRead = totalBytesRead;
     }
 
     QFile file("C:/Users/Raz/Desktop/" + item->text());

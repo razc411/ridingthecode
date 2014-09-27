@@ -91,16 +91,19 @@ void ClientHandler::parsePacket(QByteArray Data)
  */
 int ClientHandler::sendFile(QString filename)
 {
-    QByteArray data, temp;
-    QDataStream out(&data, QIODevice::WriteOnly);
+    QByteArray * data = new QByteArray();
+    QByteArray * temp = new QByteArray();
+    QDataStream out(data, QIODevice::WriteOnly);
 
     QFile * file = fManager->grabFileHandle(filename);
     file->open(QIODevice::ReadOnly);
+    quint32 size =  file->bytesAvailable();
 
-    temp = file->readAll();
-    out.writeBytes(temp.data(), strlen(temp.data()));
-
-    socket->write(data);
+    *temp = file->readAll();
+    out.writeBytes(temp->data(), size);
+    qDebug() << data->size();
+    qDebug() << file->bytesAvailable();
+    int bytesWrote = socket->write(*data);
     socket->flush();
 
     qDebug() << "File sent to client successfully.";
