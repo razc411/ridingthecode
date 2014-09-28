@@ -15,7 +15,6 @@ class ClientConnector : public QThread
     public:
         explicit ClientConnector(Ui::MainWindow * ui, QObject *parent = 0);
 
-
     signals:
 
     public slots:
@@ -23,14 +22,15 @@ class ClientConnector : public QThread
         void disconnected();
         void readyRead();
         void sendFile(QString filepath);
-        void requestFile(QListWidgetItem * item);
+        void sendRequestPacket(QListWidgetItem *item);
 
     private:
         QTcpSocket *socket;
         Ui::MainWindow *ui;
+        int socketFlag = 0;
 
         void run();
-        quint32 sendRequestPacket(QString filename);
+        void grabRequestFile();
         void processFileList();
         QString grabFileName(QByteArray data);
 };

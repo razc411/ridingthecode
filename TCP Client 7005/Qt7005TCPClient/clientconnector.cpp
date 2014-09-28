@@ -18,7 +18,7 @@ void ClientConnector::run()
     connect(socket, SIGNAL(connected()), this, SLOT(connected()), Qt::DirectConnection);
     connect(socket, SIGNAL(disconnected()), this, SLOT(disconnected()), Qt::DirectConnection);
     connect(socket, SIGNAL(readyRead()), this, SLOT(readyRead()), Qt::DirectConnection);
-    connect(ui->fileBox, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(requestFile(QListWidgetItem *)), Qt::DirectConnection);
+    connect(ui->fileBox, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(sendRequestPacket(QListWidgetItem *)), Qt::DirectConnection);
 
     ui->statusBox->append("Connecting to server...");
 
@@ -54,6 +54,10 @@ void ClientConnector::readyRead()
     {
        processFileList();
     }
+    else if(Data.startsWith(";T7005PKTFREQPSND"))
+    {
+        grabRequestFile();
+    }
     else if(Data.startsWith(";T7005PKTFILESEND"))
     {
 //        QString filename = grabFileName(Data);
@@ -87,30 +91,50 @@ void ClientConnector::sendFile(QString filepath)
  * @brief ClientConnector::requestFile
  * @param filename
  */
-void ClientConnector::requestFile(QListWidgetItem *item)
+void ClientConnector::grabRequestFile()
 {
-    QByteArray fileData;
+    QByteArray  * fileData = new QByteArray();
+    QString filename;
+    QDataStream in(fileData, QIODevice::ReadWrite);
 
-    quint32 fileSize = sendRequestPacket(item->text());
+    while((*fileData = socket->read(sizeof(quint32))).size() != sizeof(quint32)){}
+
+    quint32 size;
+    in >> size;
+    fileData->clear();
+    in.device()->seek(0);
+
+    while((*fileData = socket->read(size)).size() != size){}
+
+    filename = *fileData;
+    fileData->clear();
+
+    while((*fileData = socket->read(sizeof(quint32))).size() != sizeof(quint32)){}
+
+    in >> size;
+    fileData->clear();
+    in.device()->seek(0);
+
     int totalBytesRead = 0;
     int lastRead = totalBytesRead;
-    int sizebytes = 0;
     ui->statusBox->append("Waiting for file request...");
 
-    while((sizebytes = socket->bytesAvailable()) || (totalBytesRead != fileSize))
+    while(totalBytesRead != size)
     {
-        fileData.append(socket->readAll());
-        socket->flush();
-        totalBytesRead += fileData.size() - totalBytesRead;
-        if(lastRead != totalBytesRead){
-            ui->statusBox->append(QString("Downloading: %1").arg(((fileData.size()/fileSize) * 100)).append("% completed..."));
+        if(socket->bytesAvailable())
+        {
+            in << socket->readAll();
+            totalBytesRead += fileData->size() - totalBytesRead;
+            if(lastRead != totalBytesRead){
+               ui->statusBox->append(QString("Downloading: %1").arg(((fileData->size()/size) * 100)).append("% completed..."));
+            }
+            lastRead = totalBytesRead;
         }
-        lastRead = totalBytesRead;
     }
 
-    QFile file("C:/Users/Raz/Desktop/" + item->text());
+    QFile file("C:/Users/Raz/Desktop/" + filename);
     file.open(QIODevice::WriteOnly);
-    file.write(fileData);
+    file.write(*fileData);
     file.close();
 
     ui->statusBox->append("File transfer completed.");
@@ -139,6 +163,7 @@ void ClientConnector::processFileList()
     QByteArray data;
     QDataStream in(&data, QIODevice::ReadOnly);
 
+
     while((data = socket->read(sizeof(quint32))).size() != sizeof(quint32)){}
 
     quint32 size;
@@ -163,23 +188,15 @@ void ClientConnector::processFileList()
  * @param filename
  * @return
  */
-quint32 ClientConnector::sendRequestPacket(QString filename)
+void ClientConnector::sendRequestPacket(QListWidgetItem *item)
 {
-    QByteArray data, temp;
+    QByteArray data;
     QDataStream out(&data, QIODevice::WriteOnly);
-    QDataStream in(&temp, QIODevice::ReadOnly);
+    QString filename = item->text();
 
     out.writeRawData(";T7005PKTFILEREQT", strlen(";T7005PKTFILEREQT"));
     out.writeBytes(filename.toStdString().c_str(), strlen(filename.toStdString().c_str()));
 
     socket->write(data);
     socket->flush();
-
-
-    while((temp = socket->read(sizeof(quint32))).size() != sizeof(quint32)){}
-
-    quint32 size;
-    in >> size;
-
-    return size;
 }
