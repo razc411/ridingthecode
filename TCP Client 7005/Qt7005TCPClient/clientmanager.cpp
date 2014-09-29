@@ -11,6 +11,7 @@ void ClientManager::StartClient()
 {
     thread = new ClientConnector(ui);
     thread->start();
+
 }
 
 void ClientManager::StopClient()

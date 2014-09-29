@@ -25,9 +25,9 @@ class ClientConnector : public QThread
         void sendRequestPacket(QListWidgetItem *item);
 
     private:
-        QTcpSocket socket;
+        QTcpSocket * socket = NULL;
         Ui::MainWindow *ui;
-        int socketFlag = 0;
+
 
         void run();
         void grabRequestFile();

@@ -17,6 +17,7 @@ ClientHandler::ClientHandler(int ID, FileManager * fm, QObject *parent) :
 void ClientHandler::run()
 {
     qDebug() << socketDescriptor << " Starting thread";
+
     socket = new QTcpSocket();
     if(!socket->setSocketDescriptor(this->socketDescriptor))
     {
@@ -131,7 +132,7 @@ int ClientHandler::recieveClientTransfer(QString filename, quint64 fileSize)
         fileData.append(socket->read(bytesToRead));
     }
 
-    QFile file("C:/Users/Raz/Desktop/" + filename);
+    QFile file("/home/raz/Desktop/" + filename);
     file.open(QIODevice::WriteOnly);
     file.write(fileData);
     file.close();
