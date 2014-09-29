@@ -96,7 +96,6 @@ int ClientHandler::sendFile(QString filename)
 
     QFile * file = fManager->grabFileHandle(filename);
     file->open(QIODevice::ReadOnly);
-    quint32 size =  file->bytesAvailable();
 
     out.writeRawData(";T7005PKTFREQPSND", strlen(";T7005PKTFREQPSND"));
     out.writeBytes(filename.toStdString().c_str(), strlen(filename.toStdString().c_str()));
@@ -105,11 +104,10 @@ int ClientHandler::sendFile(QString filename)
     data->clear();
     out.device()->seek(0);
 
-    out << file->readAll();
-    out.device()->seek(0);
-    out << (quint32)data->size();
+    out.writeBytes(file->readAll(), file->size());
 
-    socket->write(*data);
+    qint64 written = socket->write(*data);
+    qDebug() << written;
     socket->flush();
 
     qDebug() << "File sent to client successfully.";
