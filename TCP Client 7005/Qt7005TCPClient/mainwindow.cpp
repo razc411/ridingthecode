@@ -8,6 +8,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     ui->statusBox->setHtml("<b>Welcome to the QTransfer application!</b>");
     ui->fileBox->addItem("Not connected to a fileserver.");
+    ui->progressBar->reset();
 }
 
 Ui::MainWindow * MainWindow::getMainWindowHandle()

@@ -35,7 +35,7 @@ private:
 
     void parsePacket(QByteArray Data);
     int recieveClientTransfer(QString filename, quint64 filesize);
-    int sendFile(QString filename);
+    void sendFile(QString filename);
     int sendFileList();
     QString grabFileName();
 };

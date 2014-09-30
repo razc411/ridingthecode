@@ -8,7 +8,7 @@ int main(int argc, char *argv[])
     MainWindow w;
     w.show();
 
-    QString dir = "/home/raz/Music";
+    QString dir = "C:/Users/Raz/Documents";
     ConnectionManager server(dir);
     server.StartServer();
 

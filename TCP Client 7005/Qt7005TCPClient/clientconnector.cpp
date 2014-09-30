@@ -20,7 +20,7 @@ void ClientConnector::run()
     connect(socket, SIGNAL(readyRead()), this, SLOT(readyRead()), Qt::DirectConnection);
     connect(ui->fileBox, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(sendRequestPacket(QListWidgetItem *)));
 
-    ui->statusBox->append("Connecting to server...");
+    emit appendStatus("Connecting to server...");
 
     socket->connectToHost("localhost", 3224);
 
@@ -31,7 +31,7 @@ void ClientConnector::run()
  */
 void ClientConnector::connected()
 {
-    ui->statusBox->append("Connected to " + socket->peerName());
+    emit appendStatus("Connected to " + socket->peerName());
 
     socket->write(";T7005PKTFLISTREQ");
 }
@@ -40,7 +40,7 @@ void ClientConnector::connected()
  */
 void ClientConnector::disconnected()
 {
-     ui->statusBox->append("Disconnected from server.");
+    emit appendStatus("Disconnected from server.");
 }
 /**
  * @brief ClientConnector::readyRead
@@ -55,7 +55,11 @@ void ClientConnector::readyRead()
     }
     else if(Data.startsWith(";T7005PKTFREQPSND"))
     {
-        grabRequestFile();
+       grabRequestFile();
+    }
+    else if(Data.startsWith(";T7005PKTFREQPTRN"))
+    {
+      // downloadFile();
     }
     else if(Data.startsWith(";T7005PKTFILESEND"))
     {
@@ -84,8 +88,9 @@ void ClientConnector::sendFile(QString filepath)
     socket->write(data);
     socket->flush();
 
-     ui->statusBox->append("File sent to client successfully!");
+    emit appendStatus("File sent to client successfully!");
 }
+
 /**
  * @brief ClientConnector::requestFile
  * @param filename
@@ -93,31 +98,16 @@ void ClientConnector::sendFile(QString filepath)
 void ClientConnector::grabRequestFile()
 {
     QByteArray  * fileData = new QByteArray();
-    QString filename;
-    QDataStream in(fileData, QIODevice::ReadWrite);
+
     disconnect(ui->fileBox, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(sendRequestPacket(QListWidgetItem *)));
 
-    while((*fileData = socket->read(sizeof(quint32))).size() != sizeof(quint32)){}
-
-    quint32 size;
-    in >> size;
-    fileData->clear();
-    in.device()->seek(0);
-
-    while((*fileData = socket->read(size)).size() != size){}
-
-    filename = *fileData;
-    fileData->clear();
-
-    while((*fileData = socket->read(sizeof(quint32))).size() != sizeof(quint32)){}
-
-    in >> size;
-    fileData->clear();
-    in.device()->seek(0);
+    QString filename = readFilenameHeader();
+    quint32 size = grabFileSize();
 
     int totalBytesRead = 0;
-    int lastRead = totalBytesRead;
-    ui->statusBox->append("Waiting for file request...");
+    emit appendStatus("Waiting for file request...");
+
+    emit setRangeProgress(size/100, size);
 
     while(totalBytesRead != size)
     {
@@ -125,21 +115,57 @@ void ClientConnector::grabRequestFile()
         {
             fileData->append(socket->readAll());
             totalBytesRead += fileData->size() - totalBytesRead;
-            if(lastRead != totalBytesRead){
-               ui->statusBox->append(QString("Downloading: %1").arg(((fileData->size()/size) * 100)).append("% completed..."));
-            }
-            lastRead = totalBytesRead;
+            emit setValueProgress(totalBytesRead);
         }
     }
 
-    QFile file("/home/raz/" + filename);
+    QFile file("C:/Users/Raz/Desktop/" + filename);
     file.open(QIODevice::WriteOnly);
     file.write(*fileData);
     file.close();
 
+    emit resetProgress();
     connect(ui->fileBox, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(sendRequestPacket(QListWidgetItem *)));
-    ui->statusBox->append("File transfer completed.");
+    emit appendStatus("File transfer completed.");
 }
+/**
+ * @brief ClientConnector::readFilenameHeader
+ * @return
+ */
+QString ClientConnector::readFilenameHeader()
+{
+    QByteArray fileData;
+    QDataStream in(&fileData, QIODevice::ReadWrite);
+
+    while((fileData = socket->read(sizeof(quint32))).size() != sizeof(quint32)){} // reads size of filename
+
+    quint32 size;
+    in >> size;
+    fileData.clear();
+    in.device()->seek(0);
+
+    while((fileData = socket->read(size)).size() != size){}
+
+    QString filename = fileData;
+    return filename;
+}
+/**
+ * @brief ClientConnector::grabFileSize
+ * @return
+ */
+quint32 ClientConnector::grabFileSize()
+{
+    QByteArray fileData;
+    QDataStream in(&fileData, QIODevice::ReadWrite);
+    quint32 size = 0;
+
+    while((fileData = socket->read(sizeof(quint32))).size() != sizeof(quint32)){}
+
+    in >> size;
+
+    return size;
+}
+
 /**
  * @brief ClientHandler::grabFileName
  * @param data

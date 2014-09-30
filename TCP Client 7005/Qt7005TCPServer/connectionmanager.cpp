@@ -8,8 +8,6 @@ ConnectionManager::ConnectionManager(QString dir, QObject *parent) :
 
 void ConnectionManager::StartServer()
 {
-
-
     if(!this->listen(QHostAddress::Any,3224))
     {
         qDebug() << "Could not start server";

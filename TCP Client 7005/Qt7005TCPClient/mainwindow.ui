@@ -134,10 +134,17 @@
      <property name="horizontalSpacing">
       <number>150</number>
      </property>
-     <item row="1" column="1">
-      <widget class="QPushButton" name="disconnect">
+     <item row="4" column="1">
+      <widget class="QPushButton" name="clear">
        <property name="text">
-        <string>Disconnect</string>
+        <string>Clear Status</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="3">
+      <widget class="QPushButton" name="refreshlisting">
+       <property name="text">
+        <string>Refresh File Listing</string>
        </property>
       </widget>
      </item>
@@ -148,31 +155,31 @@
        </property>
       </widget>
      </item>
-     <item row="2" column="1">
-      <widget class="QPushButton" name="sndfile">
+     <item row="1" column="1">
+      <widget class="QPushButton" name="disconnect">
        <property name="text">
-        <string>Send File</string>
+        <string>Disconnect</string>
        </property>
       </widget>
      </item>
-     <item row="2" column="0">
+     <item row="0" column="0" colspan="2">
+      <widget class="QProgressBar" name="progressBar">
+       <property name="value">
+        <number>24</number>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="3">
       <widget class="QPushButton" name="settings">
        <property name="text">
         <string>Settings</string>
        </property>
       </widget>
      </item>
-     <item row="0" column="0">
-      <widget class="QPushButton" name="clear">
+     <item row="4" column="0">
+      <widget class="QPushButton" name="sndfile">
        <property name="text">
-        <string>Clear Status</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QPushButton" name="refreshlisting">
-       <property name="text">
-        <string>Refresh File Listing</string>
+        <string>Send File</string>
        </property>
       </widget>
      </item>

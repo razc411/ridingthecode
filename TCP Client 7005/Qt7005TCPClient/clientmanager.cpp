@@ -10,8 +10,12 @@ ClientManager::ClientManager(Ui::MainWindow *ui, QObject *parent):
 void ClientManager::StartClient()
 {
     thread = new ClientConnector(ui);
+    connect(thread, SIGNAL(setValueProgress(int)), ui->progressBar, SLOT(setValue(int)));
+    connect(thread, SIGNAL(setRangeProgress(int, int)), ui->progressBar, SLOT(setRange(int, int)));
+    connect(thread, SIGNAL(resetProgress()), ui->progressBar, SLOT(reset()));
+    connect(thread, SIGNAL(appendStatus(QString)), ui->statusBox, SLOT(append(QString)));
+    connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
     thread->start();
-
 }
 
 void ClientManager::StopClient()

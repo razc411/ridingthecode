@@ -23,16 +23,22 @@ class ClientConnector : public QThread
         void readyRead();
         void sendFile(QString filepath);
         void sendRequestPacket(QListWidgetItem *item);
+    signals:
+        void setRangeProgress(int minimum, int maximum);
+        void setValueProgress(int value);
+        void resetProgress();
+        void appendStatus(const QString &);
 
     private:
         QTcpSocket * socket = NULL;
         Ui::MainWindow *ui;
 
-
         void run();
         void grabRequestFile();
         void processFileList();
         QString grabFileName(QByteArray data);
+        QString readFilenameHeader();
+        quint32 grabFileSize();
 };
 
 #endif // CLIENTCONNECTOR_H

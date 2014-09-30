@@ -73,11 +73,8 @@ void ClientHandler::parsePacket(QByteArray Data)
     }
     else if(Data.startsWith(";T7005PKTFILESEND"))
     {
-        QString filename = grabFileName();
-        quint64 fileSize;
-        QByteArray temp = socket->read(sizeof(quint64));
-        fileSize = temp.toUInt();
-        recieveClientTransfer(filename, fileSize);
+
+        //recieveClientTransfer(filename, fileSize);
     }
     else
     {
@@ -90,7 +87,7 @@ void ClientHandler::parsePacket(QByteArray Data)
  * @param filename
  * @return
  */
-int ClientHandler::sendFile(QString filename)
+void ClientHandler::sendFile(QString filename)
 {
     QByteArray * data = new QByteArray();
     QDataStream out(data, QIODevice::WriteOnly);
@@ -107,13 +104,10 @@ int ClientHandler::sendFile(QString filename)
 
     out.writeBytes(file->readAll(), file->size());
 
-    qint64 written = socket->write(*data);
-    qDebug() << written;
+    socket->write(*data);
     socket->flush();
-
-    qDebug() << "File sent to client successfully.";
-    return 1;
 }
+
 /**
  * @brief ClientHandler::recieveClientTransfer
  * @param filename
