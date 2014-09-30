@@ -111,7 +111,7 @@ void ClientConnector::grabRequestFile()
 
     while(totalBytesRead != size)
     {
-        if(socket->waitForReadyRead())
+        if((socket->peek(size).size() == size)||socket->waitForReadyRead())
         {
             fileData->append(socket->readAll());
             totalBytesRead += fileData->size() - totalBytesRead;
