@@ -9,7 +9,6 @@
 #include "filemanager.h"
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "ServerDefs.h"
 
 #define HEADER_SIZE 17
 #define FLISTREQ    ";T7005PKTFLISTREQ"
@@ -44,10 +43,9 @@ private:
     void parsePacket(QByteArray Data);
     void recieveClientTransfer();
     void sendFile(QString filename);
-    int sendFileList();
+    void sendFileList();
     QString grabFileName();
     quint32 grabFileSize();
-    QString readFilenameHeader();
 };
 
 #endif // CLIENTHANDLER_H

@@ -4,6 +4,12 @@
 #include <QApplication>
 #include <QObject>
 
+/**
+ * @brief main : establishes the MainWindow and the networking thread.
+ * @param argc : unused
+ * @param argv : unused
+ * @return 0 on proper termination.
+ */
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);

@@ -1,4 +1,20 @@
 #include "filemanager.h"
+/**
+ * FileManager Class extends QObject
+ * @author Ramzi Chennafi
+ *
+ * Manages the server file listing.
+ *
+ * Functions
+ * ------------------------------------------------
+ * FileManager(QString dir, QObject *parent)
+ * int doesFileExist(QString fname)
+ * QFile * grabFileHandle(QString)
+ * QStringList grabFileListing()
+ * void setDirectory(QString)
+ * void loadFileListing()
+ * ------------------------------------------------
+ */
 
 /**
  * @brief FileManager::FileManager - Constructor for FileManager

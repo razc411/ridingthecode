@@ -1,10 +1,32 @@
 #include "clienthandler.h"
+/**
+ * ClientHandler Class extends QThread
+ * @author Ramzi Chennafi
+ *
+ * Object which handles an individual client's network traffic. Destroyed upon client disconnection and created
+ * upon client connection for each client.
+ *
+ * Functions
+ * ---------------------------------------------------
+ * ClientHandler(int ID, FileManager *fm, MainWindow *win, QObject *parent, QString directory)
+ * void readyRead()
+ * void disconnected()
+ * void parsePacket(QByteArray)
+ * void sendFile(QString)
+ * void recieveClientTransfer()
+ * quint32 grabFileSize()
+ * QString grabFileName()
+ * void sendFileList()
+ * ----------------------------------------------------
+ */
 
 /**
  * @brief ClientHandler::ClientHandler - constructor for the ClientHandler class.
  * @param ID - the socket descriptor of the connecting client.
  * @param fm - the file manager instance for the server.
+ * @param win - the MainWindow instance of the gui
  * @param parent - defaults to 0, QObject of the calling object.
+ * @param directory - the directory for the server file listing. Defaults to C:/
  */
 ClientHandler::ClientHandler(int ID, FileManager * fm, MainWindow *win, QObject *parent, QString directory) :
     QThread(parent), fManager(fm), win(win), directory(directory)
@@ -12,7 +34,8 @@ ClientHandler::ClientHandler(int ID, FileManager * fm, MainWindow *win, QObject 
     this->socketDescriptor = ID;
 }
 /**
- * @brief ClientHandler::run
+ * @brief ClientHandler::run : run method of the client handling thread.
+ *          Creates a socket and enters the exec() loop waiting on events.
  */
 void ClientHandler::run()
 {
@@ -33,7 +56,8 @@ void ClientHandler::run()
     exec();
 }
 /**
- * @brief ClientHandler::readyRead
+ * @brief ClientHandler::readyRead : waits for any incoming data.
+ *          If the header is valid, the data is passed on for use.
  */
 void ClientHandler::readyRead()
 {
@@ -47,7 +71,7 @@ void ClientHandler::readyRead()
     }
 }
 /**
- * @brief ClientHandler::disconnected
+ * @brief ClientHandler::disconnected : called when a client disconnects from the server.
  */
 void ClientHandler::disconnected()
 {
@@ -56,31 +80,31 @@ void ClientHandler::disconnected()
     exit(0);
 }
 /**
- * @brief ClientHandler::parsePacket
- * @param Data
+ * @brief ClientHandler::parsePacket : parses the incoming data grabbed from readyRead.
+ * @param Data - the socket data passed from readyRead.
  */
 void ClientHandler::parsePacket(QByteArray Data)
 {
-    if(Data.startsWith(FLISTREQ))
+    if(Data.startsWith(FLISTREQ)) // FILE LIST REQUEST
     {
        sendFileList();
     }
-    else if(Data.startsWith(FGRABREQ))
+    else if(Data.startsWith(FGRABREQ)) // FILE GET REQUEST
     {
         QString filename = grabFileName();
 
         sendFile(filename);
     }
-    else if(Data.startsWith(FSNDREQ))
+    else if(Data.startsWith(FSNDREQ)) // INCOMING CLIENT SEND
     {
         recieveClientTransfer();
     }
 
 }
 /**
- * @brief ClientHandler::sendFile
- * @param filename
- * @return
+ * @brief ClientHandler::sendFile : sends the requested file to the calling client.
+ *          Writes a header, the filesize and the file itself.
+ * @param filename - filename grabbed from the requesting packet header.
  */
 void ClientHandler::sendFile(QString filename)
 {
@@ -90,6 +114,7 @@ void ClientHandler::sendFile(QString filename)
     QFile * file = fManager->grabFileHandle(filename);
     file->open(QIODevice::ReadOnly);
     emit appendStatus(QString("Writing " + filename + " to socket %1\nFilesize: %2 MB").arg(socketDescriptor).arg(file->size()/1000000));
+
     out.writeRawData(FRECIEVE, strlen(FRECIEVE));
     out.writeBytes(filename.toStdString().c_str(), strlen(filename.toStdString().c_str()));
 
@@ -106,24 +131,22 @@ void ClientHandler::sendFile(QString filename)
 }
 
 /**
- * @brief ClientHandler::recieveClientTransfer
- * @param filename
- * @param fileSize
- * @return
+ * @brief ClientHandler::recieveClientTransfer : recieves an incoming client send.
+ *          Proceses the header and filename, then retrieves the file.
  */
 void ClientHandler::recieveClientTransfer()
 {
     QByteArray  * fileData = new QByteArray();
 
-    QString filename = readFilenameHeader();
+    QString filename = grabFileName();
     quint32 size = grabFileSize();
 
     int totalBytesRead = 0;
-    emit appendStatus(QString("Accepting file transfer " + filename + "\nFilesize: %1 MB").arg((double)size/1000000));
+    emit appendStatus(QString("Accepting file transfer " + filename + "\nFilesize: %1 MB").arg((double)(size/1000000)));
 
     while(totalBytesRead != size)
     {
-        if((socket->peek(size).size() == size)||socket->waitForReadyRead())
+        if((socket->peek(size).size() == size)||socket->waitForReadyRead()) // in case data is too small and got sucked up in first ready read
         {
             fileData->append(socket->readAll());
             totalBytesRead += fileData->size() - totalBytesRead;
@@ -138,29 +161,8 @@ void ClientHandler::recieveClientTransfer()
     emit appendStatus("File transfer completed. Saved to " + directory);
 }
 /**
- * @brief ClientConnector::readFilenameHeader
- * @return
- */
-QString ClientHandler::readFilenameHeader()
-{
-    QByteArray fileData;
-    QDataStream in(&fileData, QIODevice::ReadWrite);
-
-    while((fileData = socket->read(sizeof(quint32))).size() != sizeof(quint32)){} // reads size of filename
-
-    quint32 size;
-    in >> size;
-    fileData.clear();
-    in.device()->seek(0);
-
-    while((fileData = socket->read(size)).size() != size){}
-
-    QString filename = fileData;
-    return filename;
-}
-/**
- * @brief ClientConnector::grabFileSize
- * @return
+ * @brief ClientConnector::grabFileSize : grabs the filesize from the packet header.
+ * @return - A quint32 containing the file size of the incoming data.
  */
 quint32 ClientHandler::grabFileSize()
 {
@@ -176,33 +178,33 @@ quint32 ClientHandler::grabFileSize()
 }
 
 /**
- * @brief ClientHandler::grabFileName
- * @param data
- * @return
+ * @brief ClientConnector::grabFileName : grabs the filename from the incoming header.
+ * @return - a QString containing the filename to be retrieved.
  */
 QString ClientHandler::grabFileName()
 {
-    QByteArray data;
+    QByteArray fileData;
     QString filename;
-    QDataStream out(&data, QIODevice::ReadOnly);
+    QDataStream in(&fileData, QIODevice::ReadWrite);
 
-    while((data = socket->read(sizeof(quint32))).size() != sizeof(quint32)){}
+    while((fileData = socket->read(sizeof(quint32))).size() != sizeof(quint32)){} // reads size of filename
 
     quint32 size;
-    out >> size;
-    data.clear();
+    in >> size;
+    fileData.clear();
+    in.device()->seek(0);
 
-    while((data = socket->read(size)).size() != size){}
+    while((fileData = socket->read(size)).size() != size){}
 
-    filename = data;
+    filename = fileData;
 
     return filename;
 }
 /**
- * @brief ClientHandler::sendFileList
- * @return
+ * @brief ClientHandler::sendFileList : sends the file listing of the server.
+ *          Retrieves the listing from the FileManager and writes its header, size and data.
  */
-int ClientHandler::sendFileList()
+void ClientHandler::sendFileList()
 {
     emit appendStatus(QString("Sending filelisting to socket %1.").arg(socketDescriptor));
     QByteArray data, list;
@@ -210,7 +212,7 @@ int ClientHandler::sendFileList()
     QDataStream flist(&list, QIODevice::WriteOnly);
     QStringList stringList = fManager->grabFileListing();
 
-    out.writeRawData(FLISTREQ, strlen(FLISTREQ));
+    out.writeRawData(FLISTREQ, strlen(FLISTREQ)); // writing header
 
     for(int i = 0; i < stringList.size(); i++)
     {
@@ -220,7 +222,7 @@ int ClientHandler::sendFileList()
 
     out.writeBytes(list.data(), strlen(list.data()));
 
-    socket->write(data);
+    socket->write(data); // writing data and size
     socket->flush();
 
     emit appendStatus("Filelist send complete.");

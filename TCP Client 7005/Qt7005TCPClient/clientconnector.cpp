@@ -1,15 +1,45 @@
 #include "clientconnector.h"
 /**
+ *  Qt7005TCPClient
+ *  ClientConnector Class extends QThread
+ *  @author Ramzi Chennafi
+ *
+ *  Called whenever the client intiates the connect button. Handles all network communications
+ *  so that the GUI thread can continue without hinderence.
+ *
+ *  Functions
+ *  -------------------------------------
+ *  ClientConnection(Ui::MainWindow *, QString, int, QString, QObject*)
+ *  void run()
+ *  void connected()
+ *  void disconnectClient()
+ *  void readyRead()
+ *  void sendFile()
+ *  void disconnectFileList(int)
+ *  void grabRequestFile()
+ *  QString readFilenameHeader()
+ *  quint32 grabFileSize()
+ *  void processFileList()
+ *  void sendRequestPacket(QWidgetItem*)
+ *  -------------------------------------
+ */
+
+/**
  * @brief ClientConnector::ClientConnector
- * @param ui
- * @param parent
+ * @param ui - ui instance of the mainwindow.
+ * @param addr - the address to connect the client to. Defaults to localhost.
+ * @param port - the port to connect the client with. Defaults to 7005.
+ * @param directory - the directory the client will save files to. Defaults to C:/
+ *              Regardless of windows or linux, directory arguments are taken with forward slashes.
+ * @param parent - the parent of the constructing object. Defaults to NULL.
  */
 ClientConnector::ClientConnector(Ui::MainWindow * ui, QString addr, int port, QString directory, QObject *parent) :
     ui(ui), QThread(parent), addr(addr), port(port), directory(directory)
 {
 }
 /**
- * @brief ClientConnector::run
+ * @brief ClientConnector::run : Run method for the client connector thread.
+ *          Establishes a new qtcpsocket, joins the required slots and connects to the specified host.
  */
 void ClientConnector::run()
 {
@@ -20,7 +50,7 @@ void ClientConnector::run()
     connect(ui->disconnect, SIGNAL(pressed()), this, SLOT(disconnectClient()), Qt::DirectConnection);
     connect(socket, SIGNAL(readyRead()), this, SLOT(readyRead()), Qt::DirectConnection);
     connect(ui->fileBox, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(sendRequestPacket(QListWidgetItem *)));
-
+    connect(this, SIGNAL(clearSettings(bool)), ui->settings, SLOT(setEnabled(bool)));
     emit appendStatus("Connecting to server...");
 
     socket->connectToHost(addr, port);
@@ -35,7 +65,8 @@ void ClientConnector::run()
     }
 }
 /**
- * @brief ClientConnector::connected
+ * @brief ClientConnector::connected : performs the file list requesting operation on client connection.
+ *              Writes a file list request to the socket.
  */
 void ClientConnector::connected()
 {
@@ -45,56 +76,66 @@ void ClientConnector::connected()
 }
 
 /**
- * @brief ClientConnector::disconnected
+ * @brief ClientConnector::disconnected : disconnects the client from the server.
+ *          Calls a delete later on the socket and exits the thread, so that the
+ *          thread may handle the disconnection.
  */
 void ClientConnector::disconnectClient()
 {
     emit clearFilebox();
     emit appendStatus("Disconnected from server.");
+    emit clearSettings(true);
     socket->deleteLater();
     this->exit(0);
 }
 
 /**
- * @brief ClientConnector::readyRead
+ * @brief ClientConnector::readyRead : waits for incoming data, immediately called when data arrives.
+ *          When data is found, checks the incoming data for a header.
+ *          Headers may either be FLISTREQ (a filelist packet) or FRECIEVE
+ *          (a data packet for file saving.)
  */
 void ClientConnector::readyRead()
 {
     QByteArray Data = socket->read(HEADER_SIZE);
 
-    if(Data.startsWith(FLISTREQ))
+    if(Data.startsWith(FLISTREQ)) // FILE LIST REQUEST PACKET
     {
        processFileList();
     }
-    else if(Data.startsWith(FRECIEVE))
+    else if(Data.startsWith(FRECIEVE)) // INCOMING GET PACKET
     {
        grabRequestFile();
     }
 }
 
 /**
- * @brief ClientConnector::sendFile
- * @param filepath
+ * @brief ClientConnector::sendFile : slot called when user hits the sendfile button.
+ *          Grabs the file the user selected and sends its header and data to the server.
+ * @param filepath - the filepath of the selected file provided by the signal calling it.
  */
 void ClientConnector::sendFile(QString filepath)
 {
     disconnectFileList(OFF);
+
     QByteArray * data = new QByteArray();
     QDataStream out(data, QIODevice::WriteOnly);
+
     QFileInfo fi(filepath);
     QString filename = fi.fileName();
 
     QFile * file = new QFile(filepath);
     file->open(QIODevice::ReadOnly);
     emit appendStatus("Sending " + filename + " to server...");
-    out.writeRawData(FSNDREQ, strlen(FSNDREQ));
-    out.writeBytes(filename.toStdString().c_str(), strlen(filename.toStdString().c_str()));
+
+    out.writeRawData(FSNDREQ, strlen(FSNDREQ)); // writes the GET header
+    out.writeBytes(filename.toStdString().c_str(), strlen(filename.toStdString().c_str())); // writes the filename and its size
 
     socket->write(*data);
     data->clear();
     out.device()->seek(0);
 
-    out.writeBytes(file->readAll(), file->size());
+    out.writeBytes(file->readAll(), file->size()); // writes both filesize and data
 
     socket->write(*data);
     socket->flush();
@@ -102,6 +143,11 @@ void ClientConnector::sendFile(QString filepath)
     emit appendStatus("Send completed.");
     disconnectFileList(ON);
 }
+/**
+ * @brief ClientConnector::disconnectFileList : enables or disables the fielisting.
+ *          Prevents the user from causing uneeded file transfer issues when an ongoing transfer is occuring.
+ * @param state - 1 means the file listing will be enabled, 0 means it will be disabled.
+ */
 void ClientConnector::disconnectFileList(int state)
 {
     if(state == OFF)
@@ -111,8 +157,8 @@ void ClientConnector::disconnectFileList(int state)
 }
 
 /**
- * @brief ClientConnector::requestFile
- * @param filename
+ * @brief ClientConnector::requestFile : grabs the incoming file from the server.
+ *          Collects the file size and header data. Saves the file to the established directory.
  */
 void ClientConnector::grabRequestFile()
 {
@@ -130,11 +176,11 @@ void ClientConnector::grabRequestFile()
 
     while(totalBytesRead != size)
     {
-        if((socket->peek(size).size() == size)||socket->waitForReadyRead())
+        if((socket->peek(size).size() == size)||socket->waitForReadyRead()) // if the file size is too small, readyread can miss it
         {
             fileData->append(socket->readAll());
             totalBytesRead += fileData->size() - totalBytesRead;
-            emit setValueProgress(totalBytesRead);
+            emit setValueProgress(totalBytesRead); // progress bar control
         }
     }
 
@@ -148,8 +194,9 @@ void ClientConnector::grabRequestFile()
     emit appendStatus("File transfer completed.");
 }
 /**
- * @brief ClientConnector::readFilenameHeader
- * @return
+ * @brief ClientConnector::readFilenameHeader : reads the incoming filename header.
+ *          Called when accepting a requested file.
+ * @return A QString containing the filename grabbed from the incoming header.
  */
 QString ClientConnector::readFilenameHeader()
 {
@@ -163,14 +210,15 @@ QString ClientConnector::readFilenameHeader()
     fileData.clear();
     in.device()->seek(0);
 
-    while((fileData = socket->read(size)).size() != size){}
+    while((fileData = socket->read(size)).size() != size){} // reads in filename
 
     QString filename = fileData;
     return filename;
 }
 /**
- * @brief ClientConnector::grabFileSize
- * @return
+ * @brief ClientConnector::grabFileSize : grabs the incoming filesize from the file header.
+ *          Called when accepting a request.
+ * @return A quint32 which represents the size of the incoming data.
  */
 quint32 ClientConnector::grabFileSize()
 {
@@ -184,25 +232,10 @@ quint32 ClientConnector::grabFileSize()
 
     return size;
 }
-
 /**
- * @brief ClientHandler::grabFileName
- * @param data
- * @return
- */
-QString ClientConnector::grabFileName(QByteArray data)
-{
-    QString filename("");
-    for(int i = 16; i < 3200; i++){
-        if(data.at(i) == ';'){
-            break;
-        }
-        filename.append(data.at(i - 16));
-    }
-}
-/**
- * @brief ClientConnector::processFileList
- * @param list
+ * @brief ClientConnector::processFileList : processes the file listing packet sent by the server.
+ *          Retrieves the size of the list first and then reads in the filelisting. Emits a signal
+ *          to the GUI thread to draw to the file listing box.
  */
 void ClientConnector::processFileList()
 {
@@ -228,9 +261,9 @@ void ClientConnector::processFileList()
 
 }
 /**
- * @brief ClientConnector::sendRequestPacket
- * @param filename
- * @return
+ * @brief ClientConnector::sendRequestPacket : slot that responds to a user double clicking a file listing item.
+ *          Retrieves the filename from the QWidgetItem and sends a file request header along with the filename.
+ * @param QListWidget - the widget the user selected for download.
  */
 void ClientConnector::sendRequestPacket(QListWidgetItem *item)
 {

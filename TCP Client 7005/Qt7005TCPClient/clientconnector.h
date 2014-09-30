@@ -28,8 +28,6 @@ class ClientConnector : public QThread
         int port;
         QTcpSocket * socket = NULL;
 
-    signals:
-
     public slots:
         void connected();
         void readyRead();
@@ -37,7 +35,7 @@ class ClientConnector : public QThread
         void sendRequestPacket(QListWidgetItem *item);
         void disconnectClient();
 
-signals: //UI functions
+    signals: //UI functions
         void openDialog();
         void setRangeProgress(int minimum, int maximum);
         void setValueProgress(int value);
@@ -46,6 +44,7 @@ signals: //UI functions
         void appendStatus(const QString &);
         void connectFailure(bool);
         void addListItem(QString);
+        void clearSettings(bool);
 
     private:
         Ui::MainWindow *ui;
@@ -55,7 +54,6 @@ signals: //UI functions
         void disconnectFileList(int state = 0);
         void grabRequestFile();
         void processFileList();
-        QString grabFileName(QByteArray data);
         QString readFilenameHeader();
         quint32 grabFileSize();
 };

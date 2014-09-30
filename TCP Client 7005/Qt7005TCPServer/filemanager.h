@@ -16,10 +16,6 @@ class FileManager : public QObject
         void setDirectory(QString dir);
         void loadFileListing();
 
-    signals:
-
-    public slots:
-
     private:
         QDir directory;
         QStringList fileListing;

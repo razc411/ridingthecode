@@ -21,7 +21,6 @@ SOURCES += main.cpp\
 HEADERS  += mainwindow.h \
     connectionmanager.h \
     clienthandler.h \
-    filemanager.h \
-    ServerDefs.h
+    filemanager.h
 
 FORMS    += mainwindow.ui

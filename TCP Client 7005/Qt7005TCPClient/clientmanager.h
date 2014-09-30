@@ -19,9 +19,7 @@ public:
 
 public slots:
     void StartClient();
-    void StopClient();
     void changeSettings();
-    void clearButton();
     void addFileItem(QString item);
 
 private:
