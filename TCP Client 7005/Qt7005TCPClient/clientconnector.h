@@ -18,15 +18,17 @@
 #define OFF         0
 #define ON          1
 
-class ClientConnector : public QThread
+class ClientConnector : public QObject
 {
     Q_OBJECT
     public:
         explicit ClientConnector(Ui::MainWindow * ui, QString addr = "localhost",
-                                 int port = 7005, QString directory = "C:/Users/Raz", QObject *parent = 0);
+                                 int port = 7005, QString directory = "C:/Users/Raz/Documents", QObject *parent = 0);
         QString addr;
         int port;
         QTcpSocket * socket = NULL;
+
+        void run();
 
     public slots:
         void connected();
@@ -50,7 +52,6 @@ class ClientConnector : public QThread
         Ui::MainWindow *ui;
         QString directory;
 
-        void run();
         void disconnectFileList(int state = 0);
         void grabRequestFile();
         void processFileList();

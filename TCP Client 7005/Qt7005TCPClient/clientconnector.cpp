@@ -34,7 +34,7 @@
  * @param parent - the parent of the constructing object. Defaults to NULL.
  */
 ClientConnector::ClientConnector(Ui::MainWindow * ui, QString addr, int port, QString directory, QObject *parent) :
-    ui(ui), QThread(parent), addr(addr), port(port), directory(directory)
+    ui(ui), QObject(parent), addr(addr), port(port), directory(directory)
 {
 }
 /**
@@ -44,7 +44,6 @@ ClientConnector::ClientConnector(Ui::MainWindow * ui, QString addr, int port, QS
 void ClientConnector::run()
 {
     socket = new QTcpSocket();
-    socket->moveToThread(this);
 
     connect(socket, SIGNAL(connected()), this, SLOT(connected()), Qt::DirectConnection);
     connect(ui->disconnect, SIGNAL(pressed()), this, SLOT(disconnectClient()), Qt::DirectConnection);
@@ -58,10 +57,6 @@ void ClientConnector::run()
     {
         emit appendStatus("Error connecting to host: " + socket->errorString());
         emit connectFailure(true);
-    }
-    else
-    {
-        exec();
     }
 }
 /**
@@ -86,7 +81,7 @@ void ClientConnector::disconnectClient()
     emit appendStatus("Disconnected from server.");
     emit clearSettings(true);
     socket->deleteLater();
-    this->exit(0);
+    exit(0);
 }
 
 /**
@@ -126,7 +121,7 @@ void ClientConnector::sendFile(QString filepath)
 
     QFile * file = new QFile(filepath);
     file->open(QIODevice::ReadOnly);
-    emit appendStatus("Sending " + filename + " to server...");
+    emit appendStatus(QString("Sending " + filename + " to server..\nFileSize: %1 MB").arg((double)file->size()/1000000));
 
     out.writeRawData(FSNDREQ, strlen(FSNDREQ)); // writes the GET header
     out.writeBytes(filename.toStdString().c_str(), strlen(filename.toStdString().c_str())); // writes the filename and its size

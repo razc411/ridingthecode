@@ -23,7 +23,7 @@ public slots:
     void addFileItem(QString item);
 
 private:
-    ClientConnector *thread;
+    ClientConnector * cConnector;
     Ui::MainWindow * ui;
     MainWindow * mainW;
 

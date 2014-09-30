@@ -48,6 +48,7 @@ void ConnectionManager::appendFileListing()
  */
 void ConnectionManager::applySettings()
 {
+    win->ui->statusBox->append("Settings applied.");
     directory = win->ui->directoryEdit->text();
     saveDirectory = win->ui->saveDir->text();
     port = win->ui->portEdit->text().toInt();
@@ -78,7 +79,7 @@ void ConnectionManager::StartServer()
 void ConnectionManager::StopServer()
 {
    win->ui->statusBox->append("Closing the connection...");
-
+   win->ui->fileListing->clear();
    for(int i = 0; i < threadList.size(); i++)
    {
        threadList.at(i)->exit();

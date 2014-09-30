@@ -34,22 +34,24 @@ ClientManager::ClientManager(Ui::MainWindow * ui, MainWindow * w, QObject *paren
  */
 void ClientManager::StartClient()
 {
-    thread = new ClientConnector(ui, addr, port, directory);
+    QThread * thread = new QThread;
+    cConnector = new ClientConnector(ui, addr, port, directory);
 
-    connect(thread, SIGNAL(setValueProgress(int)), ui->progressBar, SLOT(setValue(int))); // GUI
-    connect(thread, SIGNAL(setRangeProgress(int, int)), ui->progressBar, SLOT(setRange(int, int))); // GUI
-    connect(thread, SIGNAL(resetProgress()), ui->progressBar, SLOT(reset())); // GUI
-    connect(thread, SIGNAL(appendStatus(QString)), ui->statusBox, SLOT(append(QString))); // GUI
-    connect(thread, SIGNAL(clearFilebox()), ui->fileBox, SLOT(clear())); // GUI
+    connect(cConnector, SIGNAL(setValueProgress(int)), ui->progressBar, SLOT(setValue(int))); // GUI
+    connect(cConnector, SIGNAL(setRangeProgress(int, int)), ui->progressBar, SLOT(setRange(int, int))); // GUI
+    connect(cConnector, SIGNAL(resetProgress()), ui->progressBar, SLOT(reset())); // GUI
+    connect(cConnector, SIGNAL(appendStatus(QString)), ui->statusBox, SLOT(append(QString))); // GUI
+    connect(cConnector, SIGNAL(clearFilebox()), ui->fileBox, SLOT(clear())); // GUI
 
-    connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
-    connect(thread, SIGNAL(connectFailure(bool)), ui->settings, SLOT(setEnabled(bool)));
-    connect(thread, SIGNAL(addListItem(QString)), this, SLOT(addFileItem(QString)));
-    connect(mainW, SIGNAL(fileSelected(QString)), thread, SLOT(sendFile(QString)));
-
-    thread->start();
+    connect(cConnector, SIGNAL(connectFailure(bool)), ui->settings, SLOT(setEnabled(bool)));
+    connect(cConnector, SIGNAL(addListItem(QString)), this, SLOT(addFileItem(QString)));
+    connect(mainW, SIGNAL(fileSelected(QString)), cConnector, SLOT(sendFile(QString)));
 
     ui->settings->setEnabled(false);
+
+    cConnector->moveToThread(thread);
+    thread->start();
+    cConnector->run();
 }
 /**
  * @brief ClientManager::addFileItem : slot that adds items to the file listing.
