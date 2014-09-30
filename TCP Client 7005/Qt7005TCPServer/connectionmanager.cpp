@@ -98,7 +98,7 @@ void ConnectionManager::StopServer()
 void ConnectionManager::incomingConnection(qintptr socketDescriptor)
 {
     win->ui->statusBox->append(QString("Established socket %1, connecting...").arg(socketDescriptor));
-    ClientHandler *thread = new ClientHandler(socketDescriptor, fManager, win, this);
+    ClientHandler *thread = new ClientHandler(socketDescriptor, fManager, win, this, saveDirectory);
     connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
     connect(thread, SIGNAL(appendStatus(QString)), win->ui->statusBox, SLOT(append(QString)));
     thread->start();
