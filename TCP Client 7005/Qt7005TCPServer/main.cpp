@@ -8,9 +8,7 @@ int main(int argc, char *argv[])
     MainWindow w;
     w.show();
 
-    QString dir = "C:/Users/Raz/Documents";
-    ConnectionManager server(dir);
-    server.StartServer();
+    ConnectionManager server(&w);
 
     return a.exec();
 }

@@ -7,17 +7,26 @@
 #include <QFile>
 #include <QByteArray>
 #include "filemanager.h"
+#include "mainwindow.h"
+#include "ui_mainwindow.h"
 #include "ServerDefs.h"
+
+#define HEADER_SIZE 17
+#define FLISTREQ    ";T7005PKTFLISTREQ"
+#define FRECIEVE    ";T7005PKTFREQPSND"
+#define FSNDREQ     ";T7005PKTFILESEND"
+#define FGRABREQ    ";T7005PKTFILEREQT"
 
 class ClientHandler: public QThread
 {
     Q_OBJECT
 public:
-    explicit ClientHandler(int ID, FileManager * fm, QObject *parent = 0);
+    explicit ClientHandler(int ID, FileManager * fm, MainWindow * win, QObject *parent = 0, QString directory = "C:/");
     void run();
 
 signals:
     void error(QTcpSocket::SocketError socketerror);
+    void appendStatus(const QString &);
 
 public slots:
     void readyRead();
@@ -26,18 +35,19 @@ public slots:
 public slots:
 
 private:
+    MainWindow * win;
     QTcpSocket *socket;
     int socketDescriptor;
     FileManager * fManager;
-    const char * fListPkt = ";T7005PKTFLISTREQ";
-    QString * fReqPkt = new QString(";T7005PKTFILEREQT");
-    QString * fSndPkt = new QString(";T7005PKTFILESEND");
+    QString directory;
 
     void parsePacket(QByteArray Data);
-    int recieveClientTransfer(QString filename, quint64 filesize);
+    void recieveClientTransfer();
     void sendFile(QString filename);
     int sendFileList();
     QString grabFileName();
+    quint32 grabFileSize();
+    QString readFilenameHeader();
 };
 
 #endif // CLIENTHANDLER_H

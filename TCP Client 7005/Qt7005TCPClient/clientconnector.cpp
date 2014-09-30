@@ -4,8 +4,8 @@
  * @param ui
  * @param parent
  */
-ClientConnector::ClientConnector(Ui::MainWindow * ui, QObject *parent) :
-    ui(ui)
+ClientConnector::ClientConnector(Ui::MainWindow * ui, QString addr, int port, QString directory, QObject *parent) :
+    ui(ui), QThread(parent), addr(addr), port(port), directory(directory)
 {
 }
 /**
@@ -14,17 +14,25 @@ ClientConnector::ClientConnector(Ui::MainWindow * ui, QObject *parent) :
 void ClientConnector::run()
 {
     socket = new QTcpSocket();
+    socket->moveToThread(this);
 
     connect(socket, SIGNAL(connected()), this, SLOT(connected()), Qt::DirectConnection);
-    connect(socket, SIGNAL(disconnected()), this, SLOT(disconnected()), Qt::DirectConnection);
+    connect(ui->disconnect, SIGNAL(pressed()), this, SLOT(disconnectClient()), Qt::DirectConnection);
     connect(socket, SIGNAL(readyRead()), this, SLOT(readyRead()), Qt::DirectConnection);
     connect(ui->fileBox, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(sendRequestPacket(QListWidgetItem *)));
 
     emit appendStatus("Connecting to server...");
 
-    socket->connectToHost("localhost", 3224);
-
-    exec();
+    socket->connectToHost(addr, port);
+    if(!socket->waitForConnected(10000))
+    {
+        emit appendStatus("Error connecting to host: " + socket->errorString());
+        emit connectFailure(true);
+    }
+    else
+    {
+        exec();
+    }
 }
 /**
  * @brief ClientConnector::connected
@@ -33,62 +41,73 @@ void ClientConnector::connected()
 {
     emit appendStatus("Connected to " + socket->peerName());
 
-    socket->write(";T7005PKTFLISTREQ");
+    socket->write(FLISTREQ);
 }
+
 /**
  * @brief ClientConnector::disconnected
  */
-void ClientConnector::disconnected()
+void ClientConnector::disconnectClient()
 {
+    emit clearFilebox();
     emit appendStatus("Disconnected from server.");
+    socket->deleteLater();
+    this->exit(0);
 }
+
 /**
  * @brief ClientConnector::readyRead
  */
 void ClientConnector::readyRead()
 {
-    QByteArray Data = socket->read(17);
+    QByteArray Data = socket->read(HEADER_SIZE);
 
-    if(Data.startsWith(";T7005PKTFLISTREQ"))
+    if(Data.startsWith(FLISTREQ))
     {
        processFileList();
     }
-    else if(Data.startsWith(";T7005PKTFREQPSND"))
+    else if(Data.startsWith(FRECIEVE))
     {
        grabRequestFile();
     }
-    else if(Data.startsWith(";T7005PKTFREQPTRN"))
-    {
-      // downloadFile();
-    }
-    else if(Data.startsWith(";T7005PKTFILESEND"))
-    {
-//        QString filename = grabFileName(Data);
-//        quint64 fileSize;
-//        QByteArray temp = socket->read(sizeof(quint64));
-//        fileSize = temp.toUInt();
-//       recieveClientTransfer(filename, fileSize);
-    }
 }
+
 /**
  * @brief ClientConnector::sendFile
  * @param filepath
  */
 void ClientConnector::sendFile(QString filepath)
 {
-    QByteArray data;
-    QDataStream out(&data, QIODevice::WriteOnly);
+    disconnectFileList(OFF);
+    QByteArray * data = new QByteArray();
+    QDataStream out(data, QIODevice::WriteOnly);
+    QFileInfo fi(filepath);
+    QString filename = fi.fileName();
 
     QFile * file = new QFile(filepath);
     file->open(QIODevice::ReadOnly);
-    out << ";T7005PKTFILESEND";
-    out << (quint32)file->size();
-    out << file;
+    emit appendStatus("Sending " + filename + " to server...");
+    out.writeRawData(FSNDREQ, strlen(FSNDREQ));
+    out.writeBytes(filename.toStdString().c_str(), strlen(filename.toStdString().c_str()));
 
-    socket->write(data);
+    socket->write(*data);
+    data->clear();
+    out.device()->seek(0);
+
+    out.writeBytes(file->readAll(), file->size());
+
+    socket->write(*data);
     socket->flush();
 
-    emit appendStatus("File sent to client successfully!");
+    emit appendStatus("Send completed.");
+    disconnectFileList(ON);
+}
+void ClientConnector::disconnectFileList(int state)
+{
+    if(state == OFF)
+        disconnect(ui->fileBox, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(sendRequestPacket(QListWidgetItem *)));
+    else if(state == ON)
+        connect(ui->fileBox, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(sendRequestPacket(QListWidgetItem *)));
 }
 
 /**
@@ -99,14 +118,14 @@ void ClientConnector::grabRequestFile()
 {
     QByteArray  * fileData = new QByteArray();
 
-    disconnect(ui->fileBox, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(sendRequestPacket(QListWidgetItem *)));
+    disconnectFileList(OFF);
 
     QString filename = readFilenameHeader();
     quint32 size = grabFileSize();
 
     int totalBytesRead = 0;
     emit appendStatus("Waiting for file request...");
-
+    emit appendStatus(QString("Retrieving " + filename + "\nFilesize: %1").arg((double)size/1000000).append(" MB."));
     emit setRangeProgress(size/100, size);
 
     while(totalBytesRead != size)
@@ -119,13 +138,13 @@ void ClientConnector::grabRequestFile()
         }
     }
 
-    QFile file("C:/Users/Raz/Desktop/" + filename);
+    QFile file(directory + "/" + filename);
     file.open(QIODevice::WriteOnly);
     file.write(*fileData);
     file.close();
 
     emit resetProgress();
-    connect(ui->fileBox, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(sendRequestPacket(QListWidgetItem *)));
+    disconnectFileList(ON);
     emit appendStatus("File transfer completed.");
 }
 /**
@@ -190,23 +209,21 @@ void ClientConnector::processFileList()
     QByteArray data;
     QDataStream in(&data, QIODevice::ReadOnly);
 
-
     while((data = socket->read(sizeof(quint32))).size() != sizeof(quint32)){}
 
     quint32 size;
     in >> size;
-
     data.clear();
 
     while((data = socket->read(size)).size() != size){}
 
     QList<QByteArray> fileList = data.split(',');
 
-    ui->fileBox->clear();
+    emit clearFilebox();
 
     for(int i = 0; i < fileList.size(); i++)
     {
-        ui->fileBox->addItem(fileList.at(i));
+        emit addListItem(fileList.at(i));
     }
 
 }
@@ -221,7 +238,7 @@ void ClientConnector::sendRequestPacket(QListWidgetItem *item)
     QDataStream out(&data, QIODevice::WriteOnly);
     QString filename = item->text();
 
-    out.writeRawData(";T7005PKTFILEREQT", strlen(";T7005PKTFILEREQT"));
+    out.writeRawData(FGRABREQ, strlen(FGRABREQ));
     out.writeBytes(filename.toStdString().c_str(), strlen(filename.toStdString().c_str()));
 
     socket->write(data);

@@ -2,6 +2,7 @@
 #include "clientconnector.h"
 #include "clientmanager.h"
 #include <QApplication>
+#include <QObject>
 
 int main(int argc, char *argv[])
 {
@@ -9,7 +10,7 @@ int main(int argc, char *argv[])
     MainWindow w;
     w.show();
     Ui::MainWindow * ui = w.getMainWindowHandle();
-    ClientManager controller(ui);
+    ClientManager controller(ui, &w);
 
 
     return a.exec();
