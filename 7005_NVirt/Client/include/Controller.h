@@ -1,30 +1,9 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
-#include <unistd.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <stdio.h>
-#include <string>
-#include <iostream>
-#include <cstring>
-#include <fstream>
-#include <queue>
-#include <sstream>
 #include "CommandController.h"
 #include "TransferController.h"
 #include "definitions.h"
-
-struct packet_hdr
-{
-    int8_t ptype;
-    char dest_ip[IP_LEN];
-    int32_t ack_value;
-    int32_t window_size;
-    int32_t sequence_number;
-    char data[DATA_LOAD];
-};
 
 class Controller
 {

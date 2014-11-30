@@ -1,13 +1,13 @@
 #ifndef TRANSFERCONTROLLER_H
 #define TRANSFERCONTROLLER_H
 
-#include <cstring>
+#include "definitions.h"
 
 class TransferController
 {
     public:
 
-        TransferController(char * destip, size_t transfer_size, size_t win_size);
+        TransferController(std::string destip, size_t transfer_size, size_t win_size);
         virtual ~TransferController();
 
         int current_seq;
@@ -21,12 +21,12 @@ class TransferController
         size_t size(){return strlen(buffer);}
         int readNextPacket(struct packet_hdr * packet);
         void readPacket(char &packet, int sequence_num);
-        bool verifyAck(struct packet_hdr packet);
-        void write_packet_buffer(const char ipdest[20]);
+        int verifyAck(struct packet_hdr packet);
+        void write_packet_buffer();
 
     protected:
     private:
-        char * ipdest;
+        const char * ipdest;
         char * buffer;
 };
 

@@ -1,11 +1,6 @@
 #ifndef COMMANDCONTROLLER_H
 #define COMMANDCONTROLLER_H
 
-#include <iostream>
-#include <sstream>
-#include <cstdlib>
-#include <fstream>
-#include <queue>
 #include "TransferController.h"
 #include "definitions.h"
 

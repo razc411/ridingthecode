@@ -13,15 +13,10 @@
 	<strings.h>
 	<string.h>
 
-1417326678 source:/home/raz/Github/ridingthecode/7005_NVirt/Client/src/CommandController.cpp
+1417385075 source:/home/raz/Github/ridingthecode/7005_NVirt/Client/src/CommandController.cpp
 	"CommandController.h"
 
-1417326850 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/CommandController.h
-	<iostream>
-	<sstream>
-	<cstdlib>
-	<fstream>
-	<queue>
+1417385802 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/CommandController.h
 	"TransferController.h"
 	"definitions.h"
 
@@ -35,18 +30,7 @@
 1417327435 source:/home/raz/Github/ridingthecode/7005_NVirt/Client/src/Controller.cpp
 	"../include/Controller.h"
 
-1417327110 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/Controller.h
-	<unistd.h>
-	<sys/socket.h>
-	<arpa/inet.h>
-	<netdb.h>
-	<stdio.h>
-	<string>
-	<iostream>
-	<cstring>
-	<fstream>
-	<queue>
-	<sstream>
+1417385802 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/Controller.h
 	"CommandController.h"
 	"TransferController.h"
 	"definitions.h"
@@ -67,8 +51,28 @@
 	<string.h>
 	"include/Controller.h"
 
-1417327773 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/TransferController.h
-	<cstring>
+1417385858 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/TransferController.h
+	"definitions.h"
 
-1417326832 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/definitions.h
+1417385802 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/definitions.h
+	<unistd.h>
+	<sys/socket.h>
+	<arpa/inet.h>
+	<netdb.h>
+	<stdio.h>
+	<string>
+	<iostream>
+	<cstring>
+	<fstream>
+	<queue>
+	<sstream>
+	<cstdlib>
+	<string>
+
+1417386050 source:/home/raz/Github/ridingthecode/7005_NVirt/Client/src/TransferController.cpp
+	"TransferController.h"
+
+1417386089 source:/home/raz/Github/ridingthecode/7005_NVirt/Client/main.cpp
+	"include/definitions.h"
+	"include/Controller.h"
 

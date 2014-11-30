@@ -300,9 +300,9 @@ void Controller::notify(int type, struct packet_hdr pkt)
         break;
     }
 
-    cout << type_str << "PKT: " << packet_type << " SRC: " << pkt.src_ip << " DEST: " << pkt.dest_ip
+    cout << type_str << "PKT: " << packet_type << " DEST: " << pkt.dest_ip
     << " ACK# : " << pkt.ack_value << " SEQ# " << pkt.sequence_number << endl;
 
-    n_control->log_descriptor << type_str << "PKT: " << packet_type << " SRC: " << pkt.src_ip
-    << " DEST: " << pkt.dest_ip << " ACK# : " << pkt.ack_value << " SEQ# " << pkt.sequence_number << endl;
+    n_control->log_descriptor << type_str << "PKT: " << packet_type << " DEST: " << pkt.dest_ip <<
+    " ACK# : " << pkt.ack_value << " SEQ# " << pkt.sequence_number << endl;
 }

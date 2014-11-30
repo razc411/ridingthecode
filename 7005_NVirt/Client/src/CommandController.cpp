@@ -110,7 +110,7 @@ int CommandController::check_command(queue<TransferController*> &qTransfers)
     {
         string destip = line.substr(6);
 
-        TransferController * transfer = new TransferController(destip.c_str(), P_SIZE * num_packets, window_size);
+        TransferController * transfer = new TransferController(destip, P_SIZE * num_packets, window_size);
 
         qTransfers.push(transfer);
     }
