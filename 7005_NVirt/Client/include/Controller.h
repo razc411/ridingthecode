@@ -1,8 +1,6 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
-#include "CircularBuffer.h"
-#include "CommandController.h"
 #include <unistd.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -12,30 +10,16 @@
 #include <iostream>
 #include <cstring>
 #include <fstream>
+#include <queue>
 #include <sstream>
-
-#define LISTEN      0
-#define STDIN       1
-#define SENDER      0
-#define RECIEVER    1
-#define SND         0
-#define RCV         1
-#define PORT        6323
-#define BUFLEN      HEADER_SIZE + DATA_LOAD * 100
-#define HEADER_SIZE 144
-#define DATA_LOAD   2048
-#define ACK         1
-#define DATA        2
-#define EOT         3
-#define IP_LEN      20
-#define P_DATA      2
-#define P_SIZE      HEADER_SIZE + DATA_LOAD
+#include "CommandController.h"
+#include "TransferController.h"
+#include "definitions.h"
 
 struct packet_hdr
 {
     int8_t ptype;
     char dest_ip[IP_LEN];
-    char src_ip[IP_LEN];
     int32_t ack_value;
     int32_t window_size;
     int32_t sequence_number;
@@ -52,15 +36,13 @@ class Controller
         int recieve_data();
         int transmit_data();
         int create_udp_socket(int port);
-        void notify(int type, struct packet_hdr pkt);
+        void notify_terminal(int type, struct packet_hdr pkt);
 
-        void write_dummy_buffer();
-        int recieve_ack(int ack_vaue, int sequence_number);
+        int send_ack(int seq, char * dest_ip);
     protected:
     private:
         int ctrl_socket;
-        int data_ready;
-        CircularBuffer * c_buffer;
         CommandController * cmd_control;
+        std::queue<TransferController*> transfers;
 };
 #endif // CONTROLLER_H

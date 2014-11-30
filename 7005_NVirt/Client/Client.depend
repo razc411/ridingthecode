@@ -13,15 +13,17 @@
 	<strings.h>
 	<string.h>
 
-1417313338 source:/home/raz/Github/ridingthecode/7005_NVirt/Client/src/CommandController.cpp
+1417326678 source:/home/raz/Github/ridingthecode/7005_NVirt/Client/src/CommandController.cpp
 	"CommandController.h"
 
-1417313290 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/CommandController.h
+1417326850 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/CommandController.h
 	<iostream>
 	<sstream>
 	<cstdlib>
 	<fstream>
 	<queue>
+	"TransferController.h"
+	"definitions.h"
 
 1417313382 source:/home/raz/Github/ridingthecode/7005_NVirt/Client/src/CircularBuffer.cpp
 	"../include/CircularBuffer.h"
@@ -30,12 +32,10 @@
 	<algorithm>
 	<cstring>
 
-1417313699 source:/home/raz/Github/ridingthecode/7005_NVirt/Client/src/Controller.cpp
+1417327435 source:/home/raz/Github/ridingthecode/7005_NVirt/Client/src/Controller.cpp
 	"../include/Controller.h"
 
-1417313679 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/Controller.h
-	"CircularBuffer.h"
-	"CommandController.h"
+1417327110 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/Controller.h
 	<unistd.h>
 	<sys/socket.h>
 	<arpa/inet.h>
@@ -45,7 +45,11 @@
 	<iostream>
 	<cstring>
 	<fstream>
+	<queue>
 	<sstream>
+	"CommandController.h"
+	"TransferController.h"
+	"definitions.h"
 
 1417313798 source:/home/raz/Github/ridingthecode/7005_NVirt/Client/udp_client.cpp
 	<stdio.h>
@@ -62,4 +66,9 @@
 	<pthread.h>
 	<string.h>
 	"include/Controller.h"
+
+1417327773 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/TransferController.h
+	<cstring>
+
+1417326832 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/definitions.h
 

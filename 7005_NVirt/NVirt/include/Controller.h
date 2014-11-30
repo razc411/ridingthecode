@@ -22,7 +22,7 @@
 #define RCV         1
 #define PORT       6323
 #define BUFLEN      HEADER_SIZE + DATA_LOAD * 100
-#define HEADER_SIZE 144
+#define HEADER_SIZE 176
 #define DATA_LOAD   2048
 #define ACK         1
 #define DATA        2
@@ -35,7 +35,6 @@ struct packet_hdr
 {
     int8_t ptype;
     char dest_ip[IP_LEN];
-    char src_ip[IP_LEN];
     int32_t ack_value;
     int32_t window_size;
     int32_t sequence_number;

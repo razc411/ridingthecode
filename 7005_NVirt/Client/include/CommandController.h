@@ -6,6 +6,9 @@
 #include <cstdlib>
 #include <fstream>
 #include <queue>
+#include "TransferController.h"
+#include "definitions.h"
+
 
 class CommandController
 {
@@ -16,12 +19,15 @@ class CommandController
         CommandController();
         virtual ~CommandController();
 
-        int check_command();
+        int check_command(std::queue<TransferController*> &qTransfers);
         void set_descriptor(std::string line);
         bool file_exists(const std::string& name);
 
     protected:
     private:
+        int num_packets;
+        int window_size;
+
 };
 
 #endif // NOISECONTROLLER_H

@@ -40,7 +40,7 @@ using namespace std;
 --      Reads an amount of data specified by bytes. If empty, returns 0. If requested bytes is larger than the buffer,
 --      returns an entire buffer.
 ----------------------------------------------------------------------------------------------------------------------*/
-CommandController::CommandController()
+CommandController::CommandController(): num_packets(100), window_size(10)
 {
     log_descriptor.open("log.txt");
 }
@@ -82,7 +82,7 @@ CommandController::~CommandController()
 --      Reads an amount of data specified by bytes. If empty, returns 0. If requested bytes is larger than the buffer,
 --      returns an entire buffer.
 ----------------------------------------------------------------------------------------------------------------------*/
-int CommandController::check_command()
+int CommandController::check_command(queue<TransferController*> &qTransfers)
 {
     string line, command;
     char delim = ' ';
@@ -96,18 +96,23 @@ int CommandController::check_command()
         exit(1);
     }
 
-    if(command.compare("/sendDummy") == 0)
+    if(command.compare("/setWindow") == 0)
     {
-        return true;
+        string destip = line.substr(11);
+    }
+
+    if(command.compare("/setNumPackets") == 0)
+    {
+
     }
 
     if(command.compare("/send") == 0)
     {
-        string filename = line.substr(6);
-        if(file_exists(filename))
-        {
-            files.push(filename);
-        }
+        string destip = line.substr(6);
+
+        TransferController * transfer = new TransferController(destip.c_str(), P_SIZE * num_packets, window_size);
+
+        qTransfers.push(transfer);
     }
 
     else if(command.compare("/help") == 0)

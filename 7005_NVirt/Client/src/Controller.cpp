@@ -39,8 +39,7 @@ using namespace std;
 --      Reads an amount of data specified by bytes. If empty, returns 0. If requested bytes is larger than the buffer,
 --      returns an entire buffer.
 ----------------------------------------------------------------------------------------------------------------------*/
-Controller::Controller(): data_ready(0),
-    c_buffer(new CircularBuffer(BUFLEN)), cmd_control(new CommandController())
+Controller::Controller(): cmd_control(new CommandController())
 {
 }
 /*------------------------------------------------------------------------------------------------------------------
@@ -62,7 +61,7 @@ Controller::Controller(): data_ready(0),
 ----------------------------------------------------------------------------------------------------------------------*/
 Controller::~Controller()
 {
-    delete c_buffer;
+    close(ctrl_socket);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: read
@@ -103,12 +102,7 @@ void Controller::execute()
 
         if(FD_ISSET(STDIN, &rcvset_t))
         {
-            data_ready = cmd_control->check_command();
-            //temporary testing with dummy packets
-            if(data_ready)
-            {
-                write_dummy_buffer();
-            }
+            cmd_control->check_command(transfers);
         }
 
         if(FD_ISSET(ctrl_socket, &sndset))
@@ -123,23 +117,6 @@ void Controller::execute()
     }
 }
 
-void Controller::write_dummy_buffer()
-{
-    char ipsrc[20] = "192.168.0.1";
-    char ipdest[20] = "192.168.0.2";
-    for(int i = 0; i < 50; i++)
-    {
-        struct packet_hdr dummy_packet;
-        memcpy(&ipdest, dummy_packet.dest_ip, sizeof(ipdest));
-        memcpy(&ipsrc, dummy_packet.src_ip, sizeof(ipsrc));
-        dummy_packet.ack_value = i;
-        dummy_packet.sequence_number = i + 1;
-        dummy_packet.window_size = 50;
-        dummy_packet.ptype = DATA;
-        memset(&dummy_packet.data, 'A', sizeof(dummy_packet.data));
-        c_buffer->write((char*)&dummy_packet, sizeof(dummy_packet));
-    }
-}
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: read
 --
@@ -173,11 +150,56 @@ int Controller::recieve_data()
     }
 
     memcpy(buffer, &packet, P_SIZE);
-    notify(RCV, packet);
+    notify_terminal(RCV, packet);
+
+    if(packet.ptype == ACK){
+        if(!transfers.front()->verifyAck(packet))
+        {
+
+        }
+    }
+    else if(packet.ptype == EOT){
+
+    }
+    else{
+        send_ack(packet.sequence_number, packet.dest_ip);
+    }
 
     free(buffer);
 
     return 1;
+}
+
+int Controller::send_ack(int seq, char * dest_ip)
+{
+    struct packet_hdr dummy_packet;
+    struct sockaddr_in server;
+    struct hostent *hp;
+
+    memcpy(&dest_ip, dummy_packet.dest_ip, sizeof(dest_ip));
+    dummy_packet.ack_value = seq - 1;
+    dummy_packet.sequence_number = seq;
+    dummy_packet.window_size = 0;
+    dummy_packet.ptype = ACK;
+    memset(&dummy_packet.data, 'A', sizeof(dummy_packet.data));
+
+    bzero((char *)&server, sizeof(server));
+    server.sin_family = AF_INET;
+    server.sin_port = htons(PORT);
+
+    if ((hp = gethostbyname(dummy_packet.dest_ip)) == NULL)
+    {
+        perror("Can't get server's IP address\n");
+        return -1;
+    }
+    bcopy(hp->h_addr, (char *)&server.sin_addr, hp->h_length);
+
+    if(sendto(ctrl_socket, (void*)&dummy_packet, P_SIZE, 0, (struct sockaddr *)&server, sizeof(server)))
+    {
+        perror("sendto failure");
+    }
+
+    notify_terminal(SND, dummy_packet);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: read
@@ -198,18 +220,13 @@ int Controller::recieve_data()
 ----------------------------------------------------------------------------------------------------------------------*/
 int Controller::transmit_data()
 {
-    //if(cmd_control->files.size() == 0){return 0;}
-    if(!data_ready){return 0;}
+    if(transfers.size() == 0) {return 0;}
 
     struct packet_hdr packet;
     struct sockaddr_in server;
     struct hostent *hp;
 
-    char * buffer = (char*) malloc(sizeof(P_SIZE));
-    memset(buffer, 0, P_SIZE);
-
-    c_buffer->read(buffer, P_SIZE);
-    memcpy(&packet, buffer, P_SIZE);
+    if(!(transfers.front()->readNextPacket(&packet))) {return 0;}
 
     bzero((char *)&server, sizeof(server));
     server.sin_family = AF_INET;
@@ -222,43 +239,12 @@ int Controller::transmit_data()
     }
     bcopy(hp->h_addr, (char *)&server.sin_addr, hp->h_length);
 
-    do{
-        if(sendto(ctrl_socket, (void*)&packet, P_SIZE, 0, (struct sockaddr *)&server, sizeof(server)))
-        {
-            perror("sendto failure");
-        }
-    }   while(!recieve_ack(packet.ack_value, packet.sequence_number));
-
-    notify(SND, packet);
-
-    free(buffer);
-
-    return 0;
-}
-
-int Controller::recieve_ack(int ack_value, int sequence_number)
-{
-    int total_read = 0, n = 0, bytes_to_read = P_SIZE;
-    struct packet_hdr packet;
-
-    char * buffer = (char*) malloc(sizeof(P_SIZE));
-    memset(buffer, 0, P_SIZE);
-
-    while ((n = read(ctrl_socket, buffer, bytes_to_read)) < P_SIZE)
+    if(sendto(ctrl_socket, (void*)&packet, P_SIZE, 0, (struct sockaddr *)&server, sizeof(server)))
     {
-        buffer += n;
-        bytes_to_read -= n;
-        total_read += n;
+        perror("sendto failure");
     }
 
-    memcpy(buffer, &packet, P_SIZE);
-    notify(RCV, packet);
-
-    free(buffer);
-
-    if(ack_value == packet.ack_value && packet.ptype == ACK){
-        return 1;
-    }
+    notify_terminal(SND, packet);
 
     return 0;
 }
@@ -321,7 +307,7 @@ int Controller::create_udp_socket(int port)
 --      Reads an amount of data specified by bytes. If empty, returns 0. If requested bytes is larger than the buffer,
 --      returns an entire buffer.
 ----------------------------------------------------------------------------------------------------------------------*/
-void Controller::notify(int type, struct packet_hdr pkt)
+void Controller::notify_terminal(int type, struct packet_hdr pkt)
 {
     string packet_type;
     string type_str = (type > 0) ? "RECV | " : "SND | ";
@@ -339,9 +325,9 @@ void Controller::notify(int type, struct packet_hdr pkt)
         break;
     }
 
-    cout << type_str << "PKT: " << packet_type << " SRC: " << pkt.src_ip << " DEST: " << pkt.dest_ip
+    cout << type_str << "PKT: " << packet_type << " DEST: " << pkt.dest_ip
     << " ACK# : " << pkt.ack_value << " SEQ# " << pkt.sequence_number << endl;
 
-    cmd_control->log_descriptor << type_str << "PKT: " << packet_type << " SRC: " << pkt.src_ip
-    << " DEST: " << pkt.dest_ip << " ACK# : " << pkt.ack_value << " SEQ# " << pkt.sequence_number << endl;
+    cmd_control->log_descriptor << type_str << "PKT: " << packet_type << " DEST: " << pkt.dest_ip << " ACK# : "
+    << pkt.ack_value << " SEQ# " << pkt.sequence_number << endl;
 }
