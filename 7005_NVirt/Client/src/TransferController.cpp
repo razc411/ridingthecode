@@ -6,6 +6,7 @@ TransferController::TransferController(std::string ip_dest, size_t t_size, size_
 {
     buffer = (char*)malloc(t_size);
     memset(buffer, 0, sizeof(t_size));
+    write_packet_buffer();
 }
 
 TransferController::~TransferController()
@@ -33,6 +34,7 @@ int TransferController::verifyAck(struct packet_hdr packet)
     if(packet.ack_value == current_ack + 1)
     {
         last_acked_seq = packet.sequence_number;
+        current_ack++;
 
         if(((current_window * window_size)) == current_seq)
         {
@@ -52,7 +54,7 @@ void TransferController::write_packet_buffer()
         memcpy(packet_data.dest_ip, &ipdest, sizeof(ipdest));
         packet_data.ack_value = i;
         packet_data.sequence_number = i + 1;
-        packet_data.window_size = transfer_size/packet_size;
+        packet_data.window_size = window_size;
         packet_data.ptype = DATA;
         memset(&packet_data.data, 'A', sizeof(packet_data.data));
         memcpy(&buffer[packet_size * i], &packet_data, packet_size);

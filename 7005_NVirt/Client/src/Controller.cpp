@@ -243,6 +243,7 @@ int Controller::transmit_data()
     if(!sendto(ctrl_socket, (void*)packet, P_SIZE, 0, (struct sockaddr *)&server, sizeof(server)))
     {
         perror("sendto failure");
+        return -1;
     }
 
     notify_terminal(SND, packet);
