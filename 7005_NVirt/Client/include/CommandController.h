@@ -5,22 +5,23 @@
 #include <sstream>
 #include <cstdlib>
 #include <fstream>
+#include <queue>
 
-class NoiseController
+class CommandController
 {
     public:
         std::ofstream log_descriptor;
-        queue<std::string> files;
+        std::queue<std::string> files;
 
-        NoiseController();
-        virtual ~NoiseController();
+        CommandController();
+        virtual ~CommandController();
 
         int check_command();
         void set_descriptor(std::string line);
+        bool file_exists(const std::string& name);
 
     protected:
     private:
-        queue<std::string> files;
 };
 
 #endif // NOISECONTROLLER_H

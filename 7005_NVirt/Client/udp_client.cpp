@@ -11,9 +11,13 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <strings.h>
+#include <pthread.h>
 #include <string.h>
+#include "include/Controller.h"
 
 #define OPTIONS "f:p:t:RS"
+
+void *execute(void *placeholder);
 
 int main (int argc, char **argv)
 {

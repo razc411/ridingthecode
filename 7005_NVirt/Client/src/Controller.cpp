@@ -103,7 +103,7 @@ void Controller::execute()
 
         if(FD_ISSET(STDIN, &rcvset_t))
         {
-            data_ready = n_control->check_command();
+            data_ready = cmd_control->check_command();
             //temporary testing with dummy packets
             if(data_ready)
             {
@@ -123,19 +123,21 @@ void Controller::execute()
     }
 }
 
-void write_dummy_buffer()
+void Controller::write_dummy_buffer()
 {
+    char ipsrc[20] = "192.168.0.1";
+    char ipdest[20] = "192.168.0.2";
     for(int i = 0; i < 50; i++)
     {
         struct packet_hdr dummy_packet;
-        dummy_packet->dest_ip = 192.168.0.1;
-        dummy_packet->src_ip = 192.168.0.2;
-        dummy_packet->ack_value = i;
-        dummy_packet->sequence_number = i + 1;
-        dummy_packet->window_size = 50;
-        dummy_packet->ptype = DATA;
-        memset(&dummy_packet->data, 'A', sizeof(dummy_packet->data));
-        c_buffer->write(&dummy_packet, sizeof(dummy_packet));
+        memcpy(&ipdest, dummy_packet.dest_ip, sizeof(ipdest));
+        memcpy(&ipsrc, dummy_packet.src_ip, sizeof(ipsrc));
+        dummy_packet.ack_value = i;
+        dummy_packet.sequence_number = i + 1;
+        dummy_packet.window_size = 50;
+        dummy_packet.ptype = DATA;
+        memset(&dummy_packet.data, 'A', sizeof(dummy_packet.data));
+        c_buffer->write((char*)&dummy_packet, sizeof(dummy_packet));
     }
 }
 /*------------------------------------------------------------------------------------------------------------------
@@ -198,7 +200,6 @@ int Controller::transmit_data()
 {
     //if(cmd_control->files.size() == 0){return 0;}
     if(!data_ready){return 0;}
-    if(last_ack != current_ack){return 3;}
 
     struct packet_hdr packet;
     struct sockaddr_in server;
@@ -209,8 +210,6 @@ int Controller::transmit_data()
 
     c_buffer->read(buffer, P_SIZE);
     memcpy(&packet, buffer, P_SIZE);
-
-    current_ack = packet.ack_value;
 
     bzero((char *)&server, sizeof(server));
     server.sin_family = AF_INET;
@@ -237,7 +236,7 @@ int Controller::transmit_data()
     return 0;
 }
 
-int recieve_ack(int ack_value, int sequence_number)
+int Controller::recieve_ack(int ack_value, int sequence_number)
 {
     int total_read = 0, n = 0, bytes_to_read = P_SIZE;
     struct packet_hdr packet;
@@ -343,6 +342,6 @@ void Controller::notify(int type, struct packet_hdr pkt)
     cout << type_str << "PKT: " << packet_type << " SRC: " << pkt.src_ip << " DEST: " << pkt.dest_ip
     << " ACK# : " << pkt.ack_value << " SEQ# " << pkt.sequence_number << endl;
 
-    n_control->log_descriptor << type_str << "PKT: " << packet_type << " SRC: " << pkt.src_ip
+    cmd_control->log_descriptor << type_str << "PKT: " << packet_type << " SRC: " << pkt.src_ip
     << " DEST: " << pkt.dest_ip << " ACK# : " << pkt.ack_value << " SEQ# " << pkt.sequence_number << endl;
 }

@@ -2,7 +2,7 @@
 #define CONTROLLER_H
 
 #include "CircularBuffer.h"
-#include "NoiseController.h"
+#include "CommandController.h"
 #include <unistd.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -55,7 +55,7 @@ class Controller
         void notify(int type, struct packet_hdr pkt);
 
         void write_dummy_buffer();
-
+        int recieve_ack(int ack_vaue, int sequence_number);
     protected:
     private:
         int ctrl_socket;

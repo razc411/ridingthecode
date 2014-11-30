@@ -106,7 +106,7 @@ int CommandController::check_command()
         string filename = line.substr(6);
         if(file_exists(filename))
         {
-            files.push_back(filename);
+            files.push(filename);
         }
     }
 
