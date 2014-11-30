@@ -222,29 +222,29 @@ int Controller::transmit_data()
 {
     if(transfers.size() == 0) {return 0;}
 
-    struct packet_hdr packet;
+    struct packet_hdr * packet = (struct packet_hdr*) malloc(sizeof(struct packet_hdr));
     struct sockaddr_in server;
     struct hostent *hp;
 
-    if(!(transfers.front()->readNextPacket(&packet))) {return 0;}
+    if(!(transfers.front()->readNextPacket(packet))) {return 0;}
 
     bzero((char *)&server, sizeof(server));
     server.sin_family = AF_INET;
     server.sin_port = htons(PORT);
 
-    if ((hp = gethostbyname(packet.dest_ip)) == NULL)
+    if ((hp = gethostbyname(packet->dest_ip)) == NULL)
     {
         perror("Can't get server's IP address\n");
         return -1;
     }
     bcopy(hp->h_addr, (char *)&server.sin_addr, hp->h_length);
 
-    if(sendto(ctrl_socket, (void*)&packet, P_SIZE, 0, (struct sockaddr *)&server, sizeof(server)))
+    if(sendto(ctrl_socket, (void*)packet, P_SIZE, 0, (struct sockaddr *)&server, sizeof(server)))
     {
         perror("sendto failure");
     }
 
-    notify_terminal(SND, packet);
+    //notify_terminal(SND, packet);
 
     return 0;
 }

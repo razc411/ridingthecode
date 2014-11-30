@@ -12,6 +12,7 @@
 				<Option type="1" />
 				<Option compiler="clang" />
 				<Compiler>
+					<Add option="-Wall" />
 					<Add option="-g" />
 					<Add directory="include" />
 				</Compiler>
@@ -34,11 +35,17 @@
 			<Add option="-Weverything" />
 			<Add option="-fexceptions" />
 		</Compiler>
+		<Linker>
+			<Add option="-pthread" />
+		</Linker>
 		<Unit filename="include/CommandController.h" />
 		<Unit filename="include/Controller.h" />
+		<Unit filename="include/TransferController.h" />
+		<Unit filename="include/definitions.h" />
+		<Unit filename="main.cpp" />
 		<Unit filename="src/CommandController.cpp" />
 		<Unit filename="src/Controller.cpp" />
-		<Unit filename="udp_client.cpp" />
+		<Unit filename="src/TransferController.cpp" />
 		<Extensions>
 			<envvars />
 			<code_completion />
