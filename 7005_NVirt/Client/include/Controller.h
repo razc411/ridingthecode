@@ -15,7 +15,7 @@ class Controller
         int recieve_data();
         int transmit_data();
         int create_udp_socket(int port);
-        void notify_terminal(int type, struct packet_hdr pkt);
+        void notify_terminal(int type, struct packet_hdr * pkt);
 
         int send_ack(int seq, char * dest_ip);
     protected:

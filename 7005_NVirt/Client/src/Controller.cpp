@@ -137,7 +137,7 @@ void Controller::execute()
 int Controller::recieve_data()
 {
     int total_read = 0, n = 0, bytes_to_read = P_SIZE;
-    struct packet_hdr packet;
+    struct packet_hdr * packet = (struct packet_hdr *) malloc(sizeof(struct packet_hdr));
 
     char * buffer = (char*) malloc(sizeof(P_SIZE));
     memset(buffer, 0, P_SIZE);
@@ -149,23 +149,24 @@ int Controller::recieve_data()
         total_read += n;
     }
 
-    memcpy(buffer, &packet, P_SIZE);
+    memcpy(buffer, packet, P_SIZE);
     notify_terminal(RCV, packet);
 
-    if(packet.ptype == ACK){
-        if(!transfers.front()->verifyAck(packet))
+    if(packet->ptype == ACK){
+        if(!transfers.front()->verifyAck(*packet))
         {
 
         }
     }
-    else if(packet.ptype == EOT){
+    else if(packet->ptype == EOT){
 
     }
     else{
-        send_ack(packet.sequence_number, packet.dest_ip);
+        send_ack(packet->sequence_number, packet->dest_ip);
     }
 
     free(buffer);
+    free(packet);
 
     return 1;
 }
@@ -199,7 +200,7 @@ int Controller::send_ack(int seq, char * dest_ip)
         perror("sendto failure");
     }
 
-    notify_terminal(SND, dummy_packet);
+    notify_terminal(SND, &dummy_packet);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: read
@@ -239,12 +240,12 @@ int Controller::transmit_data()
     }
     bcopy(hp->h_addr, (char *)&server.sin_addr, hp->h_length);
 
-    if(sendto(ctrl_socket, (void*)packet, P_SIZE, 0, (struct sockaddr *)&server, sizeof(server)))
+    if(!sendto(ctrl_socket, (void*)packet, P_SIZE, 0, (struct sockaddr *)&server, sizeof(server)))
     {
         perror("sendto failure");
     }
 
-    //notify_terminal(SND, packet);
+    notify_terminal(SND, packet);
 
     return 0;
 }
@@ -307,12 +308,12 @@ int Controller::create_udp_socket(int port)
 --      Reads an amount of data specified by bytes. If empty, returns 0. If requested bytes is larger than the buffer,
 --      returns an entire buffer.
 ----------------------------------------------------------------------------------------------------------------------*/
-void Controller::notify_terminal(int type, struct packet_hdr pkt)
+void Controller::notify_terminal(int type, struct packet_hdr * pkt)
 {
     string packet_type;
     string type_str = (type > 0) ? "RECV | " : "SND | ";
 
-    switch(pkt.ptype)
+    switch(pkt->ptype)
     {
     case ACK:
         packet_type = "ACK";
@@ -325,9 +326,9 @@ void Controller::notify_terminal(int type, struct packet_hdr pkt)
         break;
     }
 
-    cout << type_str << "PKT: " << packet_type << " DEST: " << pkt.dest_ip
-    << " ACK# : " << pkt.ack_value << " SEQ# " << pkt.sequence_number << endl;
+    cout << type_str << "PKT: " << packet_type << " DEST: " << pkt->dest_ip
+    << " ACK# : " << pkt->ack_value << " SEQ# " << pkt->sequence_number << endl;
 
-    cmd_control->log_descriptor << type_str << "PKT: " << packet_type << " DEST: " << pkt.dest_ip << " ACK# : "
-    << pkt.ack_value << " SEQ# " << pkt.sequence_number << endl;
+    cmd_control->log_descriptor << type_str << "PKT: " << packet_type << " DEST: " << pkt->dest_ip << " ACK# : "
+    << pkt->ack_value << " SEQ# " << pkt->sequence_number << endl;
 }
