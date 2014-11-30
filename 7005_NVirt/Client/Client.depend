@@ -1,0 +1,15 @@
+# depslib dependency file v1.0
+1416785107 source:/home/raz/Dropbox/Current Projects/final_project/Client/udp_client.cpp
+	<stdio.h>
+	<netdb.h>
+	<sys/types.h>
+	<sys/socket.h>
+	<sys/time.h>
+	<netinet/in.h>
+	<errno.h>
+	<stdlib.h>
+	<unistd.h>
+	<arpa/inet.h>
+	<strings.h>
+	<string.h>
+
