@@ -25,14 +25,14 @@
 #define RCV         1
 #define PORT        6323
 #define BUFLEN      HEADER_SIZE + DATA_LOAD * 100
-#define HEADER_SIZE 176
+#define HEADER_SIZE 124
 #define DATA_LOAD   2048
 #define ACK         1
 #define DATA        2
 #define EOT         3
 #define IP_LEN      20
 #define P_DATA      2
-#define P_SIZE      HEADER_SIZE + DATA_LOAD
+#define P_SIZE      2172
 
 struct packet_hdr
 {

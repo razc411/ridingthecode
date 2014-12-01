@@ -41,12 +41,12 @@ using namespace std;
 --      NOTES:
 --      Constructs a TransferController object. Sets default values of variables.
 ----------------------------------------------------------------------------------------------------------------------*/
-TransferController::TransferController(std::string ip_dest, size_t t_size, size_t win_size):
+TransferController::TransferController(std::string ip_dest, int num_packets, int win_size):
     current_ack(-1), current_seq(1), current_window(1), ipdest(ip_dest),
-    transfer_size(t_size), window_size(win_size), packet_size(P_SIZE)
+    transfer_size(num_packets * P_SIZE), window_size(win_size), packet_size(P_SIZE)
 {
-    buffer = (char*)malloc(t_size);
-    memset(buffer, 0, sizeof(t_size));
+    buffer = (char*)malloc(transfer_size + P_SIZE);
+    memset(buffer, 0, transfer_size + P_SIZE);
     write_packet_buffer();
 }
 
@@ -100,7 +100,7 @@ TransferController::~TransferController()
 int TransferController::readNextPacket(struct packet_hdr * packet)
 {
     if(current_seq <= window_size * current_window){
-        memcpy((void*)packet, &buffer[(current_seq - 1) * packet_size], packet_size);
+        memcpy((void*)packet, buffer + ((current_seq - 1) * packet_size), packet_size);
         current_seq++;
         return 1;
     }
@@ -167,14 +167,16 @@ void TransferController::write_packet_buffer()
         packet_data.window_size = window_size;
         packet_data.ptype = DATA;
         memset(&packet_data.data, 'A', sizeof(packet_data.data));
-        memcpy(&buffer[packet_size * i], &packet_data, packet_size);
+        memcpy(buffer + (packet_size * i), &packet_data, packet_size);
 
         if(i == (transfer_size/packet_size - 1))
         {
             memset(&packet_data, 0, sizeof(struct packet_hdr));
             memcpy(packet_data.dest_ip, ipdest.c_str(), strlen(ipdest.c_str()));
+            memset(&packet_data.data, 'A', sizeof(packet_data.data));
             packet_data.ptype = EOT;
-            memcpy(&buffer[packet_size * (i + 1)], &packet_data, packet_size);
+            memcpy(buffer + (packet_size * (i + 1)), &packet_data, packet_size);
+
         }
     }
 

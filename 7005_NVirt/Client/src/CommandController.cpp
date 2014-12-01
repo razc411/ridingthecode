@@ -40,7 +40,7 @@ using namespace std;
 --      NOTES:
 --      Creates a new CommandController. Sets default values for num packets and window size to 100 and 10 respectively.
 ----------------------------------------------------------------------------------------------------------------------*/
-CommandController::CommandController(): num_packets(100), window_size(10)
+CommandController::CommandController(): num_packets(30), window_size(10)
 {
     log_descriptor.open("log.txt");
 }
@@ -108,8 +108,7 @@ void CommandController::check_command()
     else if(command.compare("/send") == 0)
     {
         string destip = line.substr(6);
-
-        TransferController * new_transfer = new TransferController(destip, P_SIZE * num_packets, window_size);
+        TransferController * new_transfer = new TransferController(destip, num_packets, window_size);
 
         transfers.push_back(new_transfer);
     }

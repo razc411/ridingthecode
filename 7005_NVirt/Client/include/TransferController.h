@@ -7,16 +7,16 @@ class TransferController
 {
     public:
 
-        TransferController(std::string destip, size_t transfer_size, size_t win_size);
+        TransferController(std::string destip, int transfer_size, int win_size);
         virtual ~TransferController();
         TransferController(const TransferController &obj);
 
         int current_seq;
         int current_ack;
         int current_window;
-        size_t window_size;
-        size_t packet_size;
-        size_t transfer_size;
+        int window_size;
+        int packet_size;
+        int transfer_size;
 
         size_t size(){return strlen(buffer);}
         int readNextPacket(struct packet_hdr * packet);

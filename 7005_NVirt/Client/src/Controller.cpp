@@ -91,7 +91,7 @@ void Controller::execute()
     int maxfd = 0, ready = 0;
     ctrl_socket = create_udp_socket(PORT);
 
-    fd_set rcvset_t, rcvset, sndset;
+    fd_set rcvset_t, rcvset, sndset, sndset_t;
     FD_ZERO(&rcvset);
     FD_ZERO(&sndset);
 
@@ -104,14 +104,15 @@ void Controller::execute()
     while(true)
     {
         rcvset_t  = rcvset;
-        ready = select(maxfd + 1, &rcvset_t, &sndset, NULL, NULL);
+        sndset_t  = sndset;
+        ready = select(maxfd + 1, &rcvset_t, &sndset_t, NULL, NULL);
 
         if(FD_ISSET(STDIN, &rcvset_t))
         {
             cmd_control->check_command();
         }
 
-        if(FD_ISSET(ctrl_socket, &sndset))
+        if(FD_ISSET(ctrl_socket, &sndset_t))
         {
             transmit_data();
         }
@@ -287,7 +288,7 @@ int Controller::write_udp_socket(struct packet_hdr * packet)
 int Controller::transmit_data()
 {
     if(cmd_control->transfers.size() == 0) {
-        return 0;
+            return 0;
     }
 
     struct packet_hdr packet;
@@ -300,6 +301,7 @@ int Controller::transmit_data()
 
     if((err = write_udp_socket(&packet)) <= -1)
     {
+        delete cmd_control->transfers.front();
         cmd_control->transfers.pop_front();
         cout << "Invalid IP, abandoning transfer." << endl;
         return -2;
@@ -307,6 +309,7 @@ int Controller::transmit_data()
 
     return 0;
 }
+
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: create_udp_socket
 --
