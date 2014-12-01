@@ -84,9 +84,9 @@ Controller::~Controller()
 void Controller::execute()
 {
     int maxfd = 0, ready = 0;
-    ctrl_socket = create_udp_socket(PORT);
+    ctrl_socket = create_udp_socket(6234);
 
-    fd_set rcvset_t, rcvset, sndset;
+    fd_set rcvset_t, rcvset, sndset, sndset_t;
     FD_ZERO(&rcvset);
     FD_ZERO(&sndset);
 
@@ -99,14 +99,15 @@ void Controller::execute()
     while(true)
     {
         rcvset_t  = rcvset;
-        ready = select(maxfd + 1, &rcvset_t, &sndset, NULL, NULL);
+        sndset_t  = sndset;
+        ready = select(maxfd + 1, &rcvset_t, &sndset_t, NULL, NULL);
 
         if(FD_ISSET(STDIN, &rcvset_t))
         {
             n_control->check_command();
         }
 
-        if(FD_ISSET(ctrl_socket, &sndset))
+        if(FD_ISSET(ctrl_socket, &sndset_t))
         {
             transmit_data();
         }
@@ -141,7 +142,7 @@ int Controller::recieve_data()
 
     if((c_buffer->capacity() - c_buffer->size()) > P_SIZE)
     {
-        char * buffer = (char*) malloc(sizeof(P_SIZE));
+        char * buffer = (char*) malloc(P_SIZE);
         memset(buffer, 0, P_SIZE);
 
         while ((n = read(ctrl_socket, buffer, bytes_to_read)) < P_SIZE)
@@ -151,7 +152,7 @@ int Controller::recieve_data()
             total_read += n;
         }
 
-        memcpy(buffer, &packet, P_SIZE);
+        memcpy(&packet, buffer, P_SIZE);
         notify(RCV, packet);
 
         c_buffer->write(buffer, total_read);

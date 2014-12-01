@@ -22,6 +22,9 @@ class Controller
         void check_packet(struct packet_hdr * packet);
     protected:
     private:
+        clock_t timer;
+        double timeout = CLOCKS_PER_SEC * 5;
+        bool timer_enabled;
         int ctrl_socket;
         CommandController * cmd_control;
 };

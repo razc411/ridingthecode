@@ -89,7 +89,7 @@ Controller::~Controller()
 void Controller::execute()
 {
     int maxfd = 0, ready = 0;
-    ctrl_socket = create_udp_socket(PORT);
+    ctrl_socket = create_udp_socket(6000);
 
     fd_set rcvset_t, rcvset, sndset, sndset_t;
     FD_ZERO(&rcvset);
@@ -120,6 +120,12 @@ void Controller::execute()
         if(FD_ISSET(ctrl_socket, &rcvset_t))
         {
             recieve_data();
+        }
+
+        if((clock() - timer == timeout) && timer_enabled){
+            timer_enabled = false;
+            cmd_control->transfers.pop_front();
+            cout << "Transfer timed out, ending connection." << endl;
         }
     }
 }
@@ -186,11 +192,14 @@ void Controller::check_packet(struct packet_hdr * packet)
         if(!cmd_control->transfers.front()->verifyAck(*packet))
         {
             cmd_control->transfers.front()->current_seq = cmd_control->transfers.front()->current_ack + 2;
+        }else{
+            timer_enabled = false;
         }
     }
     else if(packet->ptype == EOT){
         cmd_control->transfers.pop_front();
         cout << "Transfer completed." << endl;
+        timer_enabled = false;
     }
     else{
         send_ack(packet->sequence_number, packet->dest_ip);
@@ -251,15 +260,15 @@ int Controller::write_udp_socket(struct packet_hdr * packet)
 
     bzero((char *)&server, sizeof(server));
     server.sin_family = AF_INET;
-    server.sin_port = htons(PORT);
+    server.sin_port = htons(6234);
 
-    if((hp = gethostbyname(packet->dest_ip)) == NULL)
+    if((hp = gethostbyname("127.0.0.1")) == NULL)
     {
         return -2;
     }
     bcopy(hp->h_addr, (char *)&server.sin_addr, hp->h_length);
 
-    if(sendto(ctrl_socket, (void*)packet, P_SIZE, 0, (struct sockaddr *)&server, sizeof(server)))
+    if(sendto(ctrl_socket, (void*)packet, P_SIZE, 0, (struct sockaddr *)&server, sizeof(server)) == -1)
     {
         perror("sendto failure");
         return -1;
@@ -306,6 +315,9 @@ int Controller::transmit_data()
         cout << "Invalid IP, abandoning transfer." << endl;
         return -2;
     }
+
+    timer = clock();
+    timer_enabled = true;
 
     return 0;
 }

@@ -1,10 +1,7 @@
 #ifndef NOISECONTROLLER_H
 #define NOISECONTROLLER_H
 
-#include <iostream>
-#include <sstream>
-#include <cstdlib>
-#include <fstream>
+#include "definitions.h"
 
 class NoiseController
 {
