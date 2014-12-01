@@ -26,7 +26,7 @@ class TransferController
 
     protected:
     private:
-        const char * ipdest;
+        std::string ipdest;
         char * buffer;
 };
 
