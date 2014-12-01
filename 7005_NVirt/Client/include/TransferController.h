@@ -9,6 +9,7 @@ class TransferController
 
         TransferController(std::string destip, size_t transfer_size, size_t win_size);
         virtual ~TransferController();
+        TransferController(const TransferController &obj);
 
         int current_seq;
         int current_ack;

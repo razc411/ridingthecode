@@ -1,10 +1,11 @@
 /*----------------------------------------------------------------------------------------------------------------------
---	Source File:		CircularBuffer.cpp
+--	Source File:		CommandController.cpp
 --
---	Functions: size_t size() const { return size_; }
---             size_t capacity() const { return capacity_; }
---             size_t write(const char *data, size_t bytes);
---             size_t read(char *data, size_t bytes);
+--	Functions: CommandController()
+--             ~CommandController()
+--             void check_command(list<TransferController*> * qTransfers)
+--             bool file_exists(const std::string& name)
+--             void set_descriptor(string line)
 --
 --	Date:			November 24 2014
 --
@@ -22,9 +23,10 @@
 -------------------------------------------------------------------------------------------------------------------------*/
 #include "CommandController.h"
 
+extern std::list<TransferController*> transfers;
 using namespace std;
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: read
+--      FUNCTION: CommandController()
 --
 --      DATE: November 24 2014
 --      REVISIONS: none
@@ -32,20 +34,19 @@ using namespace std;
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: read(const char * data, size_t bytes)
+--      INTERFACE: CommandController::CommandController()
 --
---      RETURNS: A size_t of the amount of data read.
+--      RETURNS: Nothing, allows for construction of a CommandController object.
 --
 --      NOTES:
---      Reads an amount of data specified by bytes. If empty, returns 0. If requested bytes is larger than the buffer,
---      returns an entire buffer.
+--      Creates a new CommandController. Sets default values for num packets and window size to 100 and 10 respectively.
 ----------------------------------------------------------------------------------------------------------------------*/
 CommandController::CommandController(): num_packets(100), window_size(10)
 {
     log_descriptor.open("log.txt");
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: read
+--      FUNCTION: ~CommandController
 --
 --      DATE: November 24 2014
 --      REVISIONS: none
@@ -53,20 +54,19 @@ CommandController::CommandController(): num_packets(100), window_size(10)
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: read(const char * data, size_t bytes)
+--      INTERFACE: ~CommandController()
 --
---      RETURNS: A size_t of the amount of data read.
+--      RETURNS: Nothing.
 --
 --      NOTES:
---      Reads an amount of data specified by bytes. If empty, returns 0. If requested bytes is larger than the buffer,
---      returns an entire buffer.
+--      Destructor for the CommandController. Closes the log file descriptor on call.
 ----------------------------------------------------------------------------------------------------------------------*/
 CommandController::~CommandController()
 {
     log_descriptor.close();
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: read
+--      FUNCTION: check_command
 --
 --      DATE: November 24 2014
 --      REVISIONS: none
@@ -74,15 +74,15 @@ CommandController::~CommandController()
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: read(const char * data, size_t bytes)
+--      INTERFACE: int CommandController::check_command(list<TransferController*> * qTransfers)
 --
---      RETURNS: A size_t of the amount of data read.
+--      RETURNS: Nothing.
 --
 --      NOTES:
---      Reads an amount of data specified by bytes. If empty, returns 0. If requested bytes is larger than the buffer,
---      returns an entire buffer.
+--      Reads user input to the terminal and acts on it. Currently accepts input for /send, /quit, /setWindow, /setNumPackets,
+--      and /help. Must specify arguments after the command.
 ----------------------------------------------------------------------------------------------------------------------*/
-int CommandController::check_command(queue<TransferController*> &qTransfers)
+void CommandController::check_command()
 {
     string line, command;
     char delim = ' ';
@@ -96,23 +96,23 @@ int CommandController::check_command(queue<TransferController*> &qTransfers)
         exit(1);
     }
 
-    if(command.compare("/setWindow") == 0)
+    else if(command.compare("/setWindow") == 0)
     {
         string destip = line.substr(11);
     }
 
-    if(command.compare("/setNumPackets") == 0)
+    else if(command.compare("/setNumPackets") == 0)
     {
 
     }
 
-    if(command.compare("/send") == 0)
+    else if(command.compare("/send") == 0)
     {
         string destip = line.substr(6);
 
-        TransferController * transfer = new TransferController(destip, P_SIZE * num_packets, window_size);
+        TransferController * new_transfer = new TransferController(destip, P_SIZE * num_packets, window_size);
 
-        qTransfers.push(transfer);
+        transfers.push_back(new_transfer);
     }
 
     else if(command.compare("/help") == 0)
@@ -120,7 +120,7 @@ int CommandController::check_command(queue<TransferController*> &qTransfers)
         cout << "Welcome to the NVirt dummy client!" << endl;
         cout << "Command Options" << endl;
         cout << "========================================" << endl;
-        cout << "/send <filename> : begins a transfer, will be added to queue if transfer currently in progress." << endl;
+        cout << "/send <ip> : begins a transfer, will be added to queue if transfer currently in progress." << endl;
         cout << "/quit : exits the emulator." << endl;
         cout << "========================================" << endl;
     }
@@ -128,10 +128,23 @@ int CommandController::check_command(queue<TransferController*> &qTransfers)
     {
         cout << command << " is not a valid command. Type /help to review the commands." << endl;
     }
-
-    return 1;
 }
-
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: file_exists
+--
+--      DATE: November 24 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: bool file_exists(const std::string& name)
+--
+--      RETURNS: Returns true if file exists, false if it does not.
+--
+--      NOTES:
+--      Checks if a file exists.
+----------------------------------------------------------------------------------------------------------------------*/
 bool CommandController::file_exists(const std::string& name)
 {
     if (FILE *file = fopen(name.c_str(), "r"))
@@ -144,7 +157,7 @@ bool CommandController::file_exists(const std::string& name)
 }
 
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: read
+--      FUNCTION: set_descriptor
 --
 --      DATE: November 24 2014
 --      REVISIONS: none
@@ -152,13 +165,12 @@ bool CommandController::file_exists(const std::string& name)
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: read(const char * data, size_t bytes)
+--      INTERFACE: void set_descriptor(string line)
 --
---      RETURNS: A size_t of the amount of data read.
+--      RETURNS: Nothing.
 --
 --      NOTES:
---      Reads an amount of data specified by bytes. If empty, returns 0. If requested bytes is larger than the buffer,
---      returns an entire buffer.
+--      Sets the log file to be written to.
 ----------------------------------------------------------------------------------------------------------------------*/
 void CommandController::set_descriptor(string line)
 {

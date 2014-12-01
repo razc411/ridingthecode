@@ -9,12 +9,12 @@ class CommandController
 {
     public:
         std::ofstream log_descriptor;
-        std::queue<std::string> files;
+        std::list<TransferController*> transfers;
 
         CommandController();
         virtual ~CommandController();
 
-        int check_command(std::queue<TransferController*> &qTransfers);
+        void check_command();
         void set_descriptor(std::string line);
         bool file_exists(const std::string& name);
 

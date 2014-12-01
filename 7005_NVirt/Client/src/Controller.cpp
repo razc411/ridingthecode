@@ -1,11 +1,17 @@
 #include "../include/Controller.h"
 /*----------------------------------------------------------------------------------------------------------------------
---	Source File:		CircularBuffer.cpp
+--	Source File:		Controller.cpp
 --
---	Functions: size_t size() const { return size_; }
---             size_t capacity() const { return capacity_; }
---             size_t write(const char *data, size_t bytes);
---             size_t read(char *data, size_t bytes);
+--	Functions: Controller()
+--             ~Controller()
+--             void execute()
+--             void recieve_data()
+--             void check_packet(struct packet_hdr * packet)
+--             int send_ack(int seq, char * dest_ip)
+--             int write_udp_socket(struct packet_hdr * packet)
+--             int transmit_data()
+--             int create_udp_socket(int port)
+--             void notify_terminal(int type, struct packet_hdr * pkt)
 --
 --	Date:			November 24 2014
 --
@@ -18,12 +24,13 @@
 --	PROGRAMMER:		Ramzi Chennafi
 --
 --	NOTES:
---	A circular buffer for the storing of connection data.
---
+--	The main network controller for the application. Starts a loop on select and waits for input from STDIN, the recieving
+--  socket and the sending socket.
 -------------------------------------------------------------------------------------------------------------------------*/
 using namespace std;
+
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: read
+--      FUNCTION: Controller()
 --
 --      DATE: November 24 2014
 --      REVISIONS: none
@@ -31,19 +38,19 @@ using namespace std;
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: read(const char * data, size_t bytes)
+--      INTERFACE: Controller()
 --
---      RETURNS: A size_t of the amount of data read.
+--      RETURNS: Nothing, constructs a Controller object.
 --
 --      NOTES:
---      Reads an amount of data specified by bytes. If empty, returns 0. If requested bytes is larger than the buffer,
---      returns an entire buffer.
+--      Constructs a Controller object. Creates a CommandController for use with the Controller.
 ----------------------------------------------------------------------------------------------------------------------*/
 Controller::Controller(): cmd_control(new CommandController())
 {
+
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: read
+--      FUNCTION: ~Controller
 --
 --      DATE: November 24 2014
 --      REVISIONS: none
@@ -51,20 +58,19 @@ Controller::Controller(): cmd_control(new CommandController())
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: read(const char * data, size_t bytes)
+--      INTERFACE: ~Controller()
 --
---      RETURNS: A size_t of the amount of data read.
+--      RETURNS: Nothing.
 --
 --      NOTES:
---      Reads an amount of data specified by bytes. If empty, returns 0. If requested bytes is larger than the buffer,
---      returns an entire buffer.
+--      Destructor for the Controller object. Closes any open sockets on calling.
 ----------------------------------------------------------------------------------------------------------------------*/
 Controller::~Controller()
 {
     close(ctrl_socket);
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: read
+--      FUNCTION: execute
 --
 --      DATE: November 24 2014
 --      REVISIONS: none
@@ -72,13 +78,13 @@ Controller::~Controller()
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: read(const char * data, size_t bytes)
+--      INTERFACE: execute()
 --
---      RETURNS: A size_t of the amount of data read.
+--      RETURNS: Nothing.
 --
 --      NOTES:
---      Reads an amount of data specified by bytes. If empty, returns 0. If requested bytes is larger than the buffer,
---      returns an entire buffer.
+--      Contains the controlling network loop for the application. Performs a select control for STDIN and receiving/sending
+--      on the application's main socket.
 ----------------------------------------------------------------------------------------------------------------------*/
 void Controller::execute()
 {
@@ -102,7 +108,7 @@ void Controller::execute()
 
         if(FD_ISSET(STDIN, &rcvset_t))
         {
-            cmd_control->check_command(transfers);
+            cmd_control->check_command();
         }
 
         if(FD_ISSET(ctrl_socket, &sndset))
@@ -116,9 +122,8 @@ void Controller::execute()
         }
     }
 }
-
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: read
+--      FUNCTION: recieve_data
 --
 --      DATE: November 24 2014
 --      REVISIONS: none
@@ -126,15 +131,15 @@ void Controller::execute()
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: read(const char * data, size_t bytes)
+--      INTERFACE: recieve_data()
 --
---      RETURNS: A size_t of the amount of data read.
+--      RETURNS: Nothing.
 --
 --      NOTES:
---      Reads an amount of data specified by bytes. If empty, returns 0. If requested bytes is larger than the buffer,
---      returns an entire buffer.
+--      Called whenever data is waiting on the recieve socket. Reads in a packet, prints data on the packet to the terminal
+--      and checks what kind of packet it is and performs the required action.
 ----------------------------------------------------------------------------------------------------------------------*/
-int Controller::recieve_data()
+void Controller::recieve_data()
 {
     int total_read = 0, n = 0, bytes_to_read = P_SIZE;
     struct packet_hdr * packet = (struct packet_hdr *) malloc(sizeof(struct packet_hdr));
@@ -156,32 +161,63 @@ int Controller::recieve_data()
 
     free(buffer);
     free(packet);
-
-    return 1;
 }
-
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION:check_packet
+--
+--      DATE: November 24 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void check_packet(struct packet_hdr * packet)
+--                  packet - the packet to be checked for type.
+--
+--      RETURNS: Nothing.
+--
+--      NOTES:
+--      Checks whether the passed in packet is either an ACK, EOT or DATA packet and performs the required actions.
+----------------------------------------------------------------------------------------------------------------------*/
 void Controller::check_packet(struct packet_hdr * packet)
 {
     if(packet->ptype == ACK){
-        if(!transfers.front()->verifyAck(*packet))
+        if(!cmd_control->transfers.front()->verifyAck(*packet))
         {
-            transfers.front()->current_seq = transfers.front()->current_ack + 2;
+            cmd_control->transfers.front()->current_seq = cmd_control->transfers.front()->current_ack + 2;
         }
     }
     else if(packet->ptype == EOT){
-        transfers.pop();
+        cmd_control->transfers.pop_front();
         cout << "Transfer completed." << endl;
     }
     else{
         send_ack(packet->sequence_number, packet->dest_ip);
     }
 }
-
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: send_ack
+--
+--      DATE: November 24 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: int send_ack(int seq, char * dest_ip)
+--                  dest_ip - a character array containing the destination IP
+--                  seq - the sequence number of the ack to be sent
+--
+--      RETURNS: 0 if ack send was successful, -2 on invalid hostname and -1 if the packet destination is unreachable.
+--
+--      NOTES:
+--      Crafts an ack with the requested sequence number and destination ip then sends it to the destination ip.
+----------------------------------------------------------------------------------------------------------------------*/
 int Controller::send_ack(int seq, char * dest_ip)
 {
     struct packet_hdr ack_packet;
 
-    memcpy(ack_packet.dest_ip,&dest_ip, sizeof(dest_ip));
+    memcpy(ack_packet.dest_ip, dest_ip, strlen(dest_ip));
     ack_packet.ack_value = seq - 1;
     ack_packet.sequence_number = seq;
     ack_packet.window_size = 0;
@@ -190,7 +226,23 @@ int Controller::send_ack(int seq, char * dest_ip)
 
     return write_udp_socket(&ack_packet);
 }
-
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: write_udp_socket
+--
+--      DATE: November 24 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: int Controller::write_udp_socket(struct packet_hdr * packet)
+--                  *packet - a pointer to the packet structure to be written to the socket.
+--
+--      RETURNS: An int, 0 if transfer was successful, -1 if destination unreachable and -2 if the host was invalid.
+--
+--      NOTES:
+--      Sends a packet over UDP to the specified host.
+----------------------------------------------------------------------------------------------------------------------*/
 int Controller::write_udp_socket(struct packet_hdr * packet)
 {
     struct sockaddr_in server;
@@ -200,10 +252,9 @@ int Controller::write_udp_socket(struct packet_hdr * packet)
     server.sin_family = AF_INET;
     server.sin_port = htons(PORT);
 
-    if ((hp = gethostbyname(packet->dest_ip)) == NULL)
+    if((hp = gethostbyname(packet->dest_ip)) == NULL)
     {
-        perror("Can't get server's IP address\n");
-        return -1;
+        return -2;
     }
     bcopy(hp->h_addr, (char *)&server.sin_addr, hp->h_length);
 
@@ -217,7 +268,7 @@ int Controller::write_udp_socket(struct packet_hdr * packet)
     return 0;
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: read
+--      FUNCTION: transmit_data
 --
 --      DATE: November 24 2014
 --      REVISIONS: none
@@ -225,32 +276,39 @@ int Controller::write_udp_socket(struct packet_hdr * packet)
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: read(const char * data, size_t bytes)
+--      INTERFACE: int Controller::transmit_data()
 --
---      RETURNS: A size_t of the amount of data read.
+--      RETURNS: An int, -1 if a packet is ready to be sent, -2 if a transfer failed and 0 on success.
 --
 --      NOTES:
---      Reads an amount of data specified by bytes. If empty, returns 0. If requested bytes is larger than the buffer,
---      returns an entire buffer.
+--      Retrieves the next packet to be sent and sends it over UDP. If the transfer fails the transfer is removed from
+--      the list of ongoing transfers.
 ----------------------------------------------------------------------------------------------------------------------*/
 int Controller::transmit_data()
 {
-    if(transfers.size() == 0) {
+    if(cmd_control->transfers.size() == 0) {
         return 0;
     }
 
-    struct packet_hdr * packet = (struct packet_hdr*) malloc(sizeof(struct packet_hdr));
-    struct sockaddr_in server;
-    struct hostent *hp;
+    struct packet_hdr packet;
 
-    if(!(transfers.front()->readNextPacket(packet))) {
-        return 0;
+    if(!(cmd_control->transfers.front()->readNextPacket(&packet))) {
+        return -1;
     }
 
-    return write_udp_socket(packet);
+    int err;
+
+    if((err = write_udp_socket(&packet)) <= -1)
+    {
+        cmd_control->transfers.pop_front();
+        cout << "Invalid IP, abandoning transfer." << endl;
+        return -2;
+    }
+
+    return 0;
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: read
+--      FUNCTION: create_udp_socket
 --
 --      DATE: November 24 2014
 --      REVISIONS: none
@@ -258,13 +316,13 @@ int Controller::transmit_data()
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: read(const char * data, size_t bytes)
+--      INTERFACE: int Controller::create_udp_socket(int port)
+--                  port - the port for the udp socket to be created on.
 --
---      RETURNS: A size_t of the amount of data read.
+--      RETURNS: An int for the socket descriptor created.
 --
 --      NOTES:
---      Reads an amount of data specified by bytes. If empty, returns 0. If requested bytes is larger than the buffer,
---      returns an entire buffer.
+--      Creates the udp socket for the program on the specified port.
 ----------------------------------------------------------------------------------------------------------------------*/
 int Controller::create_udp_socket(int port)
 {
@@ -282,7 +340,7 @@ int Controller::create_udp_socket(int port)
     server.sin_port = htons(port);
     server.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    if (bind(udp_socket, (struct sockaddr *)&server, sizeof(server)) == -1)
+    if (::bind(udp_socket, (struct sockaddr *)&server, sizeof(server)) == -1)
     {
         perror ("Can't bind name to socket");
         exit(1);
@@ -292,7 +350,7 @@ int Controller::create_udp_socket(int port)
     return udp_socket;
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: read
+--      FUNCTION: notify_terminal
 --
 --      DATE: November 24 2014
 --      REVISIONS: none
@@ -300,13 +358,14 @@ int Controller::create_udp_socket(int port)
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: read(const char * data, size_t bytes)
+--      INTERFACE: void Controller::notify_terminal(int type, struct packet_hdr * pkt)
+--                  *pkt - a pointer to the packet_hdr struct to be notified on
+--                  type - whether the transfer was a send or recieving transfer. RCV for recieve, SND for send.
 --
---      RETURNS: A size_t of the amount of data read.
+--      RETURNS: Nothing.
 --
 --      NOTES:
---      Reads an amount of data specified by bytes. If empty, returns 0. If requested bytes is larger than the buffer,
---      returns an entire buffer.
+--      Prints out the data of the packet passed in as *pkt to the terminal.
 ----------------------------------------------------------------------------------------------------------------------*/
 void Controller::notify_terminal(int type, struct packet_hdr * pkt)
 {

@@ -11,11 +11,11 @@
 #include <iostream>
 #include <cstring>
 #include <fstream>
-#include <queue>
+#include <list>
 #include <sstream>
 #include <cstdlib>
 #include <string>
-
+#include <memory>
 
 #define LISTEN      0
 #define STDIN       1

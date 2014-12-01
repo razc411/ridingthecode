@@ -12,7 +12,7 @@ class Controller
         virtual ~Controller();
 
         void execute();
-        int recieve_data();
+        void recieve_data();
         int transmit_data();
         int write_udp_socket(struct packet_hdr * packet);
         int create_udp_socket(int port);
@@ -24,6 +24,5 @@ class Controller
     private:
         int ctrl_socket;
         CommandController * cmd_control;
-        std::queue<TransferController*> transfers;
 };
 #endif // CONTROLLER_H
