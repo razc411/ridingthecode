@@ -11,7 +11,6 @@ class TransferController
         virtual ~TransferController();
 
         int current_seq;
-        int last_acked_seq;
         int current_ack;
         int current_window;
         size_t window_size;

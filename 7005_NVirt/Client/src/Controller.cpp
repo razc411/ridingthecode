@@ -152,18 +152,7 @@ int Controller::recieve_data()
     memcpy(buffer, packet, P_SIZE);
     notify_terminal(RCV, packet);
 
-    if(packet->ptype == ACK){
-        if(!transfers.front()->verifyAck(*packet))
-        {
-
-        }
-    }
-    else if(packet->ptype == EOT){
-
-    }
-    else{
-        send_ack(packet->sequence_number, packet->dest_ip);
-    }
+    check_packet(packet);
 
     free(buffer);
     free(packet);
@@ -171,36 +160,61 @@ int Controller::recieve_data()
     return 1;
 }
 
+void Controller::check_packet(struct packet_hdr * packet)
+{
+    if(packet->ptype == ACK){
+        if(!transfers.front()->verifyAck(*packet))
+        {
+            transfers.front()->current_seq = transfers.front()->current_ack + 2;
+        }
+    }
+    else if(packet->ptype == EOT){
+        transfers.pop();
+        cout << "Transfer completed." << endl;
+    }
+    else{
+        send_ack(packet->sequence_number, packet->dest_ip);
+    }
+}
+
 int Controller::send_ack(int seq, char * dest_ip)
 {
-    struct packet_hdr dummy_packet;
+    struct packet_hdr ack_packet;
+
+    memcpy(ack_packet.dest_ip,&dest_ip, sizeof(dest_ip));
+    ack_packet.ack_value = seq - 1;
+    ack_packet.sequence_number = seq;
+    ack_packet.window_size = 0;
+    ack_packet.ptype = ACK;
+    memset(&ack_packet.data, 'A', sizeof(ack_packet.data));
+
+    return write_udp_socket(&ack_packet);
+}
+
+int Controller::write_udp_socket(struct packet_hdr * packet)
+{
     struct sockaddr_in server;
     struct hostent *hp;
-
-    memcpy(&dest_ip, dummy_packet.dest_ip, sizeof(dest_ip));
-    dummy_packet.ack_value = seq - 1;
-    dummy_packet.sequence_number = seq;
-    dummy_packet.window_size = 0;
-    dummy_packet.ptype = ACK;
-    memset(&dummy_packet.data, 'A', sizeof(dummy_packet.data));
 
     bzero((char *)&server, sizeof(server));
     server.sin_family = AF_INET;
     server.sin_port = htons(PORT);
 
-    if ((hp = gethostbyname(dummy_packet.dest_ip)) == NULL)
+    if ((hp = gethostbyname(packet->dest_ip)) == NULL)
     {
         perror("Can't get server's IP address\n");
         return -1;
     }
     bcopy(hp->h_addr, (char *)&server.sin_addr, hp->h_length);
 
-    if(sendto(ctrl_socket, (void*)&dummy_packet, P_SIZE, 0, (struct sockaddr *)&server, sizeof(server)))
+    if(sendto(ctrl_socket, (void*)packet, P_SIZE, 0, (struct sockaddr *)&server, sizeof(server)))
     {
         perror("sendto failure");
+        return -1;
     }
 
-    notify_terminal(SND, &dummy_packet);
+    notify_terminal(SND, packet);
+    return 0;
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: read
@@ -221,34 +235,19 @@ int Controller::send_ack(int seq, char * dest_ip)
 ----------------------------------------------------------------------------------------------------------------------*/
 int Controller::transmit_data()
 {
-    if(transfers.size() == 0) {return 0;}
+    if(transfers.size() == 0) {
+        return 0;
+    }
 
     struct packet_hdr * packet = (struct packet_hdr*) malloc(sizeof(struct packet_hdr));
     struct sockaddr_in server;
     struct hostent *hp;
 
-    if(!(transfers.front()->readNextPacket(packet))) {return 0;}
-
-    bzero((char *)&server, sizeof(server));
-    server.sin_family = AF_INET;
-    server.sin_port = htons(PORT);
-
-    if ((hp = gethostbyname(packet->dest_ip)) == NULL)
-    {
-        perror("Can't get server's IP address\n");
-        return -1;
-    }
-    bcopy(hp->h_addr, (char *)&server.sin_addr, hp->h_length);
-
-    if(!sendto(ctrl_socket, (void*)packet, P_SIZE, 0, (struct sockaddr *)&server, sizeof(server)))
-    {
-        perror("sendto failure");
-        return -1;
+    if(!(transfers.front()->readNextPacket(packet))) {
+        return 0;
     }
 
-    notify_terminal(SND, packet);
-
-    return 0;
+    return write_udp_socket(packet);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: read

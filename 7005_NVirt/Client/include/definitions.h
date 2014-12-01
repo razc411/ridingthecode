@@ -37,10 +37,10 @@
 struct packet_hdr
 {
     int8_t ptype;
-    char dest_ip[IP_LEN];
     int32_t ack_value;
     int32_t window_size;
     int32_t sequence_number;
+    char dest_ip[IP_LEN];
     char data[DATA_LOAD];
 };
 

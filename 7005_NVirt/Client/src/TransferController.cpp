@@ -1,7 +1,7 @@
 #include "TransferController.h"
 
 TransferController::TransferController(std::string ip_dest, size_t t_size, size_t win_size):
-    current_ack(0), current_seq(1), current_window(1), last_acked_seq(0), ipdest(ip_dest.c_str()),
+    current_ack(-1), current_seq(1), current_window(1), ipdest(ip_dest.c_str()),
     transfer_size(t_size), window_size(win_size), packet_size(P_SIZE)
 {
     buffer = (char*)malloc(t_size);
@@ -33,10 +33,9 @@ int TransferController::verifyAck(struct packet_hdr packet)
 {
     if(packet.ack_value == current_ack + 1)
     {
-        last_acked_seq = packet.sequence_number;
         current_ack++;
 
-        if(((current_window * window_size)) == current_seq)
+        if(((current_window * window_size)) == (current_ack + 1))
         {
             current_window++;
             return 2;
@@ -58,5 +57,14 @@ void TransferController::write_packet_buffer()
         packet_data.ptype = DATA;
         memset(&packet_data.data, 'A', sizeof(packet_data.data));
         memcpy(&buffer[packet_size * i], &packet_data, packet_size);
+
+        if(i == (transfer_size/packet_size - 1))
+        {
+            memset(&packet_data, 0, sizeof(struct packet_hdr));
+            memcpy(packet_data.dest_ip, &ipdest, sizeof(ipdest));
+            packet_data.ptype = EOT;
+            memcpy(&buffer[packet_size * (i + 1)], &packet_data, packet_size);
+        }
     }
+
 }
