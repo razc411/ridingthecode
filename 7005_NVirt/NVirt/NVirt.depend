@@ -58,22 +58,23 @@
 	<pthread.h>
 	"include/Controller.h"
 
-1417463433 /home/raz/Github/ridingthecode/7005_NVirt/NVirt/include/Controller.h
+1417467484 /home/raz/Github/ridingthecode/7005_NVirt/NVirt/include/Controller.h
 	"CircularBuffer.h"
 	"NoiseController.h"
 	"definitions.h"
 
-1417142996 /home/raz/Github/ridingthecode/7005_NVirt/NVirt/include/CircularBuffer.h
+1417469526 /home/raz/Github/ridingthecode/7005_NVirt/NVirt/include/CircularBuffer.h
 	<algorithm>
 	<cstring>
+	"definitions.h"
 
 1417463408 /home/raz/Github/ridingthecode/7005_NVirt/NVirt/include/NoiseController.h
 	"definitions.h"
 
-1417143011 source:/home/raz/Github/ridingthecode/7005_NVirt/NVirt/src/CircularBuffer.cpp
+1417470262 source:/home/raz/Github/ridingthecode/7005_NVirt/NVirt/src/CircularBuffer.cpp
 	"../include/CircularBuffer.h"
 
-1417466812 source:/home/raz/Github/ridingthecode/7005_NVirt/NVirt/src/Controller.cpp
+1417470555 source:/home/raz/Github/ridingthecode/7005_NVirt/NVirt/src/Controller.cpp
 	"../include/Controller.h"
 
 1417149447 source:/home/raz/Github/ridingthecode/7005_NVirt/NVirt/src/NoiseController.cpp

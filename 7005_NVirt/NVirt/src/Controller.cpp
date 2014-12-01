@@ -85,6 +85,11 @@ void Controller::execute()
 {
     int maxfd = 0, ready = 0;
     ctrl_socket = create_udp_socket(6234);
+    if((ctrl_socket2 = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+    {
+        perror ("Can't create a socket\n");
+        exit(1);
+    }
 
     fd_set rcvset_t, rcvset, sndset, sndset_t;
     FD_ZERO(&rcvset);
@@ -145,17 +150,16 @@ int Controller::recieve_data()
         char * buffer = (char*) malloc(P_SIZE);
         memset(buffer, 0, P_SIZE);
 
-        while ((n = read(ctrl_socket, buffer, bytes_to_read)) < P_SIZE)
+        while ((total_read += (n = read(ctrl_socket, buffer, bytes_to_read))) < P_SIZE)
         {
             buffer += n;
             bytes_to_read -= n;
-            total_read += n;
         }
 
-        memcpy(&packet, buffer, P_SIZE);
+        memcpy(&packet, buffer, total_read);
         notify(RCV, packet);
 
-        c_buffer->write(buffer, total_read);
+        c_buffer->write((char*)&packet, total_read);
         free(buffer);
     }
 
@@ -184,22 +188,20 @@ int Controller::transmit_data()
     struct sockaddr_in server;
     struct hostent *hp;
 
-    if(n_control->packet_drop_check())
+    if(!n_control->packet_drop_check())
     {
         return 2;
     }
 
     if(c_buffer->size() >= P_SIZE)
     {
-        char * buffer = (char*) malloc(sizeof(P_SIZE));
-        memset(buffer, 0, P_SIZE);
+        memset(&packet, 0, P_SIZE);
 
-        c_buffer->read(buffer, P_SIZE);
-        memcpy(&packet, buffer, P_SIZE);
+        c_buffer->read((char*)&packet, P_SIZE);
 
         bzero((char *)&server, sizeof(server));
         server.sin_family = AF_INET;
-        server.sin_port = htons(PORT);
+        server.sin_port = htons(6000);
 
         if ((hp = gethostbyname(packet.dest_ip)) == NULL)
         {
@@ -211,14 +213,14 @@ int Controller::transmit_data()
 
         sleep(n_control->get_delay());
 
-        if(sendto(ctrl_socket, (void*)&packet, P_SIZE, 0, (struct sockaddr *)&server, sizeof(server)))
+        if(sendto(ctrl_socket, (void*)&packet, P_SIZE, 0, (struct sockaddr *)&server, sizeof(server)) == -1)
         {
             perror("sendto failure");
+            return -1;
         }
 
         notify(SND, packet);
 
-        free(buffer);
         return 1;
     }
 

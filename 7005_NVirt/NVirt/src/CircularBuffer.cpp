@@ -40,6 +40,7 @@
 CircularBuffer::CircularBuffer(size_t capacity) : beg_index_(0), end_index_(0), size_(0), capacity_(capacity)
 {
     data_ = new char[capacity];
+    memset(data_, 0, capacity);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: ~CircularBuffer

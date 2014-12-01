@@ -20,6 +20,7 @@ class Controller
     protected:
     private:
         int ctrl_socket;
+        int ctrl_socket2;
         CircularBuffer * c_buffer;
         NoiseController * n_control;
 };

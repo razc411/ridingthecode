@@ -21,7 +21,7 @@ class TransferController
         size_t size(){return strlen(buffer);}
         int readNextPacket(struct packet_hdr * packet);
         void readPacket(char &packet, int sequence_num);
-        int verifyAck(struct packet_hdr packet);
+        int verifyAck(struct packet_hdr * packet);
         void write_packet_buffer();
 
     protected:

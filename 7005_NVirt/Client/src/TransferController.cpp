@@ -126,9 +126,9 @@ int TransferController::readNextPacket(struct packet_hdr * packet)
 --      Checks the validity of the passed in ACK. If the ack is valid, increments the current_ack value. If the ack was
 --      the last for the window, also increments the current_window.
 ----------------------------------------------------------------------------------------------------------------------*/
-int TransferController::verifyAck(struct packet_hdr packet)
+int TransferController::verifyAck(struct packet_hdr * packet)
 {
-    if(packet.ack_value == current_ack + 1)
+    if(packet->ack_value == current_ack + 1)
     {
         current_ack++;
 

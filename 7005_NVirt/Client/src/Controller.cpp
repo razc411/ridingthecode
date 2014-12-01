@@ -149,25 +149,16 @@ void Controller::execute()
 void Controller::recieve_data()
 {
     int total_read = 0, n = 0, bytes_to_read = P_SIZE;
-    struct packet_hdr * packet = (struct packet_hdr *) malloc(sizeof(struct packet_hdr));
+    struct packet_hdr packet;
 
-    char * buffer = (char*) malloc(sizeof(P_SIZE));
-    memset(buffer, 0, P_SIZE);
-
-    while ((n = read(ctrl_socket, buffer, bytes_to_read)) < P_SIZE)
+    while ((total_read += (n = read(ctrl_socket, &packet + total_read, bytes_to_read))) < P_SIZE)
     {
-        buffer += n;
         bytes_to_read -= n;
-        total_read += n;
     }
 
-    memcpy(buffer, packet, P_SIZE);
-    notify_terminal(RCV, packet);
+    notify_terminal(RCV, &packet);
 
-    check_packet(packet);
-
-    free(buffer);
-    free(packet);
+    check_packet(&packet);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION:check_packet
@@ -189,7 +180,7 @@ void Controller::recieve_data()
 void Controller::check_packet(struct packet_hdr * packet)
 {
     if(packet->ptype == ACK){
-        if(!cmd_control->transfers.front()->verifyAck(*packet))
+        if(!cmd_control->transfers.front()->verifyAck(packet))
         {
             cmd_control->transfers.front()->current_seq = cmd_control->transfers.front()->current_ack + 2;
         }else{
