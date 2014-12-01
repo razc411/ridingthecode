@@ -10,6 +10,7 @@ class CommandController
     public:
         std::ofstream log_descriptor;
         std::list<TransferController*> transfers;
+        std::string server_ip[20] = "localhost";
 
         CommandController();
         virtual ~CommandController();

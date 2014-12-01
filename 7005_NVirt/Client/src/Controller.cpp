@@ -89,7 +89,7 @@ Controller::~Controller()
 void Controller::execute()
 {
     int maxfd = 0, ready = 0;
-    ctrl_socket = create_udp_socket(6000);
+    ctrl_socket = create_udp_socket(PORT);
 
     fd_set rcvset_t, rcvset, sndset, sndset_t;
     FD_ZERO(&rcvset);
@@ -122,7 +122,7 @@ void Controller::execute()
             recieve_data();
         }
 
-        if((clock() - timer == timeout) && timer_enabled){
+        if((clock() - timer == TIMEOUT) && timer_enabled){
             timer_enabled = false;
             cmd_control->transfers.pop_front();
             cout << "Transfer timed out, ending connection." << endl;
@@ -251,9 +251,9 @@ int Controller::write_udp_socket(struct packet_hdr * packet)
 
     bzero((char *)&server, sizeof(server));
     server.sin_family = AF_INET;
-    server.sin_port = htons(6234);
+    server.sin_port = htons(SERVER_PORT);
 
-    if((hp = gethostbyname("127.0.0.1")) == NULL)
+    if((hp = gethostbyname(cmd_control->server_ip.c_str())) == NULL)
     {
         return -2;
     }

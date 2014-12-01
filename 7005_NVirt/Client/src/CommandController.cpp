@@ -95,6 +95,10 @@ void CommandController::check_command()
         exit(1);
     }
 
+    else if(command.compare("/setRouterIP") == 0)
+    {
+        server_ip = line.substr(13)
+    }
     else if(command.compare("/setWindow") == 0)
     {
         string destip = line.substr(11);
