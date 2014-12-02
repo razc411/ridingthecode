@@ -6,6 +6,7 @@
 --             void check_command(list<TransferController*> * qTransfers)
 --             bool file_exists(const std::string& name)
 --             void set_descriptor(string line)
+--             void print_help()
 --
 --	Date:			November 24 2014
 --
@@ -101,12 +102,12 @@ void CommandController::check_command()
     }
     else if(command.compare("/setWindow") == 0)
     {
-        string destip = line.substr(11);
+        window_size = line.substr(11);
     }
 
     else if(command.compare("/setNumPackets") == 0)
     {
-
+        num_packets = line.substr(15);
     }
 
     else if(command.compare("/send") == 0)
@@ -119,17 +120,40 @@ void CommandController::check_command()
 
     else if(command.compare("/help") == 0)
     {
-        cout << "Welcome to the NVirt dummy client!" << endl;
-        cout << "Command Options" << endl;
-        cout << "========================================" << endl;
-        cout << "/send <ip> : begins a transfer, will be added to queue if transfer currently in progress." << endl;
-        cout << "/quit : exits the emulator." << endl;
-        cout << "========================================" << endl;
+        print_help();
     }
     else
     {
         cout << command << " is not a valid command. Type /help to review the commands." << endl;
     }
+}
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: print_help
+--
+--      DATE: November 24 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void print_help()
+--
+--      RETURNS: Nothing.
+--
+--      NOTES:
+--      Prints the help message to the terminal.
+----------------------------------------------------------------------------------------------------------------------*/
+void CommandController::print_help()
+{
+    cout << "Welcome to the NVirt dummy client!" << endl;
+    cout << "Command Options" << endl;
+    cout << "========================================" << endl;
+    cout << "/send <ip> : begins a transfer, will be added to queue if transfer currently in progress." << endl;
+    cout << "/setWindow : sets the window size." << endl;
+    cout << "/setRouterIP : sets the ip of the network router." << endl;
+    cout << "/setNumPackets : sets the number of packets to be sent." << endl;
+    cout << "/quit : exits the emulator." << endl;
+    cout << "========================================" << endl;
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: file_exists

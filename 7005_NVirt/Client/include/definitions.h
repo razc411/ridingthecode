@@ -19,9 +19,7 @@
 #include <ctime>
 
 #define LISTEN      0
-#define STDIN       1
-#define SENDER      0
-#define RECIEVER    1
+#define STDIN       0
 #define SND         0
 #define RCV         1
 #define PORT        6000
@@ -32,8 +30,7 @@
 #define DATA        2
 #define EOT         3
 #define IP_LEN      20
-#define P_DATA      2
-#define P_SIZE      2084
+#define P_SIZE      HEADER + DATA_LOAD
 #define TIMEOUT     CLOCKS_PER_SEC * 5
 #define SERVER_PORT 6001
 

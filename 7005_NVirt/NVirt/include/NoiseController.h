@@ -11,7 +11,7 @@ class NoiseController
         NoiseController();
         virtual ~NoiseController();
 
-        int check_command();
+        void check_command();
         void set_ploss(std::string line);
         void set_delay(std::string line);
         void set_descriptor(std::string line);

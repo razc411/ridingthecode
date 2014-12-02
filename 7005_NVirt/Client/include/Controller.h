@@ -16,10 +16,12 @@ class Controller
         int transmit_data();
         int write_udp_socket(struct packet_hdr * packet);
         int create_udp_socket(int port);
-        void notify_terminal(int type, struct packet_hdr * pkt);
-
         int send_ack(int seq, char * dest_ip);
+
+        void notify_terminal(int type, struct packet_hdr * pkt);
+        const char * get_readable_type(int type);
         void check_packet(struct packet_hdr * packet);
+
     protected:
     private:
         clock_t timer;

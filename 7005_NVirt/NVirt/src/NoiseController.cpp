@@ -1,10 +1,14 @@
 /*----------------------------------------------------------------------------------------------------------------------
---	Source File:		CircularBuffer.cpp
+--	Source File:		NoiseController.cpp
 --
---	Functions: size_t size() const { return size_; }
---             size_t capacity() const { return capacity_; }
---             size_t write(const char *data, size_t bytes);
---             size_t read(char *data, size_t bytes);
+--	Functions: NoiseController()
+--             ~NoiseController()
+--             void check_command()
+--             void set_ploss(string line)
+--             void set_descriptor(string line)
+--             void set_delay(string line)
+--             void print_help()
+--             bool packet_drop_check()
 --
 --	Date:			November 24 2014
 --
@@ -17,14 +21,14 @@
 --	PROGRAMMER:		Ramzi Chennafi
 --
 --	NOTES:
---	A circular buffer for the storing of connection data.
---
+--	Noise controller for the connection. Checks user input commands and applies user commands to the program. Also
+--  applies noise functions to incoming data and manages the log.
 -------------------------------------------------------------------------------------------------------------------------*/
 #include "NoiseController.h"
 
 using namespace std;
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: read
+--      FUNCTION: ~NoiseController
 --
 --      DATE: November 24 2014
 --      REVISIONS: none
@@ -32,13 +36,12 @@ using namespace std;
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: read(const char * data, size_t bytes)
+--      INTERFACE: ~NoiseController()
 --
---      RETURNS: A size_t of the amount of data read.
+--      RETURNS: Nothing.
 --
 --      NOTES:
---      Reads an amount of data specified by bytes. If empty, returns 0. If requested bytes is larger than the buffer,
---      returns an entire buffer.
+--      Destructor for the NoiseController. Closes the log file descriptor on call.
 ----------------------------------------------------------------------------------------------------------------------*/
 NoiseController::NoiseController(): set_logging(true), data_loss(0), packet_delay(0)
 {
@@ -48,25 +51,28 @@ NoiseController::NoiseController(): set_logging(true), data_loss(0), packet_dela
 --      FUNCTION: read
 --
 --      DATE: November 24 2014
+--      REVISIONS: none/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: print_help
+--
+--      DATE: November 24 2014
 --      REVISIONS: none
 --
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: read(const char * data, size_t bytes)
+--      INTERFACE: void print_help()
 --
---      RETURNS: A size_t of the amount of data read.
+--      RETURNS: Nothing.
 --
 --      NOTES:
---      Reads an amount of data specified by bytes. If empty, returns 0. If requested bytes is larger than the buffer,
---      returns an entire buffer.
+--      Prints the help message to the terminal.
 ----------------------------------------------------------------------------------------------------------------------*/
 NoiseController::~NoiseController()
 {
     log_descriptor.close();
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: read
+--      FUNCTION: packet_drop_check
 --
 --      DATE: November 24 2014
 --      REVISIONS: none
@@ -74,21 +80,20 @@ NoiseController::~NoiseController()
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: read(const char * data, size_t bytes)
+--      INTERFACE: bool packet_drop_check()
 --
---      RETURNS: A size_t of the amount of data read.
+--      RETURNS: A bool indicating whether the packet should be dropped.
 --
 --      NOTES:
---      Reads an amount of data specified by bytes. If empty, returns 0. If requested bytes is larger than the buffer,
---      returns an entire buffer.
+--      Performs a rand math function based on the currently set packet loss and returns the value.
 ----------------------------------------------------------------------------------------------------------------------*/
 bool NoiseController::packet_drop_check()
 {
     double val = rand() % 100;
-    return (val > packet_delay) ? true : false;
+    return (val > data_loss) ? true : false;
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: read
+--      FUNCTION: check_command
 --
 --      DATE: November 24 2014
 --      REVISIONS: none
@@ -96,19 +101,18 @@ bool NoiseController::packet_drop_check()
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: read(const char * data, size_t bytes)
+--      INTERFACE: void NoiseController::check_command()
 --
---      RETURNS: A size_t of the amount of data read.
+--      RETURNS: Nothing.
 --
 --      NOTES:
---      Reads an amount of data specified by bytes. If empty, returns 0. If requested bytes is larger than the buffer,
---      returns an entire buffer.
+--      Reads user input to the terminal and acts on it. Currently accepts input for /send, /quit, /setWindow, /setNumPackets,
+--      and /help. Must specify arguments after the command.
 ----------------------------------------------------------------------------------------------------------------------*/
-int NoiseController::check_command()
+void NoiseController::check_command()
 {
     string line, command;
     char delim = ' ';
-    stringstream ss;
     getline(cin, line);
 
     command = line.substr(0, line.find(delim));
@@ -135,24 +139,15 @@ int NoiseController::check_command()
 
     else if(command.compare("/help") == 0)
     {
-        cout << "Welcome to the NVirt network emulator!" << endl;
-        cout << "Command Options" << endl;
-        cout << "========================================" << endl;
-        cout << "/setdelay <millaseconds> : sets the internal packet transfer delay." << endl;
-        cout << "/setloss <loss number> : sets loss and takes a percentage. 100 - 0." << endl;
-        cout << "/quit : exits the emulator." << endl;
-        cout << "/log <filename> : sends all connection data to a log." << endl;
-        cout << "========================================" << endl;
+        print_help();
     }
     else
     {
         cout << command << " is not a valid command. Type /help to review the commands." << endl;
     }
-
-    return 1;
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: read
+--      FUNCTION: print_help
 --
 --      DATE: November 24 2014
 --      REVISIONS: none
@@ -160,13 +155,40 @@ int NoiseController::check_command()
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: read(const char * data, size_t bytes)
+--      INTERFACE: void print_help()
 --
---      RETURNS: A size_t of the amount of data read.
+--      RETURNS: Nothing.
 --
 --      NOTES:
---      Reads an amount of data specified by bytes. If empty, returns 0. If requested bytes is larger than the buffer,
---      returns an entire buffer.
+--      Prints the help message to the terminal.
+----------------------------------------------------------------------------------------------------------------------*/
+void NoiseController::print_help()
+{
+    cout << "Welcome to the NVirt network emulator!" << endl;
+    cout << "Command Options" << endl;
+    cout << "========================================" << endl;
+    cout << "/setdelay <millaseconds> : sets the internal packet transfer delay." << endl;
+    cout << "/setloss <loss number> : sets loss and takes a percentage. 100 - 0." << endl;
+    cout << "/quit : exits the emulator." << endl;
+    cout << "/log <filename> : sends all connection data to a log." << endl;
+    cout << "========================================" << endl;
+}
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: set_delay
+--
+--      DATE: November 24 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: void set_delay(string line)
+--                  line - contains the delay set by the user.
+--
+--      RETURNS: Nothing.
+--
+--      NOTES:
+--      Sets the current packet delay in ms.
 ----------------------------------------------------------------------------------------------------------------------*/
 void NoiseController::set_delay(string line)
 {
@@ -177,7 +199,7 @@ void NoiseController::set_delay(string line)
     cout << "Delay set to " << packet_delay << "." << endl;
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: read
+--      FUNCTION: set_ploss
 --
 --      DATE: November 24 2014
 --      REVISIONS: none
@@ -185,13 +207,13 @@ void NoiseController::set_delay(string line)
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: read(const char * data, size_t bytes)
+--      INTERFACE: void set_ploss(string line)
+--                  line - contains the loss set by the user.
 --
---      RETURNS: A size_t of the amount of data read.
+--      RETURNS: Nothing.
 --
 --      NOTES:
---      Reads an amount of data specified by bytes. If empty, returns 0. If requested bytes is larger than the buffer,
---      returns an entire buffer.
+--      Sets the packet loss variable for the noise controller.
 ----------------------------------------------------------------------------------------------------------------------*/
 void NoiseController::set_ploss(string line)
 {
@@ -213,7 +235,7 @@ void NoiseController::set_ploss(string line)
     }
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: read
+--      FUNCTION: set_descriptor
 --
 --      DATE: November 24 2014
 --      REVISIONS: none
@@ -221,13 +243,12 @@ void NoiseController::set_ploss(string line)
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: read(const char * data, size_t bytes)
+--      INTERFACE: void set_descriptor(string line)
 --
---      RETURNS: A size_t of the amount of data read.
+--      RETURNS: Nothing.
 --
 --      NOTES:
---      Reads an amount of data specified by bytes. If empty, returns 0. If requested bytes is larger than the buffer,
---      returns an entire buffer.
+--      Sets the log file to be written to.
 ----------------------------------------------------------------------------------------------------------------------*/
 void NoiseController::set_descriptor(string line)
 {

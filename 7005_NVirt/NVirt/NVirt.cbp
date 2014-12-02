@@ -42,6 +42,7 @@
 		<Unit filename="include/CircularBuffer.h" />
 		<Unit filename="include/Controller.h" />
 		<Unit filename="include/NoiseController.h" />
+		<Unit filename="include/definitions.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="src/CircularBuffer.cpp" />
 		<Unit filename="src/Controller.cpp" />

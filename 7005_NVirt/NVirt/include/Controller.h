@@ -16,11 +16,11 @@ class Controller
         int transmit_data();
         int create_udp_socket(int port);
         void notify(int type, struct packet_hdr pkt);
+        const char * get_readable_type(int type);
 
     protected:
     private:
         int ctrl_socket;
-        int ctrl_socket2;
         CircularBuffer * c_buffer;
         NoiseController * n_control;
 };

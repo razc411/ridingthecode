@@ -1,8 +1,6 @@
 #ifndef CIRCULARBUFFER_H
 #define CIRCULARBUFFER_H
 
-#include <algorithm>
-#include <cstring>
 #include "definitions.h"
 
 class CircularBuffer

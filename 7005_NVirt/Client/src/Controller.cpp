@@ -12,6 +12,7 @@
 --             int transmit_data()
 --             int create_udp_socket(int port)
 --             void notify_terminal(int type, struct packet_hdr * pkt)
+--             const char * get_readable_type(int type)
 --
 --	Date:			November 24 2014
 --
@@ -88,6 +89,8 @@ Controller::~Controller()
 ----------------------------------------------------------------------------------------------------------------------*/
 void Controller::execute()
 {
+    cmd_control->print_help();
+
     int maxfd = 0, ready = 0;
     ctrl_socket = create_udp_socket(PORT);
 
@@ -297,9 +300,7 @@ int Controller::transmit_data()
         return -1;
     }
 
-    int err;
-
-    if((err = write_udp_socket(&packet)) <= -1)
+    if(write_udp_socket(&packet) <= -1)
     {
         delete cmd_control->transfers.front();
         cmd_control->transfers.pop_front();
@@ -378,22 +379,42 @@ void Controller::notify_terminal(int type, struct packet_hdr * pkt)
     string packet_type;
     string type_str = (type > 0) ? "RECV | " : "SND | ";
 
-    switch(pkt->ptype)
-    {
-    case ACK:
-        packet_type = "ACK";
-        break;
-    case EOT:
-        packet_type = "EOT";
-        break;
-    case DATA:
-        packet_type = "DATA";
-        break;
-    }
+    packet_type = get_readable_type(pkt->ptype);
 
     cout << type_str << "PKT: " << packet_type << " DEST: " << pkt->dest_ip
     << " ACK# : " << pkt->ack_value << " SEQ# " << pkt->sequence_number << endl;
 
     cmd_control->log_descriptor << type_str << "PKT: " << packet_type << " DEST: " << pkt->dest_ip << " ACK# : "
     << pkt->ack_value << " SEQ# " << pkt->sequence_number << endl;
+}
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: get_readable_type
+--
+--      DATE: November 24 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: const char * Controller::get_readable_type(int type)
+--                  type - the corresponding value for an EOT, ACK or DATA packet.
+--
+--      RETURNS: A const char * of the name of the type of packet found from the type.
+--
+--      NOTES:
+--      Takes in a packet type # and returns the name of the packet.
+----------------------------------------------------------------------------------------------------------------------*/
+const char * Controller::get_readable_type(int type)
+{
+     switch(pkt.ptype)
+    {
+    case ACK:
+        return "ACK";
+    case EOT:
+        return "EOT";
+    case DATA:
+        return"DATA";
+    default:
+        return "UNKNOWN";
+    }
 }

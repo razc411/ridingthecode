@@ -25,15 +25,6 @@ void *execute(void *quit_request);
 ----------------------------------------------------------------------------------------------------------------------*/
 int main(int argc, char ** argv)
 {
-    cout << "Welcome to the NVirt network emulator!" << endl;
-    cout << "Command Options" << endl;
-    cout << "========================================" << endl;
-    cout << "/setdelay <millaseconds> : sets the internal packet transfer delay." << endl;
-    cout << "/setloss <loss number> : sets loss and takes a percentage. 100 - 0." << endl;
-    cout << "/quit : exits the emulator." << endl;
-    cout << "/log <filename> : sends all connection data to a log." << endl;
-    cout << "========================================" << endl;
-
     pthread_t thread;
     int err = 0;
     bool quit = false;

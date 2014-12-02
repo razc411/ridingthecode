@@ -31,6 +31,7 @@
 --      PROGRAMMER: Ramzi Chennafi
 --
 --      INTERFACE: CircularBuffer(size_t capacity)
+--                  capacity - maximum size of the circularbuffer.
 --
 --      RETURNS: A new CircularBuffer object.
 --
@@ -72,6 +73,8 @@ CircularBuffer::~CircularBuffer()
 --      PROGRAMMER: Ramzi Chennafi
 --
 --      INTERFACE: write(const char * data, size_t bytes)
+--                  data - buffer to be written from
+--                  bytes - amount of data to be written to the circular buffer
 --
 --      RETURNS: A size_t of the amount of data written.
 --
@@ -114,6 +117,8 @@ size_t CircularBuffer::write(const char *data, size_t bytes)
 --      PROGRAMMER: Ramzi Chennafi
 --
 --      INTERFACE: read(const char * data, size_t bytes)
+--                  data - buffer to be read into
+--                  bytes - amount of data to be read into data
 --
 --      RETURNS: A size_t of the amount of data read.
 --

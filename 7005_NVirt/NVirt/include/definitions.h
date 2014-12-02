@@ -12,14 +12,13 @@
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
+#include <algorithm>
+#include <cstring>
 
-#define LISTEN      0
-#define STDIN       1
-#define SENDER      0
-#define RECIEVER    1
+#define STDIN       0
 #define SND         0
 #define RCV         1
-#define PORT        6324
+#define PORT        6001
 #define BUFLEN      HEADER_SIZE + DATA_LOAD * 100
 #define HEADER_SIZE 36
 #define DATA_LOAD   2048
@@ -27,8 +26,9 @@
 #define DATA        2
 #define EOT         3
 #define IP_LEN      20
-#define P_DATA      2
-#define P_SIZE      2084
+#define P_SIZE      HEADER_SIZE + DATA_LOAD
+#define TIMEOUT     CLOCKS_PER_SEC * 5
+#define CLIENT_PORT 6000
 
 struct packet_hdr
 {

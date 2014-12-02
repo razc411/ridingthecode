@@ -1,10 +1,12 @@
 /*----------------------------------------------------------------------------------------------------------------------
 --	Source File:		TransferController.cpp
 --
---	Functions: size_t size() const { return size_; }
---             size_t capacity() const { return capacity_; }
---             size_t write(const char *data, size_t bytes);
---             size_t read(char *data, size_t bytes);
+--	Functions: TransferController(std::string ip_dest, int num_packets, int win_size)
+--             TransferController(const TransferController &obj)
+--             ~TransferController()
+--             int readNextPacket(struct packet_hdr * packet)
+--             int verifyAck(struct packet_hdr * packet)
+--             void write_packet_buffer()
 --
 --	Date:			November 24 2014
 --
@@ -49,7 +51,23 @@ TransferController::TransferController(std::string ip_dest, int num_packets, int
     memset(buffer, 0, transfer_size + P_SIZE);
     write_packet_buffer();
 }
-
+/*------------------------------------------------------------------------------------------------------------------
+--      FUNCTION: TransferController
+--
+--      DATE: November 24 2014
+--      REVISIONS: none
+--
+--      DESIGNER: Ramzi Chennafi
+--      PROGRAMMER: Ramzi Chennafi
+--
+--      INTERFACE: TransferController::TransferController(const TransferController &obj)
+--                  obj - reference to the TransferController object to be copied.
+--
+--      RETURNS: A copy of the passed in TransferController.
+--
+--      NOTES:
+--      Constructs a copy of the passed in TransferController object.
+----------------------------------------------------------------------------------------------------------------------*/
 TransferController::TransferController(const TransferController &obj)
 {
     current_ack = obj.current_ack;
@@ -69,7 +87,7 @@ TransferController::TransferController(const TransferController &obj)
 --      DESIGNER: Ramzi Chennafi
 --      PROGRAMMER: Ramzi Chennafi
 --
---      INTERFACE: TransferController::~TransferController()
+--      INTERFACE: TransferController::~TransferController()void TransferController::write_packet_buffer()
 --
 --      RETURNS: Nothing, constructs a Controller object.
 --
@@ -177,8 +195,6 @@ void TransferController::write_packet_buffer()
             memset(&packet_data.data, 'A', sizeof(packet_data.data));
             packet_data.ptype = EOT;
             memcpy(buffer + (packet_size * (i + 1)), &packet_data, packet_size);
-
         }
     }
-
 }

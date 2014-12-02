@@ -10,12 +10,13 @@ class CommandController
     public:
         std::ofstream log_descriptor;
         std::list<TransferController*> transfers;
-        std::string server_ip[20] = "localhost";
+        std::string server_ip("localhost");
 
         CommandController();
         virtual ~CommandController();
 
         void check_command();
+        void print_help();
         void set_descriptor(std::string line);
         bool file_exists(const std::string& name);
 
