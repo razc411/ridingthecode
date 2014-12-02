@@ -117,11 +117,19 @@ TransferController::~TransferController()
 ----------------------------------------------------------------------------------------------------------------------*/
 int TransferController::readNextPacket(struct packet_hdr * packet)
 {
-    if(current_seq <= window_size * current_window){
+    if(current_seq <= window_size * current_window && (((current_seq - 1) * packet_size) <= transfer_size))
+    {
         memcpy((void*)packet, buffer + ((current_seq - 1) * packet_size), packet_size);
         current_seq++;
         return 1;
     }
+
+    if((current_seq * packet_size) >= transfer_size)
+    {
+        create_EOT_packet(packet);
+        return 2;
+    }
+
     return 0;
 }
 /*------------------------------------------------------------------------------------------------------------------
@@ -158,6 +166,15 @@ int TransferController::verifyAck(struct packet_hdr * packet)
     }
     return 0;
 }
+
+void TransferController::create_EOT_packet(struct packet_hdr * packet_data)
+{
+    memset(packet_data, 0, sizeof(packet_hdr));
+    memset(packet_data->data, 'A', strlen(packet_data->data));
+    memcpy(packet_data->dest_ip, ipdest.c_str(), strlen(ipdest.c_str()));
+    memcpy(packet_data->src_ip, src_ip.c_str(), strlen(src_ip.c_str()));
+    packet_data->ptype = EOT;
+}
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: write_packet_buffer
 --
@@ -180,24 +197,15 @@ void TransferController::write_packet_buffer()
     {
         struct packet_hdr packet_data;
         memset(&packet_data, 0, sizeof(packet_hdr));
+        memset(&packet_data.data, 'A', sizeof(packet_data.data));
         memcpy(packet_data.dest_ip, ipdest.c_str(), strlen(ipdest.c_str()));
         memcpy(packet_data.src_ip, src_ip.c_str(), strlen(src_ip.c_str()));
         packet_data.ack_value = i;
         packet_data.sequence_number = i + 1;
         packet_data.window_size = window_size;
         packet_data.ptype = DATA;
-        memset(&packet_data.data, 'A', sizeof(packet_data.data));
         memcpy(buffer + (packet_size * i), &packet_data, packet_size);
 
-        if(i == (transfer_size/packet_size - 1))
-        {
-            memset(&packet_data, 0, sizeof(struct packet_hdr));
-            memcpy(packet_data.dest_ip, ipdest.c_str(), strlen(ipdest.c_str()));
-            memcpy(packet_data.src_ip, src_ip.c_str(), strlen(src_ip.c_str()));
-            memset(&packet_data.data, 'A', sizeof(packet_data.data));
-            packet_data.ptype = EOT;
-            memcpy(buffer + (packet_size * (i + 1)), &packet_data, packet_size);
-        }
     }
 }
 
@@ -210,8 +218,10 @@ string TransferController::grab_ip()
 
     getifaddrs(&ifAddrStruct);
 
-    for (ifa = ifAddrStruct; ifa != NULL; ifa = ifa->ifa_next) {
-        if (!ifa->ifa_addr) {
+    for (ifa = ifAddrStruct; ifa != NULL; ifa = ifa->ifa_next)
+    {
+        if (!ifa->ifa_addr)
+        {
             continue;
         }
         if (ifa->ifa_addr->sa_family == AF_INET)
@@ -224,7 +234,8 @@ string TransferController::grab_ip()
             }
         }
     }
-    if(ifAddrStruct != NULL){
+    if(ifAddrStruct != NULL)
+    {
         freeifaddrs(ifAddrStruct);
     }
 

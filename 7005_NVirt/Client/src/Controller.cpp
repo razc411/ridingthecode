@@ -127,6 +127,7 @@ void Controller::execute()
 
         if((clock() - timer == TIMEOUT) && timer_enabled){
             timer_enabled = false;
+            delete cmd_control->transfers.front();
             cmd_control->transfers.pop_front();
             cout << "Transfer timed out, ending connection." << endl;
         }
@@ -196,7 +197,6 @@ void Controller::check_packet(struct packet_hdr * packet)
         }
     }
     else if(packet->ptype == EOT){
-        cmd_control->transfers.pop_front();
         cout << "Transfer completed." << endl;
         timer_enabled = false;
     }
@@ -262,7 +262,12 @@ int Controller::write_udp_socket(struct packet_hdr * packet)
     server.sin_family = AF_INET;
     server.sin_port = htons(SERVER_PORT);
 
-    if((hp = gethostbyname(cmd_control->server_ip.c_str()) == NULL)
+    if(packet->ptype == EOT && !(cmd_control->transfers.front()->current_seq >=
+                                 (cmd_control->transfers.front()->transfer_size / P_SIZE))){
+        return 1;
+    }
+
+    if((hp = gethostbyname(cmd_control->server_ip.c_str())) == NULL)
     {
         return -2;
     }
@@ -296,6 +301,8 @@ int Controller::write_udp_socket(struct packet_hdr * packet)
 ----------------------------------------------------------------------------------------------------------------------*/
 int Controller::transmit_data()
 {
+    int status = 0;
+
     if(cmd_control->transfers.size() == 0) {
             return 0;
     }
@@ -306,7 +313,7 @@ int Controller::transmit_data()
         return -1;
     }
 
-    if(write_udp_socket(&packet) <= -1)
+    if((status = write_udp_socket(&packet)) <= -1)
     {
         delete cmd_control->transfers.front();
         cmd_control->transfers.pop_front();
@@ -314,9 +321,16 @@ int Controller::transmit_data()
         return -2;
     }
 
-    timer = clock();
-    timer_enabled = true;
+    if(packet.ptype == EOT && status == 0){
+        delete cmd_control->transfers.front();
+        cmd_control->transfers.pop_front();
+        cout << "Transfer completed." << endl;
+    }
 
+    if(packet.ptype == DATA){
+        timer = clock();
+        timer_enabled = true;
+    }
     return 0;
 }
 
@@ -383,7 +397,7 @@ int Controller::create_udp_socket(int port)
 void Controller::notify_terminal(int type, struct packet_hdr * pkt)
 {
     string packet_type;
-    string type_str = (type > 0) ? "RECV | " : "SND | ";
+    string type_str = (type > 0) ? "RECV | " : "SND  | ";
 
     packet_type = get_readable_type(pkt->ptype);
 

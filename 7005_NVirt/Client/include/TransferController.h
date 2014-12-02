@@ -24,6 +24,7 @@ class TransferController
         int verifyAck(struct packet_hdr * packet);
         void write_packet_buffer();
         std::string grab_ip();
+        void create_EOT_packet(struct packet_hdr * packet);
 
     protected:
     private:
