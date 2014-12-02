@@ -34,7 +34,7 @@
 #define EOT         3
 #define IP_LEN      20
 #define P_SIZE      2104
-#define TIMEOUT     CLOCKS_PER_SEC * 20
+#define TIMEOUT     CLOCKS_PER_SEC * 5
 #define SERVER_PORT 6001
 
 struct packet_hdr

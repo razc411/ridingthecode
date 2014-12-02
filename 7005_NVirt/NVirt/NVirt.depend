@@ -66,16 +66,16 @@
 1417479139 /home/raz/Github/ridingthecode/7005_NVirt/NVirt/include/CircularBuffer.h
 	"definitions.h"
 
-1417479619 /home/raz/Github/ridingthecode/7005_NVirt/NVirt/include/NoiseController.h
+1417504795 /home/raz/Github/ridingthecode/7005_NVirt/NVirt/include/NoiseController.h
 	"definitions.h"
 
 1417479139 source:/home/raz/Github/ridingthecode/7005_NVirt/NVirt/src/CircularBuffer.cpp
 	"../include/CircularBuffer.h"
 
-1417479752 source:/home/raz/Github/ridingthecode/7005_NVirt/NVirt/src/Controller.cpp
+1417504956 source:/home/raz/Github/ridingthecode/7005_NVirt/NVirt/src/Controller.cpp
 	"../include/Controller.h"
 
-1417479646 source:/home/raz/Github/ridingthecode/7005_NVirt/NVirt/src/NoiseController.cpp
+1417503209 source:/home/raz/Github/ridingthecode/7005_NVirt/NVirt/src/NoiseController.cpp
 	"NoiseController.h"
 
 1417484855 /home/raz/Github/ridingthecode/7005_NVirt/NVirt/include/definitions.h

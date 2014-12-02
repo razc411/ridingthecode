@@ -210,7 +210,7 @@ int Controller::transmit_data()
         }
         bcopy(hp->h_addr, (char *)&server.sin_addr, hp->h_length);
 
-        sleep(n_control->get_delay());
+        usleep(n_control->get_delay());
 
         if(sendto(ctrl_socket, (void*)&packet, P_SIZE, 0, (struct sockaddr *)&server, sizeof(server)) == -1)
         {
@@ -287,7 +287,7 @@ int Controller::create_udp_socket(int port)
 void Controller::notify(int type, struct packet_hdr pkt)
 {
     string packet_type;
-    string type_str = (type > 0) ? "RECV | " : "SND | ";
+    string type_str = (type > 0) ? "RECV | " : "SND  | ";
 
     packet_type = get_readable_type(pkt.ptype);
 

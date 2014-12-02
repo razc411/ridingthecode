@@ -18,13 +18,13 @@ class NoiseController
         bool packet_drop_check();
         void print_help();
 
-        int get_delay(){return packet_delay;}
+        unsigned int get_delay(){return packet_delay;}
 
     protected:
     private:
         bool set_logging;
         double data_loss;
-        int packet_delay;
+        unsigned int packet_delay;
 };
 
 #endif // NOISECONTROLLER_H

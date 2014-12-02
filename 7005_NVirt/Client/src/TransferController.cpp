@@ -117,7 +117,7 @@ TransferController::~TransferController()
 ----------------------------------------------------------------------------------------------------------------------*/
 int TransferController::readNextPacket(struct packet_hdr * packet)
 {
-    if(current_seq <= window_size * current_window && (((current_seq - 1) * packet_size) <= transfer_size))
+    if((current_seq <= (window_size * current_window)) && ((current_seq * packet_size) <= transfer_size))
     {
         memcpy((void*)packet, buffer + ((current_seq - 1) * packet_size), packet_size);
         current_seq++;
@@ -157,7 +157,7 @@ int TransferController::verifyAck(struct packet_hdr * packet)
     {
         current_ack++;
 
-        if(((current_window * window_size)) == (current_ack + 1))
+        if((current_window * window_size) == (current_ack + 1))
         {
             current_window++;
             return 2;
@@ -205,7 +205,6 @@ void TransferController::write_packet_buffer()
         packet_data.window_size = window_size;
         packet_data.ptype = DATA;
         memcpy(buffer + (packet_size * i), &packet_data, packet_size);
-
     }
 }
 

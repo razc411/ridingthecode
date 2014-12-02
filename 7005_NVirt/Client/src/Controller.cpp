@@ -127,9 +127,8 @@ void Controller::execute()
 
         if((clock() - timer == TIMEOUT) && timer_enabled){
             timer_enabled = false;
-            delete cmd_control->transfers.front();
-            cmd_control->transfers.pop_front();
-            cout << "Transfer timed out, ending connection." << endl;
+            cmd_control->transfers.front()->current_seq = cmd_control->transfers.front()->current_ack + 1;
+            cout << "Transfer timed out, reseting to last acked." << endl;
         }
     }
 }
@@ -191,7 +190,7 @@ void Controller::check_packet(struct packet_hdr * packet)
     if(packet->ptype == ACK){
         if(!cmd_control->transfers.front()->verifyAck(packet))
         {
-            cmd_control->transfers.front()->current_seq = cmd_control->transfers.front()->current_ack + 2;
+            cmd_control->transfers.front()->current_seq = cmd_control->transfers.front()->current_ack + 1;
         }else{
             timer_enabled = false;
         }
@@ -262,8 +261,7 @@ int Controller::write_udp_socket(struct packet_hdr * packet)
     server.sin_family = AF_INET;
     server.sin_port = htons(SERVER_PORT);
 
-    if(packet->ptype == EOT && !(cmd_control->transfers.front()->current_seq >=
-                                 (cmd_control->transfers.front()->transfer_size / P_SIZE))){
+    if(!((cmd_control->transfers.front()->current_ack + 3) == cmd_control->transfers.front()->current_seq) && packet->ptype == EOT){
         return 1;
     }
 
@@ -315,14 +313,12 @@ int Controller::transmit_data()
 
     if((status = write_udp_socket(&packet)) <= -1)
     {
-        delete cmd_control->transfers.front();
         cmd_control->transfers.pop_front();
         cout << "Invalid IP, abandoning transfer." << endl;
         return -2;
     }
 
     if(packet.ptype == EOT && status == 0){
-        delete cmd_control->transfers.front();
         cmd_control->transfers.pop_front();
         cout << "Transfer completed." << endl;
     }
