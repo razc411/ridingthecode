@@ -225,6 +225,7 @@ void Controller::check_packet(struct packet_hdr * packet)
 int Controller::send_ack(int seq, const char * src_ip)
 {
     struct packet_hdr ack_packet;
+    memset(&ack_packet, 0, sizeof(packet_hdr));
 
     memcpy(ack_packet.dest_ip, src_ip, strlen(src_ip));
     ack_packet.ack_value = seq - 1;
