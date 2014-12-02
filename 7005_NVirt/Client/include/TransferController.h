@@ -23,11 +23,12 @@ class TransferController
         void readPacket(char &packet, int sequence_num);
         int verifyAck(struct packet_hdr * packet);
         void write_packet_buffer();
-        const char * grab_ip();
+        std::string grab_ip();
 
     protected:
     private:
         std::string ipdest;
+        std::string src_ip;
         char * buffer;
 };
 

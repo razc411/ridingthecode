@@ -37,6 +37,7 @@ struct packet_hdr
     int window_size;
     int sequence_number;
     char dest_ip[IP_LEN];
+    char src_ip[IP_LEN];
     char data[DATA_LOAD];
 };
 
