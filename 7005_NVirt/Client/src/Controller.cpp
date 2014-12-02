@@ -262,7 +262,7 @@ int Controller::write_udp_socket(struct packet_hdr * packet)
     server.sin_family = AF_INET;
     server.sin_port = htons(SERVER_PORT);
 
-    if((hp = gethostbyname(packet->dest_ip)) == NULL)
+    if((hp = gethostbyname(cmd_control->server_ip.c_str()) == NULL)
     {
         return -2;
     }
