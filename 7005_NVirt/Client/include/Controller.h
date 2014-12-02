@@ -14,7 +14,7 @@ class Controller
         void execute();
         void recieve_data();
         int transmit_data();
-        int write_udp_socket(struct packet_hdr * packet);
+        int write_udp_socket(struct packet_hdr * packet, const char * ip_dest);
         int create_udp_socket(int port);
         int send_ack(int seq, const char * dest_ip);
 

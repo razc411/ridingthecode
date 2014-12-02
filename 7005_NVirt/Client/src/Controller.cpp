@@ -233,7 +233,7 @@ int Controller::send_ack(int seq, const char * dest_ip)
     ack_packet.ptype = ACK;
     memset(&ack_packet.data, 'A', sizeof(ack_packet.data));
 
-    return write_udp_socket(&ack_packet);
+    return write_udp_socket(&ack_packet, dest_ip);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: write_udp_socket
@@ -252,7 +252,7 @@ int Controller::send_ack(int seq, const char * dest_ip)
 --      NOTES:
 --      Sends a packet over UDP to the specified host.
 ----------------------------------------------------------------------------------------------------------------------*/
-int Controller::write_udp_socket(struct packet_hdr * packet)
+int Controller::write_udp_socket(struct packet_hdr * packet, const char * ip_dest)
 {
     struct sockaddr_in server;
     struct hostent *hp;
@@ -261,7 +261,7 @@ int Controller::write_udp_socket(struct packet_hdr * packet)
     server.sin_family = AF_INET;
     server.sin_port = htons(SERVER_PORT);
 
-    if((hp = gethostbyname(cmd_control->server_ip.c_str())) == NULL)
+    if((hp = gethostbyname(ip_dest)) == NULL)
     {
         return -2;
     }
@@ -305,7 +305,7 @@ int Controller::transmit_data()
         return -1;
     }
 
-    if(write_udp_socket(&packet) <= -1)
+    if(write_udp_socket(&packet, packet.dest_ip) <= -1)
     {
         delete cmd_control->transfers.front();
         cmd_control->transfers.pop_front();
