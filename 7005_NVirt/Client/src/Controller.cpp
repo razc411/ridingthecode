@@ -261,7 +261,7 @@ int Controller::write_udp_socket(struct packet_hdr * packet)
     server.sin_family = AF_INET;
     server.sin_port = htons(SERVER_PORT);
 
-    if(!((cmd_control->transfers.front()->current_ack + 3) == cmd_control->transfers.front()->current_seq) && packet->ptype == EOT){
+    if(!((cmd_control->transfers.front()->current_ack + 1) == (cmd_control->transfers.front()->transfer_size/P_SIZE)) && packet->ptype == EOT){
         return 1;
     }
 
@@ -306,6 +306,7 @@ int Controller::transmit_data()
     }
 
     struct packet_hdr packet;
+    memset(&packet, 0, sizeof(packet_hdr));
 
     if(!(cmd_control->transfers.front()->readNextPacket(&packet))) {
         return -1;
