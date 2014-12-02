@@ -166,7 +166,7 @@ void Controller::recieve_data()
 
     notify_terminal(RCV, &packet);
 
-    check_packet(&packet, inet_ntoa(client.sin_addr));
+    check_packet(&packet);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION:check_packet
@@ -185,7 +185,7 @@ void Controller::recieve_data()
 --      NOTES:
 --      Checks whether the passed in packet is either an ACK, EOT or DATA packet and performs the required actions.
 ----------------------------------------------------------------------------------------------------------------------*/
-void Controller::check_packet(struct packet_hdr * packet, const char * src_ip)
+void Controller::check_packet(struct packet_hdr * packet)
 {
     if(packet->ptype == ACK){
         if(!cmd_control->transfers.front()->verifyAck(packet))
@@ -201,7 +201,7 @@ void Controller::check_packet(struct packet_hdr * packet, const char * src_ip)
         timer_enabled = false;
     }
     else{
-        send_ack(packet->sequence_number, src_ip);
+        send_ack(packet->sequence_number, packet->src_ip);
     }
 }
 /*------------------------------------------------------------------------------------------------------------------
@@ -222,18 +222,18 @@ void Controller::check_packet(struct packet_hdr * packet, const char * src_ip)
 --      NOTES:
 --      Crafts an ack with the requested sequence number and destination ip then sends it to the destination ip.
 ----------------------------------------------------------------------------------------------------------------------*/
-int Controller::send_ack(int seq, const char * dest_ip)
+int Controller::send_ack(int seq, const char * src_ip)
 {
     struct packet_hdr ack_packet;
 
-    memcpy(ack_packet.dest_ip, dest_ip, strlen(dest_ip));
+    memcpy(ack_packet.dest_ip, src_ip, strlen(src_ip));
     ack_packet.ack_value = seq - 1;
     ack_packet.sequence_number = seq;
     ack_packet.window_size = 0;
     ack_packet.ptype = ACK;
     memset(&ack_packet.data, 'A', sizeof(ack_packet.data));
 
-    return write_udp_socket(&ack_packet, dest_ip);
+    return write_udp_socket(&ack_packet);
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: write_udp_socket
@@ -252,7 +252,7 @@ int Controller::send_ack(int seq, const char * dest_ip)
 --      NOTES:
 --      Sends a packet over UDP to the specified host.
 ----------------------------------------------------------------------------------------------------------------------*/
-int Controller::write_udp_socket(struct packet_hdr * packet, const char * ip_dest)
+int Controller::write_udp_socket(struct packet_hdr * packet)
 {
     struct sockaddr_in server;
     struct hostent *hp;
@@ -261,7 +261,7 @@ int Controller::write_udp_socket(struct packet_hdr * packet, const char * ip_des
     server.sin_family = AF_INET;
     server.sin_port = htons(SERVER_PORT);
 
-    if((hp = gethostbyname(ip_dest)) == NULL)
+    if((hp = gethostbyname(packet->dest_ip)) == NULL)
     {
         return -2;
     }
@@ -305,7 +305,7 @@ int Controller::transmit_data()
         return -1;
     }
 
-    if(write_udp_socket(&packet, packet.dest_ip) <= -1)
+    if(write_udp_socket(&packet) <= -1)
     {
         delete cmd_control->transfers.front();
         cmd_control->transfers.pop_front();

@@ -20,13 +20,13 @@
 #define RCV         1
 #define PORT        6001
 #define BUFLEN      HEADER_SIZE + DATA_LOAD * 100
-#define HEADER_SIZE 36
+#define HEADER_SIZE 56
 #define DATA_LOAD   2048
 #define ACK         1
 #define DATA        2
 #define EOT         3
 #define IP_LEN      20
-#define P_SIZE      2084
+#define P_SIZE      2104
 #define TIMEOUT     CLOCKS_PER_SEC * 5
 #define CLIENT_PORT 6000
 

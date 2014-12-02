@@ -14,13 +14,13 @@ class Controller
         void execute();
         void recieve_data();
         int transmit_data();
-        int write_udp_socket(struct packet_hdr * packet, const char * ip_dest);
+        int write_udp_socket(struct packet_hdr * packet);
         int create_udp_socket(int port);
         int send_ack(int seq, const char * dest_ip);
 
         void notify_terminal(int type, struct packet_hdr * pkt);
         const char * get_readable_type(int type);
-        void check_packet(struct packet_hdr * packet, const char * src_ip);
+        void check_packet(struct packet_hdr * packet);
 
     protected:
     private:

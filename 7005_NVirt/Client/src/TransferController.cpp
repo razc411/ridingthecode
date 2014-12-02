@@ -176,10 +176,13 @@ int TransferController::verifyAck(struct packet_hdr * packet)
 ----------------------------------------------------------------------------------------------------------------------*/
 void TransferController::write_packet_buffer()
 {
+    const char * src_ip = grab_ip();
+
     for(int i = 0; i < transfer_size/packet_size; i++)
     {
         struct packet_hdr packet_data;
         memcpy(packet_data.dest_ip, ipdest.c_str(), strlen(ipdest.c_str()));
+        memcpy(packet_data.src_ip, src_ip, strlen(src_ip));
         packet_data.ack_value = i;
         packet_data.sequence_number = i + 1;
         packet_data.window_size = window_size;
@@ -191,9 +194,37 @@ void TransferController::write_packet_buffer()
         {
             memset(&packet_data, 0, sizeof(struct packet_hdr));
             memcpy(packet_data.dest_ip, ipdest.c_str(), strlen(ipdest.c_str()));
+            memcpy(packet_data.src_ip, src_ip, strlen(src_ip));
             memset(&packet_data.data, 'A', sizeof(packet_data.data));
             packet_data.ptype = EOT;
             memcpy(buffer + (packet_size * (i + 1)), &packet_data, packet_size);
         }
     }
+}
+
+const char * TransferController::grab_ip()
+{
+    struct ifaddrs * ifAddrStruct=NULL;
+    struct ifaddrs * ifa=NULL;
+    void * tmpAddrPtr=NULL;
+
+    getifaddrs(&ifAddrStruct);
+
+    for (ifa = ifAddrStruct; ifa != NULL; ifa = ifa->ifa_next) {
+        if (!ifa->ifa_addr) {
+            continue;
+        }
+        if (ifa->ifa_addr->sa_family == AF_INET)
+        {
+            tmpAddrPtr=&((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
+            char addressBuffer[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, tmpAddrPtr, addressBuffer, INET_ADDRSTRLEN);
+            if(strcmp(ifa->ifa_name, "wlan0") == 0)
+            {
+                return addressBuffer;
+            }
+        }
+    }
+
+    return "localhost";
 }

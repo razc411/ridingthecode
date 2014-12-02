@@ -27,10 +27,10 @@
 	<algorithm>
 	<cstring>
 
-1417482878 source:/home/raz/Github/ridingthecode/7005_NVirt/Client/src/Controller.cpp
+1417484060 source:/home/raz/Github/ridingthecode/7005_NVirt/Client/src/Controller.cpp
 	"../include/Controller.h"
 
-1417483175 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/Controller.h
+1417484187 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/Controller.h
 	"CommandController.h"
 	"TransferController.h"
 	"definitions.h"
@@ -51,10 +51,10 @@
 	<string.h>
 	"include/Controller.h"
 
-1417471297 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/TransferController.h
+1417484166 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/TransferController.h
 	"definitions.h"
 
-1417482624 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/definitions.h
+1417484216 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/definitions.h
 	<unistd.h>
 	<sys/socket.h>
 	<arpa/inet.h>
@@ -72,6 +72,7 @@
 	<string>
 	<memory>
 	<ctime>
+	<ifaddrs.h>
 
 1417479947 source:/home/raz/Github/ridingthecode/7005_NVirt/Client/src/TransferController.cpp
 	"TransferController.h"
