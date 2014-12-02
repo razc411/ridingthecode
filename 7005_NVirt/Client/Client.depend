@@ -30,7 +30,7 @@
 1417479551 source:/home/raz/Github/ridingthecode/7005_NVirt/Client/src/Controller.cpp
 	"../include/Controller.h"
 
-1417479139 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/Controller.h
+1417482867 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/Controller.h
 	"CommandController.h"
 	"TransferController.h"
 	"definitions.h"
@@ -54,9 +54,11 @@
 1417471297 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/TransferController.h
 	"definitions.h"
 
-1417480264 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/definitions.h
+1417482624 /home/raz/Github/ridingthecode/7005_NVirt/Client/include/definitions.h
 	<unistd.h>
 	<sys/socket.h>
+	<arpa/inet.h>
+	<sys/types.h>
 	<arpa/inet.h>
 	<netdb.h>
 	<stdio.h>

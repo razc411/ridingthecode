@@ -153,15 +153,20 @@ void Controller::recieve_data()
 {
     size_t total_read = 0, n = 0, bytes_to_read = P_SIZE;
     struct packet_hdr packet;
+    struct sockaddr_in client;
 
-    while ((total_read += (n = read(ctrl_socket, &packet + total_read, bytes_to_read))) < P_SIZE)
+    bzero((char *)&client, sizeof(client));
+    client.sin_family = AF_INET;
+    socklen_t client_len = sizeof(client);
+
+    while ((total_read += (n = recvfrom(ctrl_socket, &packet + total_read, bytes_to_read, 0, (struct sockaddr*)&client, &client_len))) < P_SIZE)
     {
         bytes_to_read -= n;
     }
 
     notify_terminal(RCV, &packet);
 
-    check_packet(&packet);
+    check_packet(&packet, inet_ntoa(client.sin_addr));
 }
 /*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION:check_packet
@@ -180,7 +185,7 @@ void Controller::recieve_data()
 --      NOTES:
 --      Checks whether the passed in packet is either an ACK, EOT or DATA packet and performs the required actions.
 ----------------------------------------------------------------------------------------------------------------------*/
-void Controller::check_packet(struct packet_hdr * packet)
+void Controller::check_packet(struct packet_hdr * packet, const char * src_ip)
 {
     if(packet->ptype == ACK){
         if(!cmd_control->transfers.front()->verifyAck(packet))
@@ -196,7 +201,7 @@ void Controller::check_packet(struct packet_hdr * packet)
         timer_enabled = false;
     }
     else{
-        send_ack(packet->sequence_number, packet->dest_ip);
+        send_ack(packet->sequence_number, src_ip);
     }
 }
 /*------------------------------------------------------------------------------------------------------------------
@@ -217,7 +222,7 @@ void Controller::check_packet(struct packet_hdr * packet)
 --      NOTES:
 --      Crafts an ack with the requested sequence number and destination ip then sends it to the destination ip.
 ----------------------------------------------------------------------------------------------------------------------*/
-int Controller::send_ack(int seq, char * dest_ip)
+int Controller::send_ack(int seq, const char * dest_ip)
 {
     struct packet_hdr ack_packet;
 
