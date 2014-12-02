@@ -16,6 +16,7 @@ class NoiseController
         void set_delay(std::string line);
         void set_descriptor(std::string line);
         bool packet_drop_check();
+        void print_help();
 
         int get_delay(){return packet_delay;}
 

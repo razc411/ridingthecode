@@ -48,10 +48,6 @@ NoiseController::NoiseController(): set_logging(true), data_loss(0), packet_dela
     log_descriptor.open("log.txt");
 }
 /*------------------------------------------------------------------------------------------------------------------
---      FUNCTION: read
---
---      DATE: November 24 2014
---      REVISIONS: none/*------------------------------------------------------------------------------------------------------------------
 --      FUNCTION: print_help
 --
 --      DATE: November 24 2014

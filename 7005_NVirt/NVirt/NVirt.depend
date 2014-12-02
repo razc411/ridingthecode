@@ -52,35 +52,33 @@
 1417149447 source:/home/raz/Dropbox/Current Projects/final_project/NVirt/src/NoiseController.cpp
 	"NoiseController.h"
 
-1417144398 source:/home/raz/Github/ridingthecode/7005_NVirt/NVirt/main.cpp
+1417479139 source:/home/raz/Github/ridingthecode/7005_NVirt/NVirt/main.cpp
 	<iostream>
 	<stdio.h>
 	<pthread.h>
 	"include/Controller.h"
 
-1417467484 /home/raz/Github/ridingthecode/7005_NVirt/NVirt/include/Controller.h
+1417479139 /home/raz/Github/ridingthecode/7005_NVirt/NVirt/include/Controller.h
 	"CircularBuffer.h"
 	"NoiseController.h"
 	"definitions.h"
 
-1417469526 /home/raz/Github/ridingthecode/7005_NVirt/NVirt/include/CircularBuffer.h
-	<algorithm>
-	<cstring>
+1417479139 /home/raz/Github/ridingthecode/7005_NVirt/NVirt/include/CircularBuffer.h
 	"definitions.h"
 
-1417463408 /home/raz/Github/ridingthecode/7005_NVirt/NVirt/include/NoiseController.h
+1417479619 /home/raz/Github/ridingthecode/7005_NVirt/NVirt/include/NoiseController.h
 	"definitions.h"
 
-1417470262 source:/home/raz/Github/ridingthecode/7005_NVirt/NVirt/src/CircularBuffer.cpp
+1417479139 source:/home/raz/Github/ridingthecode/7005_NVirt/NVirt/src/CircularBuffer.cpp
 	"../include/CircularBuffer.h"
 
-1417470555 source:/home/raz/Github/ridingthecode/7005_NVirt/NVirt/src/Controller.cpp
+1417479752 source:/home/raz/Github/ridingthecode/7005_NVirt/NVirt/src/Controller.cpp
 	"../include/Controller.h"
 
-1417149447 source:/home/raz/Github/ridingthecode/7005_NVirt/NVirt/src/NoiseController.cpp
+1417479646 source:/home/raz/Github/ridingthecode/7005_NVirt/NVirt/src/NoiseController.cpp
 	"NoiseController.h"
 
-1417464606 /home/raz/Github/ridingthecode/7005_NVirt/NVirt/include/definitions.h
+1417480291 /home/raz/Github/ridingthecode/7005_NVirt/NVirt/include/definitions.h
 	<unistd.h>
 	<sys/socket.h>
 	<arpa/inet.h>
@@ -92,4 +90,6 @@
 	<fstream>
 	<sstream>
 	<cstdlib>
+	<algorithm>
+	<cstring>
 

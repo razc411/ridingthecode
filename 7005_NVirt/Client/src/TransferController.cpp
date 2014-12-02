@@ -117,7 +117,6 @@ TransferController::~TransferController()
 ----------------------------------------------------------------------------------------------------------------------*/
 int TransferController::readNextPacket(struct packet_hdr * packet)
 {
-
     if(current_seq <= window_size * current_window){
         memcpy((void*)packet, buffer + ((current_seq - 1) * packet_size), packet_size);
         current_seq++;

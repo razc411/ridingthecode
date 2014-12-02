@@ -184,18 +184,18 @@ int Controller::transmit_data()
 {
     struct packet_hdr packet;
 
-    memset(&packet, 0, P_SIZE);
-    c_buffer->read((char*)&packet, P_SIZE);
-
-    if(!n_control->packet_drop_check())
-    {
-        cout << get_readable_type(packet.ptype) <<" Packet SEQ# " << packet.sequence_number <<
-        " ACK# " << packet.ack_value << " lost!" << endl;
-        return 2;
-    }
-
     if(c_buffer->size() >= P_SIZE)
     {
+        memset(&packet, 0, P_SIZE);
+        c_buffer->read((char*)&packet, P_SIZE);
+
+        if(!n_control->packet_drop_check())
+        {
+            cout << get_readable_type(packet.ptype) <<" Packet SEQ# " << packet.sequence_number <<
+            " ACK# " << packet.ack_value << " lost!" << endl;
+            return 2;
+        }
+
         struct sockaddr_in server;
         struct hostent *hp;
 
@@ -316,7 +316,7 @@ void Controller::notify(int type, struct packet_hdr pkt)
 ----------------------------------------------------------------------------------------------------------------------*/
 const char * Controller::get_readable_type(int type)
 {
-     switch(pkt.ptype)
+     switch(type)
     {
     case ACK:
         return "ACK";

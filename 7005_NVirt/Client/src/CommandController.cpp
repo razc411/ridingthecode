@@ -98,16 +98,18 @@ void CommandController::check_command()
 
     else if(command.compare("/setRouterIP") == 0)
     {
-        server_ip = line.substr(13)
+        server_ip = line.substr(13);
     }
     else if(command.compare("/setWindow") == 0)
     {
-        window_size = line.substr(11);
+        ss << line.substr(11);
+        ss >> window_size;
     }
 
     else if(command.compare("/setNumPackets") == 0)
     {
-        num_packets = line.substr(15);
+        ss << line.substr(15);
+        ss >> num_packets;
     }
 
     else if(command.compare("/send") == 0)

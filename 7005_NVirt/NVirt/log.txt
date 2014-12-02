@@ -18,3 +18,13 @@ RECV | PKT: DATA DEST: localhost ACK# : 8 SEQ# 9
 SND | PKT: DATA DEST: localhost ACK# : 8 SEQ# 9
 RECV | PKT: DATA DEST: localhost ACK# : 9 SEQ# 10
 SND | PKT: DATA DEST: localhost ACK# : 9 SEQ# 10
+RECV | PKT: ACK DEST: localhost»1 ACK# : 0 SEQ# 1
+RECV | PKT: ACK DEST: localhost»1 ACK# : 1 SEQ# 2
+RECV | PKT: ACK DEST: localhost»1 ACK# : 2 SEQ# 3
+RECV | PKT: ACK DEST: localhost»1 ACK# : 3 SEQ# 4
+RECV | PKT: ACK DEST: localhost»1 ACK# : 4 SEQ# 5
+RECV | PKT: ACK DEST: localhost»1 ACK# : 5 SEQ# 6
+RECV | PKT: ACK DEST: localhost»1 ACK# : 6 SEQ# 7
+RECV | PKT: ACK DEST: localhost»1 ACK# : 7 SEQ# 8
+RECV | PKT: ACK DEST: localhost»1 ACK# : 8 SEQ# 9
+RECV | PKT: ACK DEST: localhost»1 ACK# : 9 SEQ# 10

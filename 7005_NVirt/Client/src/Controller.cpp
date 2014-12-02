@@ -151,7 +151,7 @@ void Controller::execute()
 ----------------------------------------------------------------------------------------------------------------------*/
 void Controller::recieve_data()
 {
-    int total_read = 0, n = 0, bytes_to_read = P_SIZE;
+    size_t total_read = 0, n = 0, bytes_to_read = P_SIZE;
     struct packet_hdr packet;
 
     while ((total_read += (n = read(ctrl_socket, &packet + total_read, bytes_to_read))) < P_SIZE)
@@ -406,7 +406,7 @@ void Controller::notify_terminal(int type, struct packet_hdr * pkt)
 ----------------------------------------------------------------------------------------------------------------------*/
 const char * Controller::get_readable_type(int type)
 {
-     switch(pkt.ptype)
+    switch(type)
     {
     case ACK:
         return "ACK";

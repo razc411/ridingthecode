@@ -30,7 +30,7 @@
 #define DATA        2
 #define EOT         3
 #define IP_LEN      20
-#define P_SIZE      HEADER + DATA_LOAD
+#define P_SIZE      2084
 #define TIMEOUT     CLOCKS_PER_SEC * 5
 #define SERVER_PORT 6001
 
